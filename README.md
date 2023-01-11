@@ -13,13 +13,12 @@ pip install teo
 
 ```python
 from asyncio import run
-from teo import AppBuilder
+from teo import App
 
 
 async def main():
-    app_builder = AppBuilder()
-    app_builder.load("./schema.teo")
-    app = await app_builder.build()
+    app = App()
+    app.load("./schema.teo")
     await app.run()
 
 
