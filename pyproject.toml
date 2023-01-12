@@ -12,4 +12,4 @@ classifiers = [
 ]
 
 [project.scripts]
-teo = "teo:cli_run"
+teo = "teo.cli:main"

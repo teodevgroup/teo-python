@@ -14,13 +14,20 @@ struct App {
 impl App {
 
     #[new]
-    fn new(py: Python<'_>) -> Self {
+    fn new(py: Python<'_>, cli: Option<bool>) -> Self {
         let platform = PyModule::import(py, "platform").unwrap();
         let python_version: Py<PyAny> = platform.getattr("python_version").unwrap().into();
         let version_any = python_version.call0(py).unwrap();
         let version_str: &str = version_any.extract::<&str>(py).unwrap();
         let environment_version = EnvironmentVersion::Python(version_str.to_owned());
-        App { app_builder: Arc::new(TeoAppBuilder::new_with_environment_version(environment_version)) }
+        match cli {
+            Some(cli) => if cli {
+                App { app_builder: Arc::new(TeoAppBuilder::new_with_environment_version_and_entrance(environment_version, ::teo::core::app::entrance::Entrance::CLI)) }
+            } else {
+                App { app_builder: Arc::new(TeoAppBuilder::new_with_environment_version(environment_version)) }
+            }
+            None => App { app_builder: Arc::new(TeoAppBuilder::new_with_environment_version(environment_version)) }
+        }
     }
 
     fn run<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
@@ -37,16 +44,19 @@ impl App {
     }
 }
 
-#[pyfunction]
-fn cli_run<'p>(py: Python<'p>) -> PyResult<()> {
-    let app = App::new(py);
-    app.run(py);
-    Ok(())
-}
+// #[pyfunction]
+// fn cli_run<'p>(py: Python<'p>) -> PyResult<()> {
+//     let app = App::new(py);
+//     let awaitable = app.run(py).unwrap();
+//     let asyncio = PyModule::import(py, "asyncio").unwrap();
+//     let run: Py<PyAny> = asyncio.getattr("run").unwrap().into();
+//     let _none = run.call1(py, (awaitable,)).unwrap();
+//     Ok(())
+// }
 
 #[pymodule]
 fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<App>()?;
-    m.add_function(wrap_pyfunction!(cli_run, m)?)?;
+    // m.add_function(wrap_pyfunction!(cli_run, m)?)?;
     Ok(())
 }
