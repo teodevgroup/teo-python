@@ -1,13 +1,13 @@
-from typing import Optional
+"""This module contains `App`, the main application class of Teo server."""
 
 
 class App:
     """Teo application."""
 
     def __init__(self) -> None:
-        """Create an Teo application."""
+        """Create a Teo application."""
         ...
 
     async def run(self) -> None:
-        """Start the Teo application server."""
+        """Run the application."""
         ...

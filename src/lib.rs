@@ -26,7 +26,9 @@ impl App {
     fn run<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let app_builder = self.app_builder.clone();
         future_into_py(py, async move {
-            let teo_app = app_builder.build().await;
+            let app_builder_ref = app_builder.as_ref();
+            let app_builder_ref_mut = app_builder_ref.to_mut();
+            let teo_app = app_builder_ref_mut.build().await;
             teo_app.run().await;
             Ok(Python::with_gil(|_py| {
                 ()
@@ -35,8 +37,16 @@ impl App {
     }
 }
 
+#[pyfunction]
+fn cli_run<'p>(py: Python<'p>) -> PyResult<()> {
+    let app = App::new(py);
+    app.run(py);
+    Ok(())
+}
+
 #[pymodule]
 fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<App>()?;
+    m.add_function(wrap_pyfunction!(cli_run, m)?)?;
     Ok(())
 }
