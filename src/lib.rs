@@ -44,19 +44,8 @@ impl App {
     }
 }
 
-// #[pyfunction]
-// fn cli_run<'p>(py: Python<'p>) -> PyResult<()> {
-//     let app = App::new(py);
-//     let awaitable = app.run(py).unwrap();
-//     let asyncio = PyModule::import(py, "asyncio").unwrap();
-//     let run: Py<PyAny> = asyncio.getattr("run").unwrap().into();
-//     let _none = run.call1(py, (awaitable,)).unwrap();
-//     Ok(())
-// }
-
 #[pymodule]
 fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<App>()?;
-    // m.add_function(wrap_pyfunction!(cli_run, m)?)?;
     Ok(())
 }
