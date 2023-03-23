@@ -1,7 +1,11 @@
-from asyncio import run
+import asyncio
 from teo import App
 
 
+async def _main():
+    app = App()
+    await app.run()
+
+
 def main():
-    app = App(True)
-    run(app.run())
+    asyncio.run(_main())

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use pyo3::prelude::*;
-use pyo3_asyncio::async_std::future_into_py;
+use pyo3_asyncio::tokio::future_into_py;
 use ::teo::core::app::builder::AppBuilder as TeoAppBuilder;
 use ::teo::core::app::environment::EnvironmentVersion;
 use to_mut::ToMut;
