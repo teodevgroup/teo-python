@@ -42,6 +42,15 @@ impl App {
             }))
         })
     }
+
+    fn transform(&self, py: Python, name: &str, callback: &PyAny) -> PyResult<()> {
+        let mut_builder = self.app_builder.as_ref().to_mut();
+        println!("see name: {}", name);
+        println!("see callback: {:?}", callback);
+        // mut_builder.transform()
+        // callback.is_callable()
+        Ok(())
+    }
 }
 
 #[pymodule]

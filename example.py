@@ -3,8 +3,8 @@ from teo import App
 
 
 async def main():
-    app = App(True)
+    app = App()
+    app.transform("addOne", lambda x: x + 1)
     await app.run()
-
 
 run(main())
