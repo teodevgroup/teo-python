@@ -3,7 +3,7 @@ from teo import App
 
 
 async def main():
-    app = App()
+    app = App(True)
     await app.run()
 
 
