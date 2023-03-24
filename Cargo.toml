@@ -1,6 +1,6 @@
 [package]
 name = "teo-py"
-version = "0.0.43"
+version = "0.0.54"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,8 +9,8 @@ name = "teo"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.17.3", features = ["extension-module"] }
+pyo3 = { version = "0.18", features = ["extension-module"] }
 teo = { path = "../teo", features = ["data-source-mysql", "data-source-postgres", "data-source-sqlite", "data-source-mongodb"] }
-pyo3-asyncio = { version = "0.17", features = ["attributes", "async-std-runtime"] }
-async-std = { version = "1.12", features = ["tokio1"] }
+pyo3-asyncio = { version = "0.18", features = ["attributes", "tokio-runtime"] }
+tokio = { version = "1.0" }
 to-mut = { version = "0.1.0" }
