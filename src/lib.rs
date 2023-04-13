@@ -1,8 +1,12 @@
+pub mod value;
+
 use std::sync::Arc;
 use pyo3::prelude::*;
 use pyo3_asyncio::tokio::future_into_py;
 use ::teo::core::app::builder::AppBuilder as TeoAppBuilder;
 use ::teo::core::app::environment::EnvironmentVersion;
+use pyo3::types::PyInt;
+use ::teo::prelude::Value;
 use to_mut::ToMut;
 
 #[pyclass]
@@ -33,9 +37,8 @@ impl App {
     fn run<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let app_builder = self.app_builder.clone();
         future_into_py(py, async move {
-            let app_builder_ref = app_builder.as_ref();
-            let app_builder_ref_mut = app_builder_ref.to_mut();
-            let teo_app = app_builder_ref_mut.build().await;
+            let app_builder_ref = app_builder.as_ref().clone();
+            let teo_app = app_builder_ref.build().await;
             teo_app.run().await;
             Ok(Python::with_gil(|_py| {
                 ()
@@ -43,14 +46,19 @@ impl App {
         })
     }
 
-    fn transform(&self, py: Python, name: &str, callback: &PyAny) -> PyResult<()> {
-        let mut_builder = self.app_builder.as_ref().to_mut();
-        println!("see name: {}", name);
-        println!("see callback: {:?}", callback);
-        // mut_builder.transform()
-        // callback.is_callable()
-        Ok(())
-    }
+    // fn transform(&self, py: Python, name: &str, callback: &PyAny) -> PyResult<()> {
+    //
+    //     let mut_builder = self.app_builder.as_ref().to_mut();
+    //     mut_builder.transform(name, |value: Value| async {
+    //         Python::with_gil(|_py| {
+    //             let v = callback.is_callable();
+    //             println!("see v: {}", v);
+    //         });
+    //         value
+    //     });
+    //     // callback.is_callable()
+    //     Ok(())
+    // }
 }
 
 #[pymodule]
