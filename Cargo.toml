@@ -9,8 +9,10 @@ name = "teo"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.18", features = ["extension-module"] }
+pyo3 = { version = "0.18", features = ["extension-module", "chrono"] }
 teo = { path = "../teo", features = ["data-source-mysql", "data-source-postgres", "data-source-sqlite", "data-source-mongodb"] }
 pyo3-asyncio = { version = "0.18", features = ["attributes", "tokio-runtime"] }
 tokio = { version = "1.0" }
 to-mut = { version = "0.1.0" }
+bigdecimal = "0.3.0"
+chrono = { version = "0.4.24" }

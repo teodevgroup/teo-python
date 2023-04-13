@@ -1,13 +1,22 @@
-pub mod value;
+pub mod convert;
+pub mod utils;
+pub mod result;
 
 use std::sync::Arc;
 use pyo3::prelude::*;
 use pyo3_asyncio::tokio::future_into_py;
 use ::teo::core::app::builder::AppBuilder as TeoAppBuilder;
 use ::teo::core::app::environment::EnvironmentVersion;
-use pyo3::types::PyInt;
 use ::teo::prelude::Value;
+use pyo3::exceptions::PyValueError;
+use pyo3::ffi::{PyAsyncGen_Type, PyCoro_Type};
+use pyo3::types::PyInt;
+use pyo3_asyncio::{into_future_with_locals, TaskLocals};
 use to_mut::ToMut;
+use crate::convert::to_py::teo_value_to_py_object;
+use crate::convert::to_teo::py_object_to_teo_value;
+use crate::utils::is_coroutine::is_coroutine;
+use crate::result::IntoTeoResult;
 
 #[pyclass]
 struct App {
@@ -46,19 +55,39 @@ impl App {
         })
     }
 
-    // fn transform(&self, py: Python, name: &str, callback: &PyAny) -> PyResult<()> {
-    //
-    //     let mut_builder = self.app_builder.as_ref().to_mut();
-    //     mut_builder.transform(name, |value: Value| async {
-    //         Python::with_gil(|_py| {
-    //             let v = callback.is_callable();
-    //             println!("see v: {}", v);
-    //         });
-    //         value
-    //     });
-    //     // callback.is_callable()
-    //     Ok(())
-    // }
+    fn transform(&self, _py: Python, name: &str, callback: &PyAny) -> PyResult<()> {
+        let mut_builder = self.app_builder.as_ref().to_mut();
+        let callback_owned = Box::leak(Box::new(Py::from(callback)));
+        mut_builder.transform(name, |value: Value| async {
+            Python::with_gil(|py| {
+                let callback = callback_owned.as_ref(py);
+                if !callback.is_callable() {
+                    return Err(PyValueError::new_err("Parameter passed into transform is not callable."));
+                }
+                let py_object = teo_value_to_py_object(value, py)?;
+                let transformed_py = callback.call1((py_object,))?;
+                let transformed_py = if is_coroutine(transformed_py, py)? {
+                    let asyncio = py.import("asyncio")?;
+                    let event_loop = asyncio.call_method0("get_event_loop").unwrap_or(
+                        {
+                            let event_loop = asyncio.call_method0("new_event_loop")?;
+                            asyncio.call_method1("set_event_loop", (event_loop,))?;
+                            event_loop
+                        }
+                    );
+                    let f = into_future_with_locals(&TaskLocals::new(event_loop), transformed_py)?;
+                    pyo3_asyncio::tokio::run_until_complete(event_loop, async move {
+                        f.await
+                    })?
+                } else {
+                    transformed_py.into_py(py)
+                };
+                let transformed = py_object_to_teo_value(transformed_py.as_ref(py), py)?;
+                Ok(transformed)
+            }).into_teo_result()
+        });
+        Ok(())
+    }
 }
 
 #[pymodule]
