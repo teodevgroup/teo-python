@@ -11,12 +11,13 @@ use ::teo::prelude::Value;
 use pyo3::exceptions::PyValueError;
 use pyo3::ffi::{PyAsyncGen_Type, PyCoro_Type};
 use pyo3::types::PyInt;
-use pyo3_asyncio::{into_future_with_locals, TaskLocals};
 use to_mut::ToMut;
 use crate::convert::to_py::teo_value_to_py_object;
 use crate::convert::to_teo::py_object_to_teo_value;
 use crate::utils::is_coroutine::is_coroutine;
 use crate::result::IntoTeoResult;
+use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed;
+use crate::utils::check_callable::check_callable;
 
 #[pyclass]
 struct App {
@@ -61,28 +62,11 @@ impl App {
         mut_builder.transform(name, |value: Value| async {
             Python::with_gil(|py| {
                 let callback = callback_owned.as_ref(py);
-                if !callback.is_callable() {
-                    return Err(PyValueError::new_err("Parameter passed into transform is not callable."));
-                }
+                check_callable(callback)?;
                 let py_object = teo_value_to_py_object(value, py)?;
                 let transformed_py = callback.call1((py_object,))?;
-                let transformed_py = if is_coroutine(transformed_py, py)? {
-                    let asyncio = py.import("asyncio")?;
-                    let event_loop = asyncio.call_method0("get_event_loop").unwrap_or(
-                        {
-                            let event_loop = asyncio.call_method0("new_event_loop")?;
-                            asyncio.call_method1("set_event_loop", (event_loop,))?;
-                            event_loop
-                        }
-                    );
-                    let f = into_future_with_locals(&TaskLocals::new(event_loop), transformed_py)?;
-                    pyo3_asyncio::tokio::run_until_complete(event_loop, async move {
-                        f.await
-                    })?
-                } else {
-                    transformed_py.into_py(py)
-                };
-                let transformed = py_object_to_teo_value(transformed_py.as_ref(py), py)?;
+                let transformed_py_awaited = await_coroutine_if_needed(transformed_py, py)?.as_ref(py);
+                let transformed = py_object_to_teo_value(transformed_py_awaited, py)?;
                 Ok(transformed)
             }).into_teo_result()
         });
