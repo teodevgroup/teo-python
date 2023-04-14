@@ -1,10 +1,11 @@
 use std::any::Any;
+use std::collections::HashMap;
 use std::str::FromStr;
 use pyo3::{IntoPy, Py, PyAny, PyObject, Python, PyResult, PyErr};
 use ::teo::prelude::Value;
 use pyo3::exceptions::PyValueError;
 use bigdecimal::BigDecimal;
-use pyo3::types::{PyBool, PyDate, PyDateTime, PyFloat, PyInt, PyList, PyString};
+use pyo3::types::{PyBool, PyDate, PyDateTime, PyDict, PyFloat, PyInt, PyList, PyString};
 use chrono::prelude::{NaiveDate, Utc, DateTime};
 
 fn big_decimal_to_python_decimal(d: BigDecimal, py: Python<'_>) -> PyResult<PyObject> {
@@ -43,6 +44,13 @@ pub fn py_object_to_teo_value(object: &PyAny, py: Python<'_>) -> PyResult<Value>
             vec.push(py_object_to_teo_value(value, py)?);
         }
         Ok(Value::Vec(vec))
+    } else if object.is_instance_of::<PyDict>()? {
+        let m: HashMap<String, &PyAny> = object.extract()?;
+        let mut map: HashMap<String, Value> = HashMap::new();
+        for (k, v) in m {
+            map.insert(k, py_object_to_teo_value(v, py)?);
+        }
+        Ok(Value::HashMap(map))
     } else {
         let decimal_module = py.import("decimal")?;
         let decimal_class = decimal_module.getattr("Decimal")?;
