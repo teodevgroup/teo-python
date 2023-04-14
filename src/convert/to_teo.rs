@@ -16,7 +16,9 @@ fn big_decimal_to_python_decimal(d: BigDecimal, py: Python<'_>) -> PyResult<PyOb
 }
 
 pub fn py_object_to_teo_value(object: &PyAny, py: Python<'_>) -> PyResult<Value> {
-    if object.is_instance_of::<PyString>()? {
+    if object.is_none() {
+        Ok(Value::Null)
+    } else if object.is_instance_of::<PyString>()? {
         let s: String = object.extract()?;
         Ok(Value::String(s))
     } else if object.is_instance_of::<PyBool>()? {

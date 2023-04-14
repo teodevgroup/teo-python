@@ -18,6 +18,7 @@ use crate::utils::is_coroutine::is_coroutine;
 use crate::result::IntoTeoResult;
 use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed;
 use crate::utils::check_callable::check_callable;
+use crate::utils::validate_result::validate_result;
 
 #[pyclass]
 struct App {
@@ -70,6 +71,24 @@ impl App {
                 let transformed = py_object_to_teo_value(transformed_py_awaited_ref, py)?;
                 Ok(transformed)
             }).into_teo_result()
+        });
+        Ok(())
+    }
+
+    fn validate(&self, _py: Python, name: &str, callback: &PyAny) -> PyResult<()> {
+        let mut_builder = self.app_builder.as_ref().to_mut();
+        let callback_owned = Box::leak(Box::new(Py::from(callback)));
+        mut_builder.validate(name, |value: Value| async {
+            Python::with_gil(|py| {
+                let callback = callback_owned.as_ref(py);
+                check_callable(callback)?;
+                let py_object = teo_value_to_py_object(value, py)?;
+                let transformed_py = callback.call1((py_object,))?;
+                let transformed_py_awaited = await_coroutine_if_needed(transformed_py, py)?;
+                let transformed_py_awaited_ref = transformed_py_awaited.as_ref(py);
+                let transformed = py_object_to_teo_value(transformed_py_awaited_ref, py)?;
+                Ok(validate_result(transformed))
+            }).into_teo_result()?
         });
         Ok(())
     }

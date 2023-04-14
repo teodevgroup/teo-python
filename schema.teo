@@ -17,7 +17,7 @@ model User {
   id: ObjectId
   @onSave($transform("appendX"))
   name: String
-  @onSave($transform("asyncDouble"))
+  @onSave($transform("asyncDouble").validate("neverValid"))
   age: Int
 }
 
