@@ -19,6 +19,8 @@ model User {
   name: String
   @onSave($compare("printOldAndNew"))
   age: Int
+  @onSave($callback("print"))
+  numbers: Date[]
 }
 
 /// @name Auth Code

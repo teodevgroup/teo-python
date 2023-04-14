@@ -2,6 +2,7 @@ use pyo3::{IntoPy, Py, PyAny, PyObject, Python, PyResult, PyErr};
 use ::teo::prelude::Value;
 use pyo3::exceptions::PyValueError;
 use bigdecimal::BigDecimal;
+use pyo3::types::PyList;
 
 fn big_decimal_to_python_decimal(d: BigDecimal, py: Python<'_>) -> PyResult<PyObject> {
     let s = d.to_string();
@@ -22,6 +23,13 @@ pub fn teo_value_to_py_object(value: Value, py: Python<'_>) -> PyResult<PyObject
         Value::Date(d) => Ok(d.into_py(py)),
         Value::DateTime(d) => Ok(d.into_py(py)),
         Value::Decimal(b) => Ok(big_decimal_to_python_decimal(b, py)?),
+        Value::Vec(v) => {
+            let list = PyList::empty(py);
+            for value in v {
+                list.append(teo_value_to_py_object(value, py)?)?;
+            }
+            Ok(list.into_py(py))
+        },
         _ => Err(PyValueError::new_err("Cannot convert Teo type to Python type.")),
     }
 }

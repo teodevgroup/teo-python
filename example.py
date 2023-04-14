@@ -15,6 +15,9 @@ def print_old_and_new(old: int, new: int):
   print("old is", old)
   print("new is", new)
 
+def ppr(v):
+  print(v)
+
 async def main():
     app = App()
     app.transform("addOne", lambda x: x + 1)
@@ -23,6 +26,7 @@ async def main():
     app.transform("asyncDouble", async_double)
     app.compare("printOldAndNew", print_old_and_new)
     app.callback("see", see)
+    app.callback("print", ppr)
     await app.run()
 
 run(main())
