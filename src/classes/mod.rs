@@ -1,11 +1,11 @@
 use std::collections::HashMap;
-use std::ffi::{c_char, c_int, c_void, CStr, CString};
+use std::ffi::{c_char, c_int, c_void, CString};
 use std::mem;
 use std::ptr::null_mut;
 use ::teo::prelude::App;
-use pyo3::{AsPyPointer, FromPyPointer, IntoPy, PyAny, PyCell, PyErr, PyObject, PyResult, Python};
-use pyo3::ffi::{Py_tp_init, PyBool_Type, PyErr_SetString, PyExc_Exception, PyExc_RuntimeError, PyObject_Type, PyType_FromModuleAndSpec, PyType_FromSpec, PyType_GenericNew, PyType_Slot, PyType_Spec, PyTypeObject};
-use pyo3::types::{PyModule, PyType};
+use pyo3::{AsPyPointer, FromPyPointer, IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
+use pyo3::ffi::{Py_tp_init, PyErr_SetString, PyExc_RuntimeError, PyType_FromModuleAndSpec, PyType_Slot, PyType_Spec};
+use pyo3::types::{PyModule};
 use teo::prelude::Object;
 
 static mut CLASSES: Option<&'static HashMap<String, PyObject>> = None;
@@ -38,7 +38,7 @@ pub fn get_model_class(name: &str, py: Python<'_>) -> PyResult<PyObject> {
 const CLASS_TP_INIT_ERROR_MSG: &'static [u8] = b"Do not call Teo model init directly. Use `create' instead.\0";
 
 #[no_mangle]
-unsafe extern "C" fn class_tp_init(this: &mut pyo3::ffi::PyObject, args: &mut pyo3::ffi::PyObject, kwargs: &mut pyo3::ffi::PyObject) -> c_int {
+unsafe extern "C" fn class_tp_init(_this: &mut pyo3::ffi::PyObject, _args: &mut pyo3::ffi::PyObject, _kwargs: &mut pyo3::ffi::PyObject) -> c_int {
     PyErr_SetString(PyExc_RuntimeError, CLASS_TP_INIT_ERROR_MSG.as_ptr() as *const c_char);
     -1
 }
@@ -76,8 +76,8 @@ pub fn setup_classes_container() -> PyResult<()> {
     Ok(())
 }
 
-pub fn generate_classes(app: &App, py: Python<'_>) -> PyResult<()> {
-    for model in app.graph().models() {
+pub fn generate_classes(app: &App, _py: Python<'_>) -> PyResult<()> {
+    for _model in app.graph().models() {
 
     }
     Ok(())
