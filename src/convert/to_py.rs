@@ -13,6 +13,7 @@ fn big_decimal_to_python_decimal(d: BigDecimal, py: Python<'_>) -> PyResult<PyOb
 
 pub fn teo_value_to_py_object(value: Value, py: Python<'_>) -> PyResult<PyObject> {
     match value {
+        Value::Null => Ok(().into_py(py)),
         Value::ObjectId(oid) => Ok(oid.to_string().into_py(py)),
         Value::String(s) => Ok(s.into_py(py)),
         Value::I32(i) => Ok(i.into_py(py)),
