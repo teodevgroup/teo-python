@@ -1,6 +1,7 @@
 pub mod convert;
 pub mod utils;
 pub mod result;
+pub mod classes;
 
 use std::sync::Arc;
 use pyo3::prelude::*;
@@ -12,6 +13,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::ffi::{PyAsyncGen_Type, PyCoro_Type};
 use pyo3::types::PyInt;
 use to_mut::ToMut;
+use crate::classes::{generate_classes, get_model_class, setup_classes_container};
 use crate::convert::to_py::teo_value_to_py_object;
 use crate::convert::to_teo::py_object_to_teo_value;
 use crate::utils::is_coroutine::is_coroutine;
@@ -50,6 +52,9 @@ impl App {
         future_into_py(py, async move {
             let app_builder_ref = app_builder.as_ref().clone();
             let teo_app = app_builder_ref.build().await;
+            Python::with_gil(|py| {
+                generate_classes(&teo_app, py)
+            })?;
             teo_app.run().await;
             Ok(Python::with_gil(|_py| {
                 ()
@@ -131,6 +136,12 @@ impl App {
 
 #[pymodule]
 fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
+    setup_classes_container();
+    #[pyfunction]
+    fn fetch_model_class(name: &str, py: Python) -> PyResult<PyObject> {
+        get_model_class(name, py)
+    }
+    m.add_function(wrap_pyfunction!(fetch_model_class, m)?)?;
     m.add_class::<App>()?;
     Ok(())
 }
