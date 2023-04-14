@@ -20,7 +20,7 @@ def ppr(v):
 
 async def main():
     cls = fetch_model_class("User")
-    print(cls)
+    print(cls())
 #     app = App()
 #     app.transform("addOne", lambda x: x + 1)
 #     app.transform("appendX", lambda x: x + 'X')
