@@ -3,12 +3,13 @@ use std::ffi::{c_char, c_int, c_void, CStr, CString};
 use std::mem;
 use std::ptr::null_mut;
 use ::teo::prelude::App;
-use pyo3::{FromPyPointer, IntoPy, PyAny, PyObject, PyResult, Python};
-use pyo3::ffi::{Py_tp_init, PyBool_Type, PyErr_SetString, PyExc_Exception, PyExc_RuntimeError, PyObject_Type, PyType_FromSpec, PyType_GenericNew, PyType_Slot, PyType_Spec, PyTypeObject};
-use pyo3::types::PyType;
+use pyo3::{AsPyPointer, FromPyPointer, IntoPy, PyAny, PyCell, PyErr, PyObject, PyResult, Python};
+use pyo3::ffi::{Py_tp_init, PyBool_Type, PyErr_SetString, PyExc_Exception, PyExc_RuntimeError, PyObject_Type, PyType_FromModuleAndSpec, PyType_FromSpec, PyType_GenericNew, PyType_Slot, PyType_Spec, PyTypeObject};
+use pyo3::types::{PyModule, PyType};
 use teo::prelude::Object;
 
 static mut CLASSES: Option<&'static HashMap<String, PyObject>> = None;
+static mut MODULE: Option<&'static PyObject> = None;
 
 fn classes_mut() -> &'static mut HashMap<String, PyObject> {
     unsafe {
@@ -18,6 +19,11 @@ fn classes_mut() -> &'static mut HashMap<String, PyObject> {
     }
 }
 
+fn get_model_module() -> &'static PyObject {
+    unsafe {
+        MODULE.unwrap()
+    }
+}
 
 pub fn get_model_class(name: &str, py: Python<'_>) -> PyResult<PyObject> {
     unsafe {
@@ -44,7 +50,7 @@ unsafe fn generate_model_class(name: &str, py: Python<'_>) -> PyResult<PyObject>
     ]));
     let mut spec = PyType_Spec {
         name: {
-            let c_string = Box::leak(Box::new(CString::new(name).unwrap()));
+            let c_string = Box::leak(Box::new(CString::new("teo.models.".to_string() + name).unwrap()));
             c_string.as_ptr()
         },
         basicsize: mem::size_of::<Object>() as c_int,
@@ -52,14 +58,22 @@ unsafe fn generate_model_class(name: &str, py: Python<'_>) -> PyResult<PyObject>
         flags: 0,
         slots: slots as *mut PyType_Slot,
     };
-    let t = PyType_FromSpec(&mut spec);
+    let module = get_model_module().as_ptr();
+    let t = PyType_FromModuleAndSpec(module, &mut spec, null_mut());
     let result = PyAny::from_owned_ptr_or_err(py, t)?;
     result.setattr("a", 1)?;
     Ok(result.into_py(py))
 }
 
-pub fn setup_classes_container() {
-    unsafe { CLASSES = Some(Box::leak(Box::new(HashMap::new()))) };
+pub fn setup_classes_container() -> PyResult<()> {
+    unsafe {
+        Python::with_gil(|py| {
+            MODULE = Some(Box::leak(Box::new(PyModule::new(py, "teo.model")?.into_py(py))));
+            Ok::<(), PyErr>(())
+        })?;
+        CLASSES = Some(Box::leak(Box::new(HashMap::new())))
+    };
+    Ok(())
 }
 
 pub fn generate_classes(app: &App, py: Python<'_>) -> PyResult<()> {
