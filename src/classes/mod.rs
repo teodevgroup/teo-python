@@ -1,27 +1,16 @@
 use std::collections::HashMap;
-use std::ffi::{c_char, c_int, c_void, CString};
-use std::mem;
-use std::ptr::null_mut;
 use ::teo::prelude::App;
-use pyo3::{AsPyPointer, FromPyPointer, IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
+use pyo3::{IntoPy, PyErr, PyObject, PyResult, Python};
 use pyo3::exceptions::PyRuntimeError;
-use pyo3::types::{PyCFunction, PyDict, PyFunction, PyModule};
-use teo::prelude::Object;
+use pyo3::types::{PyCFunction, PyDict};
 
 static mut CLASSES: Option<&'static HashMap<String, PyObject>> = None;
-static mut MODULE: Option<&'static PyObject> = None;
 
 fn classes_mut() -> &'static mut HashMap<String, PyObject> {
     unsafe {
         let const_ptr = CLASSES.unwrap() as *const HashMap<String, PyObject>;
         let mut_ptr = const_ptr as *mut HashMap<String, PyObject>;
         &mut *mut_ptr
-    }
-}
-
-fn get_model_module() -> &'static PyObject {
-    unsafe {
-        MODULE.unwrap()
     }
 }
 
@@ -53,10 +42,6 @@ unsafe fn generate_model_class(name: &str, py: Python<'_>) -> PyResult<PyObject>
 
 pub fn setup_classes_container() -> PyResult<()> {
     unsafe {
-        Python::with_gil(|py| {
-            MODULE = Some(Box::leak(Box::new(PyModule::new(py, "teo.model")?.into_py(py))));
-            Ok::<(), PyErr>(())
-        })?;
         CLASSES = Some(Box::leak(Box::new(HashMap::new())))
     };
     Ok(())

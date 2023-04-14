@@ -1,4 +1,3 @@
-
 use ::teo::core::teon::Value;
 use ::teo::core::pipeline::items::function::validate::Validity;
 use ::teo::core::result::Result;
