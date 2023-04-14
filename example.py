@@ -18,17 +18,20 @@ def print_old_and_new(old: int, new: int):
 def ppr(v):
   print(v)
 
+async def setup():
+    User = fetch_model_class("User")
+    print(User.create)
+
 async def main():
-    cls = fetch_model_class("User")
-    print(cls())
-#     app = App()
-#     app.transform("addOne", lambda x: x + 1)
-#     app.transform("appendX", lambda x: x + 'X')
-#     app.validate("neverValid", never_valid)
-#     app.transform("asyncDouble", async_double)
-#     app.compare("printOldAndNew", print_old_and_new)
-#     app.callback("see", see)
-#     app.callback("print", ppr)
-#     await app.run()
+    app = App()
+    app.transform("addOne", lambda x: x + 1)
+    app.transform("appendX", lambda x: x + 'X')
+    app.validate("neverValid", never_valid)
+    app.transform("asyncDouble", async_double)
+    app.compare("printOldAndNew", print_old_and_new)
+    app.callback("see", see)
+    app.callback("print", ppr)
+    app.setup(setup)
+    await app.run()
 
 run(main())
