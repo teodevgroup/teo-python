@@ -3,5 +3,11 @@ use pyo3::prelude::*;
 
 #[pyclass]
 pub struct ObjectWrapper {
-    object: Object
+    pub object: Object
+}
+
+impl ObjectWrapper {
+    pub fn new(object: Object) -> Self {
+        Self { object }
+    }
 }

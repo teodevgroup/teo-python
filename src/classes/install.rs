@@ -2,8 +2,9 @@ use std::collections::HashMap;
 use ::teo::prelude::App;
 use pyo3::{IntoPy, PyErr, PyObject, PyResult, Python};
 use pyo3::exceptions::PyRuntimeError;
-use pyo3::types::{PyCFunction, PyDict};
+use pyo3::types::{PyCFunction, PyDict, PyList};
 use teo::prelude::{Graph, Object, Value};
+use crate::classes::object_wrapper::ObjectWrapper;
 use crate::convert::to_teo::py_object_to_teo_value;
 use crate::result::IntoPyResult;
 use crate::utils::check_py_dict::check_py_dict;
@@ -57,29 +58,117 @@ pub fn generate_classes(app: &App, py: Python<'_>) -> PyResult<()> {
     let builtins = py.import("builtins")?;
     let classmethod = builtins.getattr("classmethod")?;
     for model in app.graph().models() {
-        let leaked_model_name = Box::leak(Box::new(model.name().to_owned())).as_str();
+        let model_name = Box::leak(Box::new(model.name().to_owned())).as_str();
         let model_heap_class = get_model_class(model.name(), py)?;
-        let find_unique = PyCFunction::new_closure(py, Some("find_unique"), Some(INIT_ERROR_MESSAGE), move |args, _kwargs| {
-            Python::with_gil(|py| {
-                let find_many_arg = if args.len() > 1 {
-                    let py_dict = args.get_item(1)?;
-                    check_py_dict(py_dict)?;
-                    py_object_to_teo_value(py_dict, py)?
-                } else {
-                    Value::HashMap(HashMap::new())
-                };
-                let coroutine = pyo3_asyncio::tokio::future_into_py(py, (|| async move {
-                    let result = Graph::current().find_unique::<Object>(leaked_model_name, &find_many_arg).await.into_py_result()?;
-                    println!("print this: {:?}", result);
-                    Ok(())
-                })())?;
-                Python::with_gil(|py| {
-                    Ok::<PyObject, PyErr>(coroutine.into_py(py))
-                })
-            })
-        })?;
+        // find unique
+        let find_unique = find_unique_function(model_name, py)?;
         let find_unique_classmethod = classmethod.call1((find_unique,))?;
         model_heap_class.setattr(py, "find_unique", find_unique_classmethod)?;
+        // find first
+        let find_first = find_first_function(model_name, py)?;
+        let find_first_classmethod = classmethod.call1((find_first,))?;
+        model_heap_class.setattr(py, "find_first", find_first_classmethod)?;
+        // find many
+        let find_many = find_many_function(model_name, py)?;
+        let find_many_classmethod = classmethod.call1((find_many,))?;
+        model_heap_class.setattr(py, "find_many", find_many_classmethod)?;
+
     }
     Ok(())
+}
+
+fn find_unique_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("find_unique"), Some("Find a unique record."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let cls = args.get_item(0)?.into_py(py);
+            let find_many_arg = if args.len() > 1 {
+                let py_dict = args.get_item(1)?;
+                check_py_dict(py_dict)?;
+                py_object_to_teo_value(py_dict, py)?
+            } else {
+                Value::HashMap(HashMap::new())
+            };
+            let coroutine = pyo3_asyncio::tokio::future_into_py(py, (|| async move {
+                let result = Graph::current().find_unique::<Object>(model_name, &find_many_arg).await.into_py_result()?;
+                Python::with_gil(|py| {
+                    match result {
+                        Some(object) => {
+                            let instance = cls.call_method1(py, "__new__", (cls.as_ref(py),))?;
+                            instance.setattr(py, "__teo_object__", ObjectWrapper::new(object))?;
+                            Ok(instance)
+                        }
+                        None => {
+                            Ok(().into_py(py))
+                        }
+                    }
+                })
+            })())?;
+            Python::with_gil(|py| {
+                Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            })
+        })
+    })?)
+}
+
+fn find_first_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("find_first"), Some("Find a record."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let cls = args.get_item(0)?.into_py(py);
+            let find_many_arg = if args.len() > 1 {
+                let py_dict = args.get_item(1)?;
+                check_py_dict(py_dict)?;
+                py_object_to_teo_value(py_dict, py)?
+            } else {
+                Value::HashMap(HashMap::new())
+            };
+            let coroutine = pyo3_asyncio::tokio::future_into_py(py, (|| async move {
+                let result = Graph::current().find_first::<Object>(model_name, &find_many_arg).await.into_py_result()?;
+                Python::with_gil(|py| {
+                    match result {
+                        Some(object) => {
+                            let instance = cls.call_method1(py, "__new__", (cls.as_ref(py),))?;
+                            instance.setattr(py, "__teo_object__", ObjectWrapper::new(object))?;
+                            Ok(instance)
+                        }
+                        None => {
+                            Ok(().into_py(py))
+                        }
+                    }
+                })
+            })())?;
+            Python::with_gil(|py| {
+                Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            })
+        })
+    })?)
+}
+
+fn find_many_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("find_many"), Some("Find many records."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let cls = args.get_item(0)?.into_py(py);
+            let find_many_arg = if args.len() > 1 {
+                let py_dict = args.get_item(1)?;
+                check_py_dict(py_dict)?;
+                py_object_to_teo_value(py_dict, py)?
+            } else {
+                Value::HashMap(HashMap::new())
+            };
+            let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                let result = Graph::current().find_many::<Object>(model_name, &find_many_arg).await.into_py_result()?;
+                Python::with_gil(|py| {
+                    let py_result = PyList::empty(py);
+                    for object in result {
+                        let instance = cls.call_method1(py, "__new__", (cls.as_ref(py),))?;
+                        instance.setattr(py, "__teo_object__", ObjectWrapper::new(object))?;
+                        py_result.append(instance)?;
+                    }
+                    Ok(py_result.into_py(py))
+                })
+            })())?;
+            Python::with_gil(|py| {
+                Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            })
+        })
+    })?)
 }
