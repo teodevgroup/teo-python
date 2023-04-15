@@ -1,10 +1,13 @@
 use std::collections::HashMap;
 use ::teo::prelude::App;
-use pyo3::{IntoPy, PyErr, PyObject, PyResult, Python};
+use pyo3::{AsPyPointer, IntoPy, PyAny, PyErr, PyMethodType, PyObject, PyResult, Python};
 use pyo3::exceptions::PyRuntimeError;
+use pyo3::ffi::{PyCMethod, PyCMethod_New};
+use pyo3::methods::OkWrap;
 use pyo3::types::{PyCFunction, PyDict, PyList};
 use teo::prelude::{Graph, Object, Value};
 use crate::classes::object_wrapper::ObjectWrapper;
+use crate::convert::to_py::teo_value_to_py_object;
 use crate::convert::to_teo::py_object_to_teo_value;
 use crate::result::IntoPyResult;
 use crate::utils::check_py_dict::check_py_dict;
@@ -72,7 +75,9 @@ pub fn generate_classes(app: &App, py: Python<'_>) -> PyResult<()> {
         let find_many = find_many_function(model_name, py)?;
         let find_many_classmethod = classmethod.call1((find_many,))?;
         model_heap_class.setattr(py, "find_many", find_many_classmethod)?;
-
+        // __repr__
+        let repr = repr_function(model_name, model_heap_class.as_ref(py), py)?;
+        model_heap_class.setattr(py, "__repr__", repr)?;
     }
     Ok(())
 }
@@ -172,3 +177,32 @@ fn find_many_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResul
         })
     })?)
 }
+
+fn repr_function<'py>(model_name: &'static str, cls: &'py PyAny, py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    let function_name = Box::leak(Box::new(format!("{model_name}.__repr__"))).as_str();
+    Ok(PyCFunction::new_method_closure(py, cls, Some(function_name), Some("Represent."), move |args, kwargs| {
+        Python::with_gil(|py| {
+            println!("see args and kwargs: {:?} {:?}", args, kwargs);
+            let slf = args.get_item(0)?;
+            let object_wrapper: ObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
+            let object = &object_wrapper.object;
+            let mut fields = "".to_owned();
+            for (index, field) in object.model().fields().iter().enumerate() {
+                if index != 0 {
+                    fields += ", ";
+                }
+                let value = object.get_value(field.name()).into_py_result()?;
+                let py_object = teo_value_to_py_object(value, py)?;
+                let py_repr_result = py_object.call_method0(py, "__repr__")?;
+                let inner_py_repr: &str = py_repr_result.extract(py)?;
+                fields += field.name();
+                fields += "=";
+                fields += inner_py_repr;
+            }
+            let result = format!("{}({})", object.model().name(), fields);
+            Ok::<String, PyErr>(result)
+        })
+    })?)
+}
+
+//__repr__

@@ -2,6 +2,7 @@ use ::teo::prelude::Object;
 use pyo3::prelude::*;
 
 #[pyclass]
+#[derive(Clone)]
 pub struct ObjectWrapper {
     pub object: Object
 }

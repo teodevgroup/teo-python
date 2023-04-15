@@ -20,8 +20,9 @@ def ppr(v):
 
 async def setup():
     User = fetch_model_class("User")
-    user = await User.find_unique({"where": {}})
-    print(user)
+    users = await User.find_many({"where": {}})
+    for user in users:
+        user.__repr__()
 
 async def main():
     app = App()
