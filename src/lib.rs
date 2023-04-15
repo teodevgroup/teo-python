@@ -9,6 +9,7 @@ use pyo3_asyncio::tokio::future_into_py;
 use ::teo::core::app::builder::AppBuilder as TeoAppBuilder;
 use ::teo::core::app::environment::EnvironmentVersion;
 use ::teo::prelude::Value;
+use pyo3::exceptions::PyRuntimeError;
 use to_mut::ToMut;
 use crate::classes::install::{generate_classes, get_model_class, setup_classes_container};
 use crate::convert::to_py::teo_value_to_py_object;
@@ -74,10 +75,10 @@ impl App {
             Python::with_gil(|py| {
                 generate_classes(&teo_app, py)
             })?;
-            teo_app.run().await;
-            Ok(Python::with_gil(|_py| {
-                ()
-            }))
+            match teo_app.run().await {
+                Ok(()) => Ok(()),
+                Err(err) => Err(PyRuntimeError::new_err(err.to_string())),
+            }
         })
     }
 
@@ -155,7 +156,7 @@ impl App {
 
 #[pymodule]
 fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
-    setup_classes_container();
+    setup_classes_container()?;
     #[pyfunction]
     fn fetch_model_class(name: &str, py: Python) -> PyResult<PyObject> {
         get_model_class(name, py)
