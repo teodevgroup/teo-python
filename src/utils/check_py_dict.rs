@@ -4,7 +4,7 @@ use pyo3::types::PyDict;
 
 pub fn check_py_dict(dict: &PyAny) -> PyResult<()> {
     if !dict.is_instance_of::<PyDict>()? {
-        return Err(PyValueError::new_err("Parameter is not dict."));
+        return Err(PyValueError::new_err("argument is not dict"));
     }
     Ok(())
 }
