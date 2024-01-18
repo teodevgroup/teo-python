@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, PyResult, PyAny};
+use pyo3::{pyclass, pymethods, PyResult, PyAny, Python};
 use teo::prelude::Range as TeoRange;
 
 use super::teo_value_to_py_any;
@@ -11,13 +11,13 @@ pub struct Range {
 #[pymethods]
 impl Range {
 
-    pub fn upperbond(&self) -> PyResult<PyAny> {
+    pub fn upperbond(&self, py: Python<'_>) -> PyResult<PyAny> {
         let value = self.value.end.as_ref();
         let any = teo_value_to_py_any(py, value)?;
         Ok(any.coerce_to_number()?)
     }
 
-    pub fn lowerbond(&self) -> PyResult<PyAny> {
+    pub fn lowerbond(&self, py: Python<'_>) -> PyResult<PyAny> {
         let value = self.value.start.as_ref();
         let any = teo_value_to_py_any(py, value)?;
         Ok(any.coerce_to_number()?)

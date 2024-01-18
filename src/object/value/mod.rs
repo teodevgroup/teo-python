@@ -5,14 +5,15 @@ pub mod enum_variant;
 pub mod option_variant;
 pub mod decimal;
 
+use indexmap::IndexMap;
 use pyo3::{Python, PyAny, PyResult, IntoPy, types::{PyList, PyDict, PyTuple, PyString}, exceptions::PyValueError};
+use regex::Regex;
 use teo::prelude::Value;
 pub use object_id::ObjectId;
 pub use file::File;
 pub use range::Range;
 pub use enum_variant::EnumVariant;
 pub use option_variant::OptionVariant;
-use std::collections::HashMap;
 use std::str::FromStr;
 use bigdecimal::BigDecimal;
 use pyo3::types::{PyBool, PyDate, PyDateTime, PyFloat, PyInt};
@@ -65,7 +66,7 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyAny>
         }
         Value::Regex(regex) => {
             let re = py.import("re")?;
-            let compile = re.get_item("compile")?;
+            let compile = re.getattr("compile")?;
             let result = compile.call((regex.as_str(),), None)?;
             Ok(result)
         }
@@ -80,6 +81,9 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyAny>
 pub fn py_any_to_teo_value(py: Python<'_>, object: &PyAny) -> PyResult<Value> {
     if object.is_none() {
         Ok(Value::Null)
+    } else if object.is_instance_of::<ObjectId>()? {
+        let object_id: ObjectId = object.extract()?;
+        Ok(Value::ObjectId(object_id.value.clone()))
     } else if object.is_instance_of::<PyString>()? {
         let s: String = object.extract()?;
         Ok(Value::String(s))
@@ -88,10 +92,10 @@ pub fn py_any_to_teo_value(py: Python<'_>, object: &PyAny) -> PyResult<Value> {
         Ok(Value::Bool(b))
     } else if object.is_instance_of::<PyInt>()? {
         let i: i64 = object.extract()?;
-        Ok(Value::I64(i))
+        Ok(Value::Int64(i))
     } else if object.is_instance_of::<PyFloat>()? {
         let f: f64 = object.extract()?;
-        Ok(Value::F64(f))
+        Ok(Value::Float(f))
     } else if object.is_instance_of::<PyDate>()? {
         let d: NaiveDate = object.extract()?;
         Ok(Value::Date(d))
@@ -106,19 +110,40 @@ pub fn py_any_to_teo_value(py: Python<'_>, object: &PyAny) -> PyResult<Value> {
         }
         Ok(Value::Vec(vec))
     } else if object.is_instance_of::<PyDict>()? {
-        let m: HashMap<String, &PyAny> = object.extract()?;
-        let mut map: HashMap<String, Value> = HashMap::new();
+        let m: IndexMap<String, &PyAny> = object.extract()?;
+        let mut map: IndexMap<String, Value> = IndexMap::new();
         for (k, v) in m {
             map.insert(k, py_any_to_teo_value(py, v)?);
         }
-        Ok(Value::HashMap(map))
+        Ok(Value::Dictionary(map))
+    } else if object.is_instance_of::<Range>()? {
+        let range: Range = object.extract()?;
+        Ok(Value::Range(range.value.clone()))
+    } else if object.is_instance_of::<PyTuple>()? {
+        let tuple: PyTuple = object.extract()?;
+        let mut vec = vec![];
+        for value in tuple.iter() {
+            vec.push(py_any_to_teo_value(py, value)?);
+        }
+        Ok(Value::Tuple(vec))
+
+    } else if object.is_instance_of::<File>()? {
+        let file: File = object.extract()?;
+        Ok(Value::File(file.into()))
     } else {
         let decimal_module = py.import("decimal")?;
         let decimal_class = decimal_module.getattr("Decimal")?;
+        let re_module = py.import("re")?;
+        let pattern_class = re_module.getattr("Pattern")?;
         if object.is_instance(decimal_class)? {
             let s: String = object.call_method0("__str__")?.extract()?;
             Ok(Value::Decimal(BigDecimal::from_str(&s).unwrap()))
-        } else {
+        } else if object.is_instance(pattern_class)? {
+            let pattern: &str = object.getattr("pattern")?;
+            let r: Regex = Regex::new(pattern).unwrap();
+            Ok(Value::Regex(r))
+        }
+         else {
             Err(PyValueError::new_err("Cannot convert Python object to Teo value."))
         }
     }
