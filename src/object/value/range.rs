@@ -13,13 +13,13 @@ impl Range {
 
     pub fn upperbond(&self) -> PyResult<PyAny> {
         let value = self.value.end.as_ref();
-        let any = teo_value_to_py_any(value)?;
+        let any = teo_value_to_py_any(py, value)?;
         Ok(any.coerce_to_number()?)
     }
 
     pub fn lowerbond(&self) -> PyResult<PyAny> {
         let value = self.value.start.as_ref();
-        let any = teo_value_to_py_any(value)?;
+        let any = teo_value_to_py_any(py, value)?;
         Ok(any.coerce_to_number()?)
     }
 

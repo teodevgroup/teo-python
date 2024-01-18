@@ -12,6 +12,12 @@ pub use file::File;
 pub use range::Range;
 pub use enum_variant::EnumVariant;
 pub use option_variant::OptionVariant;
+use std::collections::HashMap;
+use std::str::FromStr;
+use bigdecimal::BigDecimal;
+use pyo3::types::{PyBool, PyDate, PyDateTime, PyFloat, PyInt};
+use chrono::prelude::{NaiveDate, Utc, DateTime};
+
 
 use self::decimal::big_decimal_to_python_decimal;
 
@@ -58,11 +64,10 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyAny>
             Ok(instance.into_py(py))
         }
         Value::Regex(regex) => {
-            let global = env.get_global()?;
-            let reg_exp_constructor: JsFunction = global.get_named_property("RegExp")?;
-            let js_regex_str = env.create_string(regex.as_str())?;
-            let js_regex = reg_exp_constructor.new_instance(&[js_regex_str])?;
-            js_regex.into_unknown()
+            let re = py.import("re")?;
+            let compile = re.get_item("compile")?;
+            let result = compile.call((regex.as_str(),), None)?;
+            Ok(result)
         }
         Value::File(file) => {
             let instance = File::from(file);
@@ -70,4 +75,51 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyAny>
         }
         _ => Err(PyValueError::new_err("cannot convert Teo value to Python value")),
     })
+}
+
+pub fn py_any_to_teo_value(py: Python<'_>, object: &PyAny) -> PyResult<Value> {
+    if object.is_none() {
+        Ok(Value::Null)
+    } else if object.is_instance_of::<PyString>()? {
+        let s: String = object.extract()?;
+        Ok(Value::String(s))
+    } else if object.is_instance_of::<PyBool>()? {
+        let b: bool = object.extract()?;
+        Ok(Value::Bool(b))
+    } else if object.is_instance_of::<PyInt>()? {
+        let i: i64 = object.extract()?;
+        Ok(Value::I64(i))
+    } else if object.is_instance_of::<PyFloat>()? {
+        let f: f64 = object.extract()?;
+        Ok(Value::F64(f))
+    } else if object.is_instance_of::<PyDate>()? {
+        let d: NaiveDate = object.extract()?;
+        Ok(Value::Date(d))
+    } else if object.is_instance_of::<PyDateTime>()? {
+        let d: DateTime<Utc> = object.extract()?;
+        Ok(Value::DateTime(d))
+    } else if object.is_instance_of::<PyList>()? {
+        let v: Vec<&PyAny> = object.extract()?;
+        let mut vec = vec![];
+        for value in v {
+            vec.push(py_any_to_teo_value(py, value)?);
+        }
+        Ok(Value::Vec(vec))
+    } else if object.is_instance_of::<PyDict>()? {
+        let m: HashMap<String, &PyAny> = object.extract()?;
+        let mut map: HashMap<String, Value> = HashMap::new();
+        for (k, v) in m {
+            map.insert(k, py_any_to_teo_value(py, v)?);
+        }
+        Ok(Value::HashMap(map))
+    } else {
+        let decimal_module = py.import("decimal")?;
+        let decimal_class = decimal_module.getattr("Decimal")?;
+        if object.is_instance(decimal_class)? {
+            let s: String = object.call_method0("__str__")?.extract()?;
+            Ok(Value::Decimal(BigDecimal::from_str(&s).unwrap()))
+        } else {
+            Err(PyValueError::new_err("Cannot convert Python object to Teo value."))
+        }
+    }
 }
