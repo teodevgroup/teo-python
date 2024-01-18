@@ -1,12 +1,12 @@
 use pyo3::{pyclass, pymethods, Python, PyResult, types::PyModule, PyAny, Py, exceptions::PyRuntimeError};
 use pyo3_asyncio::generic::future_into_py;
 use teo::cli::runtime_version::RuntimeVersion;
-use ::teo::prelude::{Value, App as TeoApp, Entrance, transaction};
+use ::teo::prelude::{App as TeoApp, Entrance, transaction};
 
-use crate::utils::{check_callable::check_callable, is_coroutine::is_coroutine};
+use crate::{utils::{check_callable::check_callable, is_coroutine::is_coroutine}, result::IntoPyResult, classes::install::generate_classes};
 
 #[pyclass]
-struct App {
+pub struct App {
     teo_app: TeoApp,
 }
 
@@ -73,89 +73,16 @@ impl App {
         Ok(())
     }
 
-    fn run<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
-        let app_builder = self.app_builder.clone();
+    fn run<'p>(&'static self, py: Python<'p>) -> PyResult<&'p PyAny> {
         future_into_py(py, async move {
-            let app_builder_ref = app_builder.as_ref().clone();
-            let teo_app = app_builder_ref.build().await;
+            self.teo_app.prepare_for_run().await.into_py_result()?;
             Python::with_gil(|py| {
-                generate_classes(&teo_app, py)
+                generate_classes(&self.teo_app, py)
             })?;
-            match teo_app.run().await {
+            match self.teo_app.run_without_prepare().await {
                 Ok(()) => Ok(()),
                 Err(err) => Err(PyRuntimeError::new_err(err.to_string())),
             }
         })
-    }
-
-    fn transform(&self, _py: Python, name: &str, callback: &PyAny) -> PyResult<()> {
-        check_callable(callback)?;
-        let mut_builder = self.app_builder.as_ref().to_mut();
-        let callback_owned = Box::leak(Box::new(Py::from(callback)));
-        mut_builder.transform(name, |value: Value| async {
-            Python::with_gil(|py| {
-                let callback = callback_owned.as_ref(py);
-                let py_object = teo_value_to_py_object(value, py)?;
-                let transformed_py = callback.call1((py_object,))?;
-                let transformed_py_awaited = await_coroutine_if_needed(transformed_py, py)?;
-                let transformed_py_awaited_ref = transformed_py_awaited.as_ref(py);
-                let transformed = py_object_to_teo_value(transformed_py_awaited_ref, py)?;
-                Ok(transformed)
-            }).into_teo_result()
-        });
-        Ok(())
-    }
-
-    fn validate(&self, _py: Python, name: &str, callback: &PyAny) -> PyResult<()> {
-        check_callable(callback)?;
-        let mut_builder = self.app_builder.as_ref().to_mut();
-        let callback_owned = Box::leak(Box::new(Py::from(callback)));
-        mut_builder.validate(name, |value: Value| async {
-            Python::with_gil(|py| {
-                let callback = callback_owned.as_ref(py);
-                let py_object = teo_value_to_py_object(value, py)?;
-                let transformed_py = callback.call1((py_object,))?;
-                let transformed_py_awaited = await_coroutine_if_needed(transformed_py, py)?;
-                let transformed_py_awaited_ref = transformed_py_awaited.as_ref(py);
-                let transformed = py_object_to_teo_value(transformed_py_awaited_ref, py)?;
-                Ok(validate_result(transformed))
-            }).into_teo_result()?
-        });
-        Ok(())
-    }
-
-    fn callback(&self, _py: Python, name: &str, callback: &PyAny) -> PyResult<()> {
-        check_callable(callback)?;
-        let mut_builder = self.app_builder.as_ref().to_mut();
-        let callback_owned = Box::leak(Box::new(Py::from(callback)));
-        mut_builder.callback(name, |value: Value| async {
-            Python::with_gil(|py| {
-                let callback = callback_owned.as_ref(py);
-                let py_object = teo_value_to_py_object(value, py)?;
-                let transformed_py = callback.call1((py_object,))?;
-                let _ = await_coroutine_if_needed(transformed_py, py)?;
-                Ok(())
-            }).into_teo_result()
-        });
-        Ok(())
-    }
-
-    fn compare(&self, _py: Python, name: &str, callback: &PyAny) -> PyResult<()> {
-        check_callable(callback)?;
-        let mut_builder = self.app_builder.as_ref().to_mut();
-        let callback_owned = Box::leak(Box::new(Py::from(callback)));
-        mut_builder.compare(name, |old: Value, new: Value| async {
-            Python::with_gil(|py| {
-                let callback = callback_owned.as_ref(py);
-                let py_object_old = teo_value_to_py_object(old, py)?;
-                let py_object_new = teo_value_to_py_object(new, py)?;
-                let transformed_py = callback.call1((py_object_old,py_object_new))?;
-                let transformed_py_awaited = await_coroutine_if_needed(transformed_py, py)?;
-                let transformed_py_awaited_ref = transformed_py_awaited.as_ref(py);
-                let transformed = py_object_to_teo_value(transformed_py_awaited_ref, py)?;
-                Ok(validate_result(transformed))
-            }).into_teo_result()?
-        });
-        Ok(())
     }
 }
