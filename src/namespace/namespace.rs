@@ -26,7 +26,7 @@ impl Namespace {
     }
 
     pub fn namespace_or_create(&'static mut self, name: String) -> Namespace {
-        Namespace{ teo_namespace: self.teo_namespace.namespace_mut_or_create(name.as_str()) }
+        Namespace { teo_namespace: self.teo_namespace.namespace_mut_or_create(name.as_str()) }
     }
 
     pub fn namespace_at_path(&'static mut self, path: Vec<&str>) -> Option<Namespace> {
@@ -34,6 +34,6 @@ impl Namespace {
     }
 
     pub fn namespace_or_create_at_path(&'static mut self, path: Vec<&str>) -> Namespace {
-        Namespace{ teo_namespace: self.teo_namespace.namespace_mut_or_create_at_path(&path) }
+        Namespace { teo_namespace: self.teo_namespace.namespace_mut_or_create_at_path(&path) }
     }
 }
