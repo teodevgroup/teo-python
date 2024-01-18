@@ -3,6 +3,7 @@ pub mod utils;
 pub mod result;
 pub mod classes;
 pub mod app;
+pub mod namespace;
 
 use std::sync::Arc;
 use pyo3::prelude::*;
@@ -20,6 +21,7 @@ use crate::utils::is_coroutine::is_coroutine;
 use crate::utils::validate_result::validate_result;
 
 use crate::app::app::App;
+use crate::namespace::namespace::Namespace;
 
 
 #[pymodule]
@@ -31,5 +33,6 @@ fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
     }
     m.add_function(wrap_pyfunction!(fetch_model_class, m)?)?;
     m.add_class::<App>()?;
+    m.add_class::<Namespace>()?;
     Ok(())
 }

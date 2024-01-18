@@ -3,7 +3,7 @@ use pyo3_asyncio::generic::future_into_py;
 use teo::cli::runtime_version::RuntimeVersion;
 use ::teo::prelude::{App as TeoApp, Entrance, transaction};
 
-use crate::{utils::{check_callable::check_callable, is_coroutine::is_coroutine}, result::IntoPyResult, classes::install::generate_classes};
+use crate::{utils::{check_callable::check_callable, is_coroutine::is_coroutine}, result::IntoPyResult, classes::install::generate_classes, namespace::namespace::Namespace};
 
 #[pyclass]
 pub struct App {
@@ -84,5 +84,9 @@ impl App {
                 Err(err) => Err(PyRuntimeError::new_err(err.to_string())),
             }
         })
+    }
+
+    fn main_namespace(&'static self) -> Namespace {
+        Namespace { teo_namespace: self.teo_app.main_namespace_mut() }
     }
 }
