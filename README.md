@@ -18,7 +18,6 @@ from teo import App
 
 async def main():
     app = App()
-    app.load("./schema.teo")
     await app.run()
 
 
