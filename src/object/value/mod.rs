@@ -5,7 +5,7 @@ pub mod enum_variant;
 pub mod option_variant;
 pub mod decimal;
 
-use pyo3::{Python, PyAny, PyResult, IntoPy, types::{PyList, PyDict}, exceptions::PyValueError};
+use pyo3::{Python, PyAny, PyResult, IntoPy, types::{PyList, PyDict, PyTuple, PyString}, exceptions::PyValueError};
 use teo::prelude::Value;
 pub use object_id::ObjectId;
 pub use file::File;
@@ -44,23 +44,18 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyAny>
             Ok(dict.into_py(py))
         },
         Value::Range(range) => {
-            let instance = Range { value: range.clone() }.into_instance(*env)?;
-            instance.as_object(*env).into_unknown()
+            let instance = Range { value: range.clone() };
+            Ok(instance.into_py(py))
         }
         Value::Tuple(tuple) => {
-            let mut js_array = env.create_array_with_length(tuple.len())?;
-            for (i, value) in tuple.iter().enumerate() {
-                let v = teo_value_to_js_any(value, env)?;
-                js_array.set_element(i as u32, &v)?;
-            }
-            js_array.into_unknown()
+            Ok(PyTuple::new(py, tuple).into_py(py))
         }
         Value::EnumVariant(enum_variant) => {
-            env.create_string(enum_variant.value.as_str())?.into_unknown()
+            Ok(PyString::new(py, enum_variant.value.as_str()).into_py(py))
         }
         Value::OptionVariant(option_variant) => {
-            let instance = OptionVariant { value: option_variant.clone() }.into_instance(*env)?;
-            instance.as_object(*env).into_unknown()
+            let instance = OptionVariant { value: option_variant.clone() };
+            Ok(instance.into_py(py))
         }
         Value::Regex(regex) => {
             let global = env.get_global()?;
@@ -71,7 +66,7 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyAny>
         }
         Value::File(file) => {
             let instance = File::from(file);
-            instance.into_instance(*env)?.as_object(*env).into_unknown()
+            Ok(instance.into_py(py))
         }
         _ => Err(PyValueError::new_err("cannot convert Teo value to Python value")),
     })
