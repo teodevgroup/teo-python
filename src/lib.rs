@@ -2,6 +2,7 @@ pub mod convert;
 pub mod utils;
 pub mod result;
 pub mod classes;
+pub mod app;
 
 use std::sync::Arc;
 use pyo3::prelude::*;
@@ -17,6 +18,8 @@ use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed;
 use crate::utils::check_callable::check_callable;
 use crate::utils::is_coroutine::is_coroutine;
 use crate::utils::validate_result::validate_result;
+
+use crate::app::app::App;
 
 
 #[pymodule]
