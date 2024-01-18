@@ -13,6 +13,6 @@ pyo3 = { version = "0.20.2", features = ["extension-module"] }
 teo = { path = "../teo" }
 pyo3-asyncio = { version = "0.20.0", features = ["attributes", "tokio-runtime"] }
 tokio = { version = "1.0" }
-to-mut = { version = "0.1.0" }
+bson = { version = "2.7.0", features = ["chrono-0_4", "serde_with"] }
 bigdecimal = "0.3.0"
 chrono = { version = "0.4.24" }
