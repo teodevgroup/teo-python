@@ -1,10 +1,10 @@
 pub mod utils;
 pub mod result;
-pub mod classes;
 pub mod app;
 pub mod namespace;
 pub mod dynamic;
 pub mod object;
+pub mod r#enum;
 
 use std::sync::Arc;
 use pyo3::prelude::*;
