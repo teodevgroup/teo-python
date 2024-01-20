@@ -4,6 +4,7 @@ use teo::prelude::File as TeoFile;
 /// File
 /// File only represent input file in form request.
 #[pyclass]
+#[derive(Clone)]
 pub struct File {
     pub filepath: String,
     pub content_type: Option<String>,

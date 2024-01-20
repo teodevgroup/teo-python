@@ -6,7 +6,7 @@ pub mod option_variant;
 pub mod decimal;
 
 use indexmap::IndexMap;
-use pyo3::{Python, PyAny, PyResult, IntoPy, types::{PyList, PyDict, PyTuple, PyString}, exceptions::PyValueError, PyObject};
+use pyo3::{Python, PyAny, PyResult, IntoPy, types::{PyList, PyDict, PyTuple, PyString}, exceptions::PyValueError, PyObject, PyTryInto};
 use regex::Regex;
 use teo::prelude::Value;
 pub use object_id::ObjectId;
@@ -55,7 +55,7 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObje
             instance.into_py(py)
         }
         Value::Tuple(tuple) => {
-            PyTuple::new(py, tuple).into_py(py)
+            PyTuple::new(py, tuple.iter().map(|v| teo_value_to_py_any(py, v)).collect::<PyResult<Vec<PyObject>>>()?).into_py(py)
         }
         Value::EnumVariant(enum_variant) => {
             PyString::new(py, enum_variant.value.as_str()).into_py(py)
@@ -81,55 +81,56 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObje
 pub fn py_any_to_teo_value(py: Python<'_>, object: &PyAny) -> PyResult<Value> {
     if object.is_none() {
         Ok(Value::Null)
-    } else if object.is_instance_of::<ObjectId>()? {
+    } else if object.is_instance_of::<ObjectId>() {
         let object_id: ObjectId = object.extract()?;
         Ok(Value::ObjectId(object_id.value.clone()))
-    } else if object.is_instance_of::<PyString>()? {
+    } else if object.is_instance_of::<PyString>() {
         let s: String = object.extract()?;
         Ok(Value::String(s))
-    } else if object.is_instance_of::<PyBool>()? {
+    } else if object.is_instance_of::<PyBool>() {
         let b: bool = object.extract()?;
         Ok(Value::Bool(b))
-    } else if object.is_instance_of::<PyInt>()? {
+    } else if object.is_instance_of::<PyInt>() {
         let i: i64 = object.extract()?;
         Ok(Value::Int64(i))
-    } else if object.is_instance_of::<PyFloat>()? {
+    } else if object.is_instance_of::<PyFloat>() {
         let f: f64 = object.extract()?;
         Ok(Value::Float(f))
-    } else if object.is_instance_of::<PyDate>()? {
+    } else if object.is_instance_of::<PyDate>() {
         let d: NaiveDate = object.extract()?;
         Ok(Value::Date(d))
-    } else if object.is_instance_of::<PyDateTime>()? {
+    } else if object.is_instance_of::<PyDateTime>() {
         let d: DateTime<Utc> = object.extract()?;
         Ok(Value::DateTime(d))
-    } else if object.is_instance_of::<PyList>()? {
+    } else if object.is_instance_of::<PyList>() {
         let v: Vec<&PyAny> = object.extract()?;
         let mut vec = vec![];
         for value in v {
             vec.push(py_any_to_teo_value(py, value)?);
         }
-        Ok(Value::Vec(vec))
-    } else if object.is_instance_of::<PyDict>()? {
-        let m: IndexMap<String, &PyAny> = object.extract()?;
+        Ok(Value::Array(vec))
+    } else if object.is_instance_of::<PyDict>() {
+        let dict: &PyDict = PyTryInto::try_into(object)?;
         let mut map: IndexMap<String, Value> = IndexMap::new();
-        for (k, v) in m {
-            map.insert(k, py_any_to_teo_value(py, v)?);
+        for k in dict.keys() {
+            let k_str: &str = k.extract()?;
+            map.insert(k_str.to_owned(), py_any_to_teo_value(py, dict.get_item(k)?.unwrap())?);
         }
         Ok(Value::Dictionary(map))
-    } else if object.is_instance_of::<Range>()? {
+    } else if object.is_instance_of::<Range>() {
         let range: Range = object.extract()?;
         Ok(Value::Range(range.value.clone()))
-    } else if object.is_instance_of::<PyTuple>()? {
-        let tuple: PyTuple = object.extract()?;
+    } else if object.is_instance_of::<PyTuple>() {
+        let tuple: &PyTuple = object.extract()?;
         let mut vec = vec![];
         for value in tuple.iter() {
             vec.push(py_any_to_teo_value(py, value)?);
         }
         Ok(Value::Tuple(vec))
 
-    } else if object.is_instance_of::<File>()? {
+    } else if object.is_instance_of::<File>() {
         let file: File = object.extract()?;
-        Ok(Value::File(file.into()))
+        Ok(Value::File((&file).into()))
     } else {
         let decimal_module = py.import("decimal")?;
         let decimal_class = decimal_module.getattr("Decimal")?;
@@ -139,8 +140,9 @@ pub fn py_any_to_teo_value(py: Python<'_>, object: &PyAny) -> PyResult<Value> {
             let s: String = object.call_method0("__str__")?.extract()?;
             Ok(Value::Decimal(BigDecimal::from_str(&s).unwrap()))
         } else if object.is_instance(pattern_class)? {
-            let pattern: &str = object.getattr("pattern")?;
-            let r: Regex = Regex::new(pattern).unwrap();
+            let pattern_any: &PyAny = object.getattr("pattern")?;
+            let pattern_str: &str = pattern_any.into_py(py).extract(py)?;
+            let r: Regex = Regex::new(pattern_str).unwrap();
             Ok(Value::Regex(r))
         }
          else {

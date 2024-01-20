@@ -4,6 +4,7 @@ use teo::prelude::Range as TeoRange;
 use super::teo_value_to_py_any;
 
 #[pyclass]
+#[derive(Clone)]
 pub struct Range {
     pub(crate) value: TeoRange
 }
