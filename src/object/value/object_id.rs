@@ -1,5 +1,5 @@
 use bson::oid::ObjectId as BsonObjectId;
-use pyo3::{pyclass, pymethods, PyResult, exceptions::PyValueError};
+use pyo3::{pyclass, pymethods, PyResult, exceptions::PyValueError, types::PyType};
 
 #[pyclass]
 #[derive(Clone)]
@@ -15,7 +15,8 @@ impl ObjectId {
         self.value.to_hex()
     }
 
-    pub fn from_string(string: String) -> PyResult<ObjectId> {
+    #[classmethod]
+    pub fn from_string(cls: &PyType, string: &str) -> PyResult<ObjectId> {
         match BsonObjectId::parse_str(&string) {
             Ok(value) => Ok(Self { value }),
             Err(_) => Err(PyValueError::new_err("string doesn't represent valid ObjectId"))

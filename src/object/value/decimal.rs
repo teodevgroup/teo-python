@@ -1,5 +1,5 @@
 use bigdecimal::BigDecimal;
-use pyo3::{Python, PyResult, PyObject};
+use pyo3::{Python, PyResult, PyObject, IntoPy};
 
 pub fn big_decimal_to_python_decimal(d: BigDecimal, py: Python<'_>) -> PyResult<PyObject> {
     let s = d.to_string();

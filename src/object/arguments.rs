@@ -1,14 +1,13 @@
-use pyo3::{types::PyDict, Python, PyAny, PyResult};
+use pyo3::{types::PyDict, Python, PyResult, PyObject, IntoPy};
 use teo::prelude::Arguments;
 
-use super::teo_object_to_js_any;
+use super::teo_object_to_py_any;
 
-pub(crate) fn teo_args_to_py_args(py: Python<'_>, args: &Arguments) -> PyResult<PyDict> {
+pub(crate) fn teo_args_to_py_args(py: Python<'_>, args: &Arguments) -> PyResult<PyObject> {
     let mut dict = PyDict::new(py);
-    
     for (k, v) in args.iter() {
-        let v = teo_object_to_js_any(v, env)?;
-        js_object.set_named_property(k, &v)?;
+        let v = teo_object_to_py_any(py, v)?;
+        dict.set_item(k, &v)?;
     }
-    Ok(js_object)
+    Ok(dict.into_py(py))
 }

@@ -1,5 +1,5 @@
 use teo::prelude::EnumVariant as TeoEnumVariant;
-use pyo3::{pyclass, pymethods};
+use pyo3::{pyclass, pymethods, types::PyType};
 
 #[pyclass]
 pub struct EnumVariant {
@@ -13,10 +13,11 @@ impl EnumVariant {
         self.value.value.clone()
     }
     
-    pub fn from_string(value: String) -> EnumVariant {
-        Self { 
+    #[classmethod]
+    pub fn from_string(cls: &PyType, value: &str) -> EnumVariant {
+        Self {
             value: TeoEnumVariant {
-                value,
+                value: value.to_owned(),
                 args: None,
             } 
         }
