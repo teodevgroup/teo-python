@@ -6,6 +6,9 @@ pub mod dynamic;
 pub mod object;
 pub mod r#enum;
 pub mod model;
+pub mod handler;
+pub mod request;
+pub mod response;
 
 use std::sync::Arc;
 use pyo3::prelude::*;
