@@ -10,7 +10,7 @@ use pyo3::{AsPyPointer, IntoPy, PyAny, PyErr, PyMethodType, PyObject, PyResult, 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::ffi::{PyCMethod, PyCMethod_New};
 use pyo3::types::{PyCFunction, PyDict, PyList};
-use teo::prelude::{Namespace, Value, model};
+use teo::prelude::{Namespace, Value, model, transaction};
 use crate::dynamic::model_object_wrapper::ModelObjectWrapper;
 
 use crate::object::value::{teo_value_to_py_any, py_any_to_teo_value};
@@ -83,6 +83,36 @@ pub fn get_ctx_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
             generate_ctx_class(py, name)
         }
     }
+}
+
+pub(crate) fn py_model_class_object_from_teo_model_ctx(py: Python<'_>, model_ctx: model::Ctx, name: &str) -> PyResult<PyObject> {
+    let model_name = model_ctx.model.path().join(".");
+    let model_class_class = get_model_class_class(py, &model_name)?;
+    let model_class_object = model_class_class.call_method1(py, "__new__", (model_class_class,))?;
+    model_class_object.setattr(py, "__teo_model_ctx__", ModelCtxWrapper::new(model_ctx))?;
+    Ok(model_class_object)
+}
+
+pub(crate) fn py_model_object_from_teo_model_object(py: Python<'_>, teo_model_object: model::Object) -> PyResult<PyObject> {
+    let model_name = teo_model_object.model().path().join(".");
+    let model_object_class = get_model_object_class(py, &model_name)?;
+    let model_object = model_object_class.call_method1(py, "__new__", (model_object_class,))?;
+    model_object.setattr(py, "__teo_object__", ModelCtxWrapper::new(model_ctx))?;
+    Ok(model_object)
+}
+
+pub(crate) fn py_optional_model_object_from_teo_object(py: Python<'_>, teo_model_object: Option<model::Object>) -> PyResult<PyObject> {
+    Ok(match teo_model_object {
+        Some(teo_model_object) => py_model_object_from_teo_model_object(py, teo_model_object)?,
+        None => ().into_py(py),
+    })
+}
+
+pub(crate) fn py_ctx_object_from_teo_transaction_ctx(py: Python<'_>, transaction_ctx: transaction::Ctx, name: &str) -> PyResult<PyObject> {
+    let ctx_class = get_ctx_class(py, name)?;
+    let ctx_object = ctx_class.call_method1(py, "__new__", (ctx_class,))?;
+    ctx_object.setattr(py, "__teo_transaction_ctx__", TransactionCtxWrapper::new(transaction_ctx))?;
+    Ok(ctx_object)
 }
 
 static INIT_ERROR_MESSAGE: &str = "class is not initialized";
@@ -235,6 +265,7 @@ fn find_unique_function<'py>(model_name: &'static str, py: Python<'py>) -> PyRes
                 Python::with_gil(|py| {
                     match result {
                         Some(object) => {
+                            let 
                             let instance = cls.call_method1(py, "__new__", (cls.as_ref(py),))?;
                             instance.setattr(py, "__teo_object__", ModelObjectWrapper::new(object))?;
                             Ok(instance)
