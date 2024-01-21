@@ -1,4 +1,4 @@
-use ::teo::prelude::Object;
+use teo::prelude::model::Object;
 use pyo3::prelude::*;
 
 #[pyclass]

@@ -14,7 +14,7 @@ teo = { path = "../teo" }
 pyo3-asyncio = { version = "0.20.0", features = ["attributes", "tokio-runtime"] }
 tokio = { version = "1.0" }
 bson = { version = "2.7.0", features = ["chrono-0_4", "serde_with"] }
-bigdecimal = "0.3.0"
+bigdecimal = "=0.3.1"
 chrono = { version = "0.4.24" }
 indexmap = "2.1.0"
 regex = "1.10.2"

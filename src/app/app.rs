@@ -3,7 +3,7 @@ use pyo3_asyncio::generic::future_into_py;
 use teo::cli::runtime_version::RuntimeVersion;
 use ::teo::prelude::{App as TeoApp, Entrance, transaction};
 
-use crate::{utils::{check_callable::check_callable, is_coroutine::is_coroutine}, result::IntoPyResult, classes::install::generate_classes, namespace::namespace::Namespace};
+use crate::{utils::{check_callable::check_callable, is_coroutine::is_coroutine}, result::IntoPyResult, dynamic::generate_classes, namespace::namespace::Namespace};
 
 #[pyclass]
 pub struct App {
@@ -75,7 +75,7 @@ impl App {
 
     fn run<'p>(&'static self, py: Python<'p>) -> PyResult<&'p PyAny> {
         future_into_py(py, async move {
-            self.teo_app.prepare_for_run().await.into_py_result()?;
+            self.teo_app.prepare_for_run().await.into_py_result(py)?;
             Python::with_gil(|py| {
                 generate_classes(&self.teo_app, py)
             })?;
