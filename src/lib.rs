@@ -10,17 +10,8 @@ pub mod handler;
 pub mod request;
 pub mod response;
 
-use std::sync::Arc;
 use pyo3::prelude::*;
-use pyo3_asyncio::tokio::future_into_py;
-use ::teo::prelude::{Value, App as TeoApp};
-use pyo3::exceptions::PyRuntimeError;
-use crate::dynamic::{get_model_class, setup_dynamic_container};
-use crate::result::IntoTeoResult;
-use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed;
-use crate::utils::check_callable::check_callable;
-use crate::utils::is_coroutine::is_coroutine;
-use crate::utils::validate_result::validate_result;
+use crate::dynamic::{get_model_class_class, get_model_object_class, get_ctx_class, setup_dynamic_container};
 
 use crate::app::app::App;
 use crate::namespace::namespace::Namespace;
@@ -30,10 +21,20 @@ use crate::namespace::namespace::Namespace;
 fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
     setup_dynamic_container()?;
     #[pyfunction]
-    fn fetch_model_class(name: &str, py: Python) -> PyResult<PyObject> {
-        get_model_class(name, py)
+    fn fetch_model_class_class(name: &str, py: Python) -> PyResult<PyObject> {
+        get_model_class_class(name, py)
     }
-    m.add_function(wrap_pyfunction!(fetch_model_class, m)?)?;
+    #[pyfunction]
+    fn fetch_model_object_class(name: &str, py: Python) -> PyResult<PyObject> {
+        get_model_object_class(name, py)
+    }
+    #[pyfunction]
+    fn fetch_ctx_class(name: &str, py: Python) -> PyResult<PyObject> {
+        get_ctx_class(name, py)
+    }
+    m.add_function(wrap_pyfunction!(fetch_model_class_class, m)?)?;
+    m.add_function(wrap_pyfunction!(fetch_model_object_class, m)?)?;
+    m.add_function(wrap_pyfunction!(fetch_ctx_class, m)?)?;
     m.add_class::<App>()?;
     m.add_class::<Namespace>()?;
     Ok(())
