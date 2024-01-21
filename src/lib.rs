@@ -9,6 +9,7 @@ pub mod model;
 pub mod handler;
 pub mod request;
 pub mod response;
+pub mod middleware;
 
 use pyo3::prelude::*;
 use crate::dynamic::{get_model_class_class, get_model_object_class, get_ctx_class, setup_dynamic_container};
