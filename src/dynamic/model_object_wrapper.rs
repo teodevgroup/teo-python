@@ -3,11 +3,11 @@ use pyo3::prelude::*;
 
 #[pyclass]
 #[derive(Clone)]
-pub struct ObjectWrapper {
+pub struct ModelObjectWrapper {
     pub object: Object
 }
 
-impl ObjectWrapper {
+impl ModelObjectWrapper {
     pub fn new(object: Object) -> Self {
         Self { object }
     }
