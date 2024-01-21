@@ -1,6 +1,6 @@
 pub mod object_wrapper;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use ::teo::prelude::App;
 use pyo3::{AsPyPointer, IntoPy, PyAny, PyErr, PyMethodType, PyObject, PyResult, Python};
 use pyo3::exceptions::PyRuntimeError;
@@ -11,29 +11,74 @@ use crate::dynamic::object_wrapper::ObjectWrapper;
 use crate::result::IntoPyResult;
 use crate::utils::check_py_dict::check_py_dict;
 
-static mut CLASSES: Option<&'static HashMap<String, PyObject>> = None;
+static mut CTXS: Option<&'static BTreeMap<String, PyObject>> = None;
+static mut CLASSES: Option<&'static BTreeMap<String, PyObject>> = None;
+static mut OBJECTS: Option<&'static BTreeMap<String, PyObject>> = None;
 
-fn classes_mut() -> &'static mut HashMap<String, PyObject> {
+pub fn setup_dynamic_container() -> PyResult<()> {
+    unsafe { CLASSES = Some(Box::leak(Box::new(BTreeMap::new()))) };
+    unsafe { OBJECTS = Some(Box::leak(Box::new(BTreeMap::new()))) };
+    unsafe { CTXS = Some(Box::leak(Box::new(BTreeMap::new()))) };
+    Ok(())
+}
+
+fn classes_mut() -> &'static mut BTreeMap<String, PyObject> {
     unsafe {
-        let const_ptr = CLASSES.unwrap() as *const HashMap<String, PyObject>;
-        let mut_ptr = const_ptr as *mut HashMap<String, PyObject>;
+        let const_ptr = CLASSES.unwrap() as *const BTreeMap<String, PyObject>;
+        let mut_ptr = const_ptr as *mut BTreeMap<String, PyObject>;
         &mut *mut_ptr
     }
 }
 
-pub fn get_model_class(name: &str, py: Python<'_>) -> PyResult<PyObject> {
+fn objects_mut() -> &'static mut BTreeMap<String, PyObject> {
+    unsafe {
+        let const_ptr = OBJECTS.unwrap() as *const BTreeMap<String, PyObject>;
+        let mut_ptr = const_ptr as *mut BTreeMap<String, PyObject>;
+        &mut *mut_ptr
+    }
+}
+
+fn ctxs_mut() -> &'static mut BTreeMap<String, PyObject> {
+    unsafe {
+        let const_ptr = CTXS.unwrap() as *const BTreeMap<String, PyObject>;
+        let mut_ptr = const_ptr as *mut BTreeMap<String, PyObject>;
+        &mut *mut_ptr
+    }
+}
+
+pub fn get_model_class_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
     unsafe {
         if let Some(object_ref) = CLASSES.unwrap().get(name) {
             Ok(object_ref.clone_ref(py))
         } else {
-            generate_model_class(name, py)
+            generate_model_class_class(py, name)
+        }
+    }
+}
+
+pub fn get_model_object_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
+    unsafe {
+        if let Some(object_ref) = OBJECTS.unwrap().get(name) {
+            Ok(object_ref.clone_ref(py))
+        } else {
+            generate_model_object_class(py, name)
+        }
+    }
+}
+
+pub fn get_ctx_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
+    unsafe {
+        if let Some(object_ref) = CTXS.unwrap().get(name) {
+            Ok(object_ref.clone_ref(py))
+        } else {
+            generate_ctx_class(py, name)
         }
     }
 }
 
 static INIT_ERROR_MESSAGE: &str = "Do not call Teo model init directly. Use `create' instead.";
 
-unsafe fn generate_model_class(name: &str, py: Python<'_>) -> PyResult<PyObject> {
+unsafe fn generate_model_class_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
     let builtins = py.import("builtins")?;
     let py_type = builtins.getattr("type")?;
     let py_object = builtins.getattr("object")?;
@@ -44,16 +89,41 @@ unsafe fn generate_model_class(name: &str, py: Python<'_>) -> PyResult<PyObject>
     })?;
     dict.set_item("__init__", init)?;
     let result = py_type.call1((name, (py_object,), dict))?;
-    let copy = result.into_py(py);
-    classes_mut().insert(name.to_owned(), copy);
+    let result_object = result.into_py(py);
+    classes_mut().insert(name.to_owned(), result_object);
     Ok(result.into_py(py))
 }
 
-pub fn setup_classes_container() -> PyResult<()> {
-    unsafe {
-        CLASSES = Some(Box::leak(Box::new(HashMap::new())))
-    };
-    Ok(())
+unsafe fn generate_model_object_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
+    let builtins = py.import("builtins")?;
+    let py_type = builtins.getattr("type")?;
+    let py_object = builtins.getattr("object")?;
+    let dict = PyDict::new(py);
+    dict.set_item("__module__", "teo.models")?;
+    let init = PyCFunction::new_closure(py, Some("__init__"), Some(INIT_ERROR_MESSAGE), |_slf, _args| {
+        Err::<(), PyErr>(PyRuntimeError::new_err(INIT_ERROR_MESSAGE))
+    })?;
+    dict.set_item("__init__", init)?;
+    let result = py_type.call1((name, (py_object,), dict))?;
+    let result_object = result.into_py(py);
+    classes_mut().insert(name.to_owned(), result_object);
+    Ok(result.into_py(py))
+}
+
+unsafe fn generate_ctx_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
+    let builtins = py.import("builtins")?;
+    let py_type = builtins.getattr("type")?;
+    let py_object = builtins.getattr("object")?;
+    let dict = PyDict::new(py);
+    dict.set_item("__module__", "teo.models")?;
+    let init = PyCFunction::new_closure(py, Some("__init__"), Some(INIT_ERROR_MESSAGE), |_slf, _args| {
+        Err::<(), PyErr>(PyRuntimeError::new_err(INIT_ERROR_MESSAGE))
+    })?;
+    dict.set_item("__init__", init)?;
+    let result = py_type.call1((name, (py_object,), dict))?;
+    let result_object = result.into_py(py);
+    classes_mut().insert(name.to_owned(), result_object);
+    Ok(result.into_py(py))
 }
 
 pub fn generate_classes(app: &App, py: Python<'_>) -> PyResult<()> {

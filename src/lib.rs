@@ -15,7 +15,7 @@ use pyo3::prelude::*;
 use pyo3_asyncio::tokio::future_into_py;
 use ::teo::prelude::{Value, App as TeoApp};
 use pyo3::exceptions::PyRuntimeError;
-use crate::dynamic::{generate_classes, get_model_class, setup_classes_container};
+use crate::dynamic::{get_model_class, setup_dynamic_container};
 use crate::result::IntoTeoResult;
 use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed;
 use crate::utils::check_callable::check_callable;
@@ -28,7 +28,7 @@ use crate::namespace::namespace::Namespace;
 
 #[pymodule]
 fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
-    setup_classes_container()?;
+    setup_dynamic_container()?;
     #[pyfunction]
     fn fetch_model_class(name: &str, py: Python) -> PyResult<PyObject> {
         get_model_class(name, py)
