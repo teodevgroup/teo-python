@@ -2,13 +2,12 @@ pub mod model_object_wrapper;
 pub mod transaction_ctx_wrapper;
 pub mod model_ctx_wrapper;
 
-use std::collections::{HashMap, BTreeMap};
+use std::collections::BTreeMap;
 use indexmap::IndexMap;
 use inflector::Inflector;
 use ::teo::prelude::App;
-use pyo3::{AsPyPointer, IntoPy, PyAny, PyErr, PyMethodType, PyObject, PyResult, Python, PyRef};
+use pyo3::{IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3::exceptions::PyRuntimeError;
-use pyo3::ffi::{PyCMethod, PyCMethod_New};
 use pyo3::types::{PyCFunction, PyDict, PyList};
 use teo::prelude::{Namespace, Value, model, transaction};
 use crate::dynamic::model_object_wrapper::ModelObjectWrapper;
@@ -97,7 +96,7 @@ pub(crate) fn py_model_object_from_teo_model_object(py: Python<'_>, teo_model_ob
     let model_name = teo_model_object.model().path().join(".");
     let model_object_class = get_model_object_class(py, &model_name)?;
     let model_object = model_object_class.call_method1(py, "__new__", (model_object_class,))?;
-    model_object.setattr(py, "__teo_object__", ModelCtxWrapper::new(model_ctx))?;
+    model_object.setattr(py, "__teo_object__", ModelObjectWrapper::new(teo_model_object))?;
     Ok(model_object)
 }
 
@@ -113,6 +112,21 @@ pub(crate) fn py_ctx_object_from_teo_transaction_ctx(py: Python<'_>, transaction
     let ctx_object = ctx_class.call_method1(py, "__new__", (ctx_class,))?;
     ctx_object.setattr(py, "__teo_transaction_ctx__", TransactionCtxWrapper::new(transaction_ctx))?;
     Ok(ctx_object)
+}
+
+pub(crate) fn teo_model_ctx_from_py_model_class_object(py: Python<'_>, model_class_object: PyObject) -> PyResult<model::Ctx> {
+    let wrapper: &ModelCtxWrapper = model_class_object.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+    Ok(wrapper.ctx.clone())
+}
+
+pub(crate) fn teo_model_object_from_py_model_object(py: Python<'_>, model_class_object: PyObject) -> PyResult<model::Object> {
+    let wrapper: &ModelObjectWrapper = model_class_object.getattr(py, "__teo_object__")?.extract(py)?;
+    Ok(wrapper.object.clone())
+}
+
+pub(crate) fn teo_transaction_ctx_from_py_ctx_object(py: Python<'_>, ctx_object: PyObject) -> PyResult<transaction::Ctx> {
+    let wrapper: &TransactionCtxWrapper = ctx_object.getattr(py, "__teo_transaction_ctx__")?.extract(py)?;
+    Ok(wrapper.ctx.clone())
 }
 
 static INIT_ERROR_MESSAGE: &str = "class is not initialized";
@@ -265,10 +279,7 @@ fn find_unique_function<'py>(model_name: &'static str, py: Python<'py>) -> PyRes
                 Python::with_gil(|py| {
                     match result {
                         Some(object) => {
-                            let 
-                            let instance = cls.call_method1(py, "__new__", (cls.as_ref(py),))?;
-                            instance.setattr(py, "__teo_object__", ModelObjectWrapper::new(object))?;
-                            Ok(instance)
+                            py_model_object_from_teo_model_object(py, object)
                         }
                         None => {
                             Ok(().into_py(py))
@@ -284,22 +295,21 @@ fn find_unique_function<'py>(model_name: &'static str, py: Python<'py>) -> PyRes
 fn find_first_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResult<&'py PyCFunction> {
     Ok(PyCFunction::new_closure(py, Some("find_first"), Some("Find a record."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let cls = args.get_item(0)?.into_py(py);
+            let slf = args.get_item(0)?.into_py(py);
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
             let find_many_arg = if args.len() > 1 {
                 let py_dict = args.get_item(1)?;
                 check_py_dict(py_dict)?;
                 py_any_to_teo_value(py, py_dict)?
             } else {
-                Value::HashMap(HashMap::new())
+                Value::Dictionary(IndexMap::new())
             };
             let coroutine = pyo3_asyncio::tokio::future_into_py(py, (|| async move {
-                let result = Graph::current().find_first::<Object>(model_name, &find_many_arg).await.into_py_result()?;
+                let result: Option<model::Object> = model_ctx_wrapper.ctx.find_first(&find_many_arg).await.into_py_result()?;
                 Python::with_gil(|py| {
                     match result {
                         Some(object) => {
-                            let instance = cls.call_method1(py, "__new__", (cls.as_ref(py),))?;
-                            instance.setattr(py, "__teo_object__", ModelObjectWrapper::new(object))?;
-                            Ok(instance)
+                            py_model_object_from_teo_model_object(py, object)
                         }
                         None => {
                             Ok(().into_py(py))
@@ -307,9 +317,7 @@ fn find_first_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResu
                     }
                 })
             })())?;
-            Python::with_gil(|py| {
-                Ok::<PyObject, PyErr>(coroutine.into_py(py))
-            })
+            Ok::<PyObject, PyErr>(coroutine.into_py(py))
         })
     })?)
 }
@@ -317,29 +325,27 @@ fn find_first_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResu
 fn find_many_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResult<&'py PyCFunction> {
     Ok(PyCFunction::new_closure(py, Some("find_many"), Some("Find many records."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let cls = args.get_item(0)?.into_py(py);
+            let slf = args.get_item(0)?.into_py(py);
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
             let find_many_arg = if args.len() > 1 {
                 let py_dict = args.get_item(1)?;
                 check_py_dict(py_dict)?;
                 py_any_to_teo_value(py, py_dict)?
             } else {
-                Value::Dictionary(HashMap::new())
+                Value::Dictionary(IndexMap::new())
             };
             let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
-                let result = Graph::current().find_many::<Object>(model_name, &find_many_arg).await.into_py_result()?;
+                let result: Vec<model::Object> = model_ctx_wrapper.ctx.find_many(&find_many_arg).await.into_py_result()?;
                 Python::with_gil(|py| {
                     let py_result = PyList::empty(py);
                     for object in result {
-                        let instance = cls.call_method1(py, "__new__", (cls.as_ref(py),))?;
-                        instance.setattr(py, "__teo_object__", ModelObjectWrapper::new(object))?;
+                        let instance = py_model_object_from_teo_model_object(py, object)?;
                         py_result.append(instance)?;
                     }
                     Ok(py_result.into_py(py))
                 })
             })())?;
-            Python::with_gil(|py| {
-                Ok::<PyObject, PyErr>(coroutine.into_py(py))
-            })
+            Ok::<PyObject, PyErr>(coroutine.into_py(py))
         })
     })?)
 }
