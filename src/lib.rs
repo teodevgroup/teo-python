@@ -5,6 +5,7 @@ pub mod namespace;
 pub mod dynamic;
 pub mod object;
 pub mod r#enum;
+pub mod model;
 
 use std::sync::Arc;
 use pyo3::prelude::*;

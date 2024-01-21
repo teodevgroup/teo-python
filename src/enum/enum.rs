@@ -1,7 +1,7 @@
-use pyo3::{PyResult, PyAny, Python, pyclass, pymethods, IntoPy, PyObject};
+use pyo3::{PyResult, Python, pyclass, pymethods, IntoPy, PyObject};
 use teo::prelude::Enum as TeoEnum;
 
-use crate::object::value::py_any_to_teo_value;
+use crate::object::{py_any_to_teo_object, teo_object_to_py_any};
 
 #[pyclass]
 pub struct Enum {
@@ -19,7 +19,7 @@ impl Enum {
     pub fn data(&mut self, py: Python<'_>, key: String) -> PyResult<PyObject> {
         Ok(match self.teo_enum.data.get(key.as_str()) {
             Some(object) => teo_object_to_py_any(py, object)?,
-            None => ().into_py(py)?,
+            None => ().into_py(py),
         })
     }
 }
