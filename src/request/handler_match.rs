@@ -1,13 +1,13 @@
-use napi::{Env, Result, JsObject};
+use pyo3::{pyclass, pymethods, Python, PyResult, ffi::PyObject, types::PyDict, IntoPy};
 use teo::prelude::handler::r#match::HandlerMatch as TeoHandlerMatch;
 
-#[napi(js_name = "HandlerMatch")]
+#[pyclass]
 pub struct HandlerMatch {
     teo_inner: &'static TeoHandlerMatch,
 }
 
 /// Handler match.
-#[napi]
+#[pymethods]
 impl HandlerMatch {
 
     pub(crate) fn new(teo_inner: &'static TeoHandlerMatch) -> Self {
@@ -16,24 +16,20 @@ impl HandlerMatch {
         }
     }
 
-    #[napi]
     pub fn path(&self) -> Vec<&str> {
         self.teo_inner.path()
     }
 
-    #[napi]
     pub fn handler_name(&self) -> &str {
         self.teo_inner.handler_name()
     }
 
-    #[napi]
-    pub fn captures(&self, env: Env) -> Result<JsObject> {
+    pub fn captures(&self, py: Python<'_>) -> PyResult<PyObject> {
         let captures_map = self.teo_inner.captures();
-        let mut js_object = env.create_object()?;
+        let mut py_dict = PyDict::new(py);
         for (k, value) in captures_map.iter() {
-            js_object.set_named_property(k, value)?;
+            py_dict.set_item(k, value)?;
         }
-        Ok(js_object)
+        Ok(py_dict.into_py(py))
     }
-
 }
