@@ -13,10 +13,8 @@ pub mod middleware;
 
 use pyo3::prelude::*;
 use crate::dynamic::{get_model_class_class, get_model_object_class, get_ctx_class, setup_dynamic_container};
-
 use crate::app::app::App;
 use crate::namespace::namespace::Namespace;
-
 
 #[pymodule]
 fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
