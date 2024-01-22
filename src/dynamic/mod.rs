@@ -87,7 +87,7 @@ pub fn get_ctx_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
 pub(crate) fn py_model_class_object_from_teo_model_ctx(py: Python<'_>, model_ctx: model::Ctx, name: &str) -> PyResult<PyObject> {
     let model_name = model_ctx.model.path().join(".");
     let model_class_class = get_model_class_class(py, &model_name)?;
-    let model_class_object = model_class_class.call_method1(py, "__new__", (model_class_class,))?;
+    let model_class_object = model_class_class.call_method1(py, "__new__", (model_class_class.as_ref(py),))?;
     model_class_object.setattr(py, "__teo_model_ctx__", ModelCtxWrapper::new(model_ctx))?;
     Ok(model_class_object)
 }
@@ -95,7 +95,7 @@ pub(crate) fn py_model_class_object_from_teo_model_ctx(py: Python<'_>, model_ctx
 pub(crate) fn py_model_object_from_teo_model_object(py: Python<'_>, teo_model_object: model::Object) -> PyResult<PyObject> {
     let model_name = teo_model_object.model().path().join(".");
     let model_object_class = get_model_object_class(py, &model_name)?;
-    let model_object = model_object_class.call_method1(py, "__new__", (model_object_class,))?;
+    let model_object = model_object_class.call_method1(py, "__new__", (model_object_class.as_ref(py),))?;
     model_object.setattr(py, "__teo_object__", ModelObjectWrapper::new(teo_model_object))?;
     Ok(model_object)
 }
@@ -109,7 +109,7 @@ pub(crate) fn py_optional_model_object_from_teo_object(py: Python<'_>, teo_model
 
 pub(crate) fn py_ctx_object_from_teo_transaction_ctx(py: Python<'_>, transaction_ctx: transaction::Ctx, name: &str) -> PyResult<PyObject> {
     let ctx_class = get_ctx_class(py, name)?;
-    let ctx_object = ctx_class.call_method1(py, "__new__", (ctx_class,))?;
+    let ctx_object = ctx_class.call_method1(py, "__new__", (ctx_class.as_ref(py),))?;
     ctx_object.setattr(py, "__teo_transaction_ctx__", TransactionCtxWrapper::new(transaction_ctx))?;
     Ok(ctx_object)
 }
@@ -214,9 +214,9 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
     let property_wrapper = builtins.getattr("property")?;
     let ctx_class = get_ctx_class(py, &namespace.path().join("."))?;
     for model in namespace.models.values() {
-        let model_name = model.path().join(".");
+        let model_name = Box::leak(Box::new(model.path().join("."))).as_str();
         let model_property_name = model.path().last().unwrap().to_snake_case();
-        let model_property = PyCFunction::new_closure(py, Some(model_name.as_str()), None, move |args, _kwargs| {
+        let model_property = PyCFunction::new_closure(py, Some(model_name), None, move |args, _kwargs| {
             let model_class_object = Python::with_gil(|py| {
                 let slf = args.get_item(0)?;
                 let transaction_ctx_wrapper: TransactionCtxWrapper = slf.getattr("__teo_transaction_ctx__")?.extract()?;
@@ -247,8 +247,8 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
 
     }
     for namespace in namespace.namespaces.values() {
-        let namespace_name = namespace.path().join(".");
-        let namespace_property = PyCFunction::new_closure(py, Some(namespace_name.as_str()), None, move |args, _kwargs| {
+        let namespace_name = Box::leak(Box::new(namespace.path().join("."))).as_str();
+        let namespace_property = PyCFunction::new_closure(py, Some(namespace_name), None, move |args, _kwargs| {
             let next_ctx_object = Python::with_gil(|py| {
                 let slf = args.get_item(0)?;
                 let transaction_ctx_wrapper: TransactionCtxWrapper = slf.getattr("__teo_transaction_ctx__")?.extract()?;

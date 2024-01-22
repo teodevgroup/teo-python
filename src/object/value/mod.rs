@@ -34,7 +34,7 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObje
         Value::Bool(b) => b.into_py(py),
         Value::Date(d) => d.into_py(py),
         Value::DateTime(d) => d.into_py(py),
-        Value::Decimal(b) => big_decimal_to_python_decimal(*b, py)?,
+        Value::Decimal(b) => big_decimal_to_python_decimal(b.clone(), py)?,
         Value::Array(v) => {
             let list = PyList::empty(py);
             for value in v {
@@ -140,8 +140,8 @@ pub fn py_any_to_teo_value(py: Python<'_>, object: &PyAny) -> PyResult<Value> {
             let s: String = object.call_method0("__str__")?.extract()?;
             Ok(Value::Decimal(BigDecimal::from_str(&s).unwrap()))
         } else if object.is_instance(pattern_class)? {
-            let pattern_any: &PyAny = object.getattr("pattern")?;
-            let pattern_str: &str = pattern_any.into_py(py).extract(py)?;
+            let pattern_any = object.getattr("pattern")?.into_py(py);
+            let pattern_str: &str = pattern_any.extract(py)?;
             let r: Regex = Regex::new(pattern_str).unwrap();
             Ok(Value::Regex(r))
         }
