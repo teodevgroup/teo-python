@@ -27,9 +27,10 @@ impl RequestCtx {
         Ok(py_ctx_object_from_teo_transaction_ctx(py, self.teo_inner.transaction_ctx(), "")?)
     }
 
-    pub fn handler_match(&'static self) -> HandlerMatch {
+    pub fn handler_match(&self) -> HandlerMatch {
+        let static_self: &'static RequestCtx = unsafe { &*(self as * const RequestCtx) };
         HandlerMatch {
-            teo_inner: self.teo_inner.handler_match()
+            teo_inner: static_self.teo_inner.handler_match()
         }
     }
 }

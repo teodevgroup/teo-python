@@ -9,9 +9,9 @@ impl<T> IntoTeoResult<T> for PyResult<T> {
         match self {
             Ok(r) => Ok(r),
             Err(e) => {
-                let mut e = ::teo::prelude::Error::new(e.to_string());
-                e.insert_meta("pyErr", e);
-                Err(e)
+                let mut error = ::teo::prelude::Error::new(e.to_string());
+                error.insert_meta("pyErr", e);
+                Err(error)
             },
         }
     }
@@ -62,9 +62,9 @@ impl<T> IntoTeoPathResult<T> for PyResult<T> {
         match self {
             Ok(r) => Ok(r),
             Err(e) => {
-                let mut e = teo::prelude::path::Error::internal_server_error_message_only(e.to_string());
-                e.insert_meta("pyErr", e);
-                Err(e)
+                let mut error = teo::prelude::path::Error::internal_server_error_message_only(e.to_string());
+                error.insert_meta("pyErr", e);
+                Err(error)
             },
         }
     }
