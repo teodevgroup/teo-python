@@ -3,7 +3,7 @@ use teo::prelude::handler::r#match::HandlerMatch as TeoHandlerMatch;
 
 #[pyclass]
 pub struct HandlerMatch {
-    teo_inner: &'static TeoHandlerMatch,
+    pub(crate) teo_inner: &'static TeoHandlerMatch,
 }
 
 /// Handler match.

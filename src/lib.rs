@@ -23,15 +23,15 @@ fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
     setup_dynamic_container()?;
     #[pyfunction]
     fn fetch_model_class_class(name: &str, py: Python) -> PyResult<PyObject> {
-        get_model_class_class(name, py)
+        get_model_class_class(py, name)
     }
     #[pyfunction]
     fn fetch_model_object_class(name: &str, py: Python) -> PyResult<PyObject> {
-        get_model_object_class(name, py)
+        get_model_object_class(py, name)
     }
     #[pyfunction]
     fn fetch_ctx_class(name: &str, py: Python) -> PyResult<PyObject> {
-        get_ctx_class(name, py)
+        get_ctx_class(py, name)
     }
     m.add_function(wrap_pyfunction!(fetch_model_class_class, m)?)?;
     m.add_function(wrap_pyfunction!(fetch_model_object_class, m)?)?;

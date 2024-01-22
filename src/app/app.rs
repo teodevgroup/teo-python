@@ -1,9 +1,9 @@
-use pyo3::{pyclass, pymethods, Python, PyResult, types::PyModule, PyAny, Py, exceptions::PyRuntimeError};
+use pyo3::{pyclass, pymethods, Python, PyResult, types::{PyModule, PyType}, PyAny, Py, exceptions::PyRuntimeError, PyErr};
 use pyo3_asyncio::generic::future_into_py;
 use teo::cli::runtime_version::RuntimeVersion;
 use ::teo::prelude::{App as TeoApp, Entrance, transaction};
 
-use crate::{utils::{check_callable::check_callable, is_coroutine::is_coroutine}, result::IntoPyResult, namespace::namespace::Namespace, dynamic::synthesize_dynamic_python_classes};
+use crate::{utils::{check_callable::check_callable, is_coroutine::is_coroutine}, result::{IntoPyResult, IntoTeoResult, IntoPyResultWithGil}, namespace::namespace::Namespace, dynamic::synthesize_dynamic_python_classes};
 
 #[pyclass]
 pub struct App {
@@ -15,11 +15,12 @@ pub struct App {
 impl App {
 
     #[new]
-    fn new(py: Python<'_>) -> PyResult<Self> {
-        Self::with_cli(py, false)
+    fn new(cls: &PyType, py: Python<'_>) -> PyResult<Self> {
+        Self::with_cli(cls, py, false)
     }
 
-    fn with_cli(py: Python<'_>, cli: bool) -> PyResult<Self> {
+    #[classmethod]
+    fn with_cli(cls: &PyType, py: Python<'_>, cli: bool) -> PyResult<Self> {
         let platform = PyModule::import(py, "platform")?;
         let python_version: Py<PyAny> = platform.getattr("python_version")?.into();
         let version_any = python_version.call0(py)?;
@@ -39,11 +40,11 @@ impl App {
                 let callback = callback_owned.as_ref(py);
                 let transformed_py = callback.call0()?;
                 let is_coroutine = is_coroutine(transformed_py, py)?;
-                Ok((transformed_py.into_py(py), is_coroutine))
+                Ok((transformed_py, is_coroutine))
             }).into_teo_result()?;
             if transformed.1 {
                 let fut = Python::with_gil(|py| {
-                    pyo3_asyncio::tokio::into_future(transformed.0.as_ref(py))
+                    pyo3_asyncio::tokio::into_future(transformed.0)
                 }).into_teo_result()?;
                 let _ = fut.await.into_teo_result()?;
             }
@@ -60,11 +61,11 @@ impl App {
                 let callback = callback_owned.as_ref(py);
                 let transformed_py = callback.call0()?;
                 let is_coroutine = is_coroutine(transformed_py, py)?;
-                Ok((transformed_py.into_py(py), is_coroutine))
+                Ok((transformed_py, is_coroutine))
             }).into_teo_result()?;
             if transformed.1 {
                 let fut = Python::with_gil(|py| {
-                    pyo3_asyncio::tokio::into_future(transformed.0.as_ref(py))
+                    pyo3_asyncio::tokio::into_future(transformed.0)
                 }).into_teo_result()?;
                 let _ = fut.await.into_teo_result()?;
             }
@@ -75,12 +76,13 @@ impl App {
 
     fn run<'p>(&'static self, py: Python<'p>) -> PyResult<&'p PyAny> {
         future_into_py(py, async move {
-            self.teo_app.prepare_for_run().await.into_py_result(py)?;
+            self.teo_app.prepare_for_run().await.into_py_result_with_gil()?;
             Python::with_gil(|py| {
-                synthesize_dynamic_python_classes(&self.teo_app, py)
+                synthesize_dynamic_python_classes(py, &self.teo_app)?;
+                Ok(())
             })?;
             match self.teo_app.run_without_prepare().await {
-                Ok(()) => Ok(()),
+                Ok(()) => Ok::<(), PyErr>(()),
                 Err(err) => Err(PyRuntimeError::new_err(err.to_string())),
             }
         })

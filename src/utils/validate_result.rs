@@ -8,6 +8,6 @@ pub fn validate_result(value: Value) -> Result<Validity> {
         Value::Null => Validity::Valid,
         Value::String(s) => Validity::Invalid(s),
         Value::Bool(b) => Validity::from(b),
-        _ => return Err(Error::custom_validation_error("return value of validate callback is not expected")),
+        _ => return Err(Error::new("return value of validate callback is not expected")),
     })
 }
