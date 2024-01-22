@@ -9,6 +9,7 @@ use pyo3::{pyclass, pymethods, PyObject, Python, PyResult, IntoPy};
 use teo::prelude::response::Response as TeoResponse;
 
 #[pyclass]
+#[derive(Clone)]
 pub struct Response {
     pub(crate) teo_response: TeoResponse,
 }

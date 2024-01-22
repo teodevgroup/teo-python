@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, Python, PyResult, ffi::PyObject, types::PyDict, IntoPy};
+use pyo3::{pyclass, pymethods, Python, PyResult, PyObject, types::PyDict, IntoPy};
 use teo::prelude::handler::r#match::HandlerMatch as TeoHandlerMatch;
 
 #[pyclass]
@@ -9,12 +9,6 @@ pub struct HandlerMatch {
 /// Handler match.
 #[pymethods]
 impl HandlerMatch {
-
-    pub(crate) fn new(teo_inner: &'static TeoHandlerMatch) -> Self {
-        Self {
-            teo_inner
-        }
-    }
 
     pub fn path(&self) -> Vec<&str> {
         self.teo_inner.path()

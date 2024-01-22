@@ -13,7 +13,7 @@ use teo::prelude::{Namespace, Value, model, transaction};
 use crate::dynamic::model_object_wrapper::ModelObjectWrapper;
 
 use crate::object::value::{teo_value_to_py_any, py_any_to_teo_value};
-use crate::result::IntoPyResult;
+use crate::result::{IntoPyResult, IntoPyResultWithGil};
 use crate::utils::check_py_dict::check_py_dict;
 
 use self::model_ctx_wrapper::ModelCtxWrapper;
@@ -115,17 +115,17 @@ pub(crate) fn py_ctx_object_from_teo_transaction_ctx(py: Python<'_>, transaction
 }
 
 pub(crate) fn teo_model_ctx_from_py_model_class_object(py: Python<'_>, model_class_object: PyObject) -> PyResult<model::Ctx> {
-    let wrapper: &ModelCtxWrapper = model_class_object.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+    let wrapper: ModelCtxWrapper = model_class_object.getattr(py, "__teo_model_ctx__")?.extract(py)?;
     Ok(wrapper.ctx.clone())
 }
 
 pub(crate) fn teo_model_object_from_py_model_object(py: Python<'_>, model_class_object: PyObject) -> PyResult<model::Object> {
-    let wrapper: &ModelObjectWrapper = model_class_object.getattr(py, "__teo_object__")?.extract(py)?;
+    let wrapper: ModelObjectWrapper = model_class_object.getattr(py, "__teo_object__")?.extract(py)?;
     Ok(wrapper.object.clone())
 }
 
 pub(crate) fn teo_transaction_ctx_from_py_ctx_object(py: Python<'_>, ctx_object: PyObject) -> PyResult<transaction::Ctx> {
-    let wrapper: &TransactionCtxWrapper = ctx_object.getattr(py, "__teo_transaction_ctx__")?.extract(py)?;
+    let wrapper: TransactionCtxWrapper = ctx_object.getattr(py, "__teo_transaction_ctx__")?.extract(py)?;
     Ok(wrapper.ctx.clone())
 }
 
@@ -216,17 +216,20 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
     for model in namespace.models.values() {
         let model_name = model.path().join(".");
         let model_property_name = model.path().last().unwrap().to_snake_case();
-        let model_property = PyCFunction::new_closure(py, model_name, None, move |args, _kwargs| {
-            let slf = args.get_item(0)?;
-            let transaction_ctx_wrapper: &TransactionCtxWrapper = slf.getattr("__teo_transaction_ctx__")?.extract()?;
-            let model_ctx = transaction_ctx_wrapper.ctx.model_ctx_for_model_at_path(&model.path()).unwrap();
-            let model_class_class = get_model_class_class(py, &model_name)?;
-            let model_class_object = model_class_class.call_method1(py, "__new__", (model_class_class.as_ref(py),))?;
-            model_class_object.setattr(py, "__teo_model_ctx__", ModelCtxWrapper::new(model_ctx))?;
-            Ok(model_class_object)
+        let model_property = PyCFunction::new_closure(py, Some(model_name.as_str()), None, move |args, _kwargs| {
+            let model_class_object = Python::with_gil(|py| {
+                let slf = args.get_item(0)?;
+                let transaction_ctx_wrapper: TransactionCtxWrapper = slf.getattr("__teo_transaction_ctx__")?.extract()?;
+                let model_ctx = transaction_ctx_wrapper.ctx.model_ctx_for_model_at_path(&model.path()).unwrap();
+                let model_class_class = get_model_class_class(py, &model_name)?;
+                let model_class_object = model_class_class.call_method1(py, "__new__", (model_class_class.as_ref(py),))?;
+                model_class_object.setattr(py, "__teo_model_ctx__", ModelCtxWrapper::new(model_ctx))?;
+                Ok::<PyObject, PyErr>(model_class_object)
+            })?;
+            Ok::<PyObject, PyErr>(model_class_object)
         })?;
         let model_property_wrapped = property_wrapper.call1((model_property,))?;
-        ctx_class.setattr(py, model_property_name, model_property_wrapped)?;
+        ctx_class.setattr(py, model_property_name.as_str(), model_property_wrapped)?;
         let model_class_class = get_model_class_class(py, &model_name)?;
         // find unique
         let find_unique = find_unique_function(&model_name, py)?;
@@ -238,23 +241,26 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
         let find_many = find_many_function(&model_name, py)?;
         model_class_class.setattr(py, "find_many", find_many)?;
         // __repr__
-        let repr = repr_function(&model_name, model_class_class.as_ref(py), py)?;
-        model_class_class.setattr(py, "__repr__", repr)?;
+        // let repr = repr_function(&model_name, model_class_class.as_ref(py), py)?;
+        // model_class_class.setattr(py, "__repr__", repr)?;
         let model_object_class = get_model_object_class(py, &model_name)?;
 
     }
     for namespace in namespace.namespaces.values() {
         let namespace_name = namespace.path().join(".");
-        let namespace_property = PyCFunction::new_closure(py, namespace_name, None, move |args, _kwargs| {
-            let slf = args.get_item(0)?;
-            let transaction_ctx_wrapper: &TransactionCtxWrapper = slf.getattr("__teo_transaction_ctx__")?.extract()?;
-            let next_ctx_class = get_ctx_class(py, &namespace_name)?;
-            let next_ctx_object = next_ctx_class.call_method1(py, "__new__", (next_ctx_class.as_ref(py),))?;
-            next_ctx_object.setattr(py, "__teo_transaction_ctx__", transaction_ctx_wrapper.clone())?;
-            Ok(next_ctx_object)
+        let namespace_property = PyCFunction::new_closure(py, Some(namespace_name.as_str()), None, move |args, _kwargs| {
+            let next_ctx_object = Python::with_gil(|py| {
+                let slf = args.get_item(0)?;
+                let transaction_ctx_wrapper: TransactionCtxWrapper = slf.getattr("__teo_transaction_ctx__")?.extract()?;
+                let next_ctx_class = get_ctx_class(py, &namespace_name)?;
+                let next_ctx_object = next_ctx_class.call_method1(py, "__new__", (next_ctx_class.as_ref(py),))?;
+                next_ctx_object.setattr(py, "__teo_transaction_ctx__", transaction_ctx_wrapper.clone())?;
+                Ok::<PyObject, PyErr>(next_ctx_object)
+            })?;
+            Ok::<PyObject, PyErr>(next_ctx_object)
         })?;
         let namespace_property_wrapped = property_wrapper.call1((namespace_property,))?;
-        ctx_class.setattr(py, namespace.path().last().unwrap().to_snake_case(), namespace_property_wrapped)?;
+        ctx_class.setattr(py, namespace.path().last().unwrap().to_snake_case().as_str(), namespace_property_wrapped)?;
     }
     // TODO: transaction
     ctx_class.setattr(py, "__teo_initialized__", true)?;
@@ -275,7 +281,7 @@ fn find_unique_function<'py>(model_name: &'static str, py: Python<'py>) -> PyRes
                 Value::Dictionary(IndexMap::new())
             };
             let coroutine = pyo3_asyncio::tokio::future_into_py(py, (|| async move {
-                let result: Option<model::Object> = model_ctx_wrapper.ctx.find_unique(&find_many_arg).await.into_py_result()?;
+                let result: Option<model::Object> = model_ctx_wrapper.ctx.find_unique(&find_many_arg).await.into_py_result_with_gil()?;
                 Python::with_gil(|py| {
                     match result {
                         Some(object) => {
@@ -305,7 +311,7 @@ fn find_first_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResu
                 Value::Dictionary(IndexMap::new())
             };
             let coroutine = pyo3_asyncio::tokio::future_into_py(py, (|| async move {
-                let result: Option<model::Object> = model_ctx_wrapper.ctx.find_first(&find_many_arg).await.into_py_result()?;
+                let result: Option<model::Object> = model_ctx_wrapper.ctx.find_first(&find_many_arg).await.into_py_result_with_gil()?;
                 Python::with_gil(|py| {
                     match result {
                         Some(object) => {
@@ -335,7 +341,7 @@ fn find_many_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResul
                 Value::Dictionary(IndexMap::new())
             };
             let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
-                let result: Vec<model::Object> = model_ctx_wrapper.ctx.find_many(&find_many_arg).await.into_py_result()?;
+                let result: Vec<model::Object> = model_ctx_wrapper.ctx.find_many(&find_many_arg).await.into_py_result_with_gil()?;
                 Python::with_gil(|py| {
                     let py_result = PyList::empty(py);
                     for object in result {
@@ -350,31 +356,31 @@ fn find_many_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResul
     })?)
 }
 
-fn repr_function<'py>(model_name: &'static str, cls: &'py PyAny, py: Python<'py>) -> PyResult<&'py PyCFunction> {
-    let function_name = Box::leak(Box::new(format!("{model_name}.__repr__"))).as_str();
-    Ok(PyCFunction::new_method_closure(py, cls, Some(function_name), Some("Represent."), move |args, kwargs| {
-        Python::with_gil(|py| {
-            println!("see args and kwargs: {:?} {:?}", args, kwargs);
-            let slf = args.get_item(0)?;
-            let object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
-            let object = &object_wrapper.object;
-            let mut fields = "".to_owned();
-            for (index, field) in object.model().fields().iter().enumerate() {
-                if index != 0 {
-                    fields += ", ";
-                }
-                let value = object.get_value(field.name()).into_py_result(py)?;
-                let py_object = teo_value_to_py_any(py, &value)?;
-                let py_repr_result = py_object.call_method0(py, "__repr__")?;
-                let inner_py_repr: &str = py_repr_result.extract(py)?;
-                fields += field.name();
-                fields += "=";
-                fields += inner_py_repr;
-            }
-            let result = format!("{}({})", object.model().name(), fields);
-            Ok::<String, PyErr>(result)
-        })
-    })?)
-}
+// fn repr_function<'py>(model_name: &'static str, cls: &'py PyAny, py: Python<'py>) -> PyResult<&'py PyCFunction> {
+//     let function_name = Box::leak(Box::new(format!("{model_name}.__repr__"))).as_str();
+//     Ok(PyCFunction::new_closure(py, cls, Some(function_name), Some("Represent."), move |args, kwargs| {
+//         Python::with_gil(|py| {
+//             println!("see args and kwargs: {:?} {:?}", args, kwargs);
+//             let slf = args.get_item(0)?;
+//             let object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
+//             let object = &object_wrapper.object;
+//             let mut fields = "".to_owned();
+//             for (index, field) in object.model().fields().iter().enumerate() {
+//                 if index != 0 {
+//                     fields += ", ";
+//                 }
+//                 let value = object.get_value(field.name()).into_py_result(py)?;
+//                 let py_object = teo_value_to_py_any(py, &value)?;
+//                 let py_repr_result = py_object.call_method0(py, "__repr__")?;
+//                 let inner_py_repr: &str = py_repr_result.extract(py)?;
+//                 fields += field.name();
+//                 fields += "=";
+//                 fields += inner_py_repr;
+//             }
+//             let result = format!("{}({})", object.model().name(), fields);
+//             Ok::<String, PyErr>(result)
+//         })
+//     })?)
+//}
 
 //__repr__
