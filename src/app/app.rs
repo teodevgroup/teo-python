@@ -15,12 +15,12 @@ pub struct App {
 impl App {
 
     #[new]
-    fn new(cls: &PyType, py: Python<'_>) -> PyResult<Self> {
-        Self::with_cli(cls, py, false)
+    fn new(py: Python<'_>) -> PyResult<Self> {
+        Self::with_cli(py, false)
     }
 
-    #[classmethod]
-    fn with_cli(_cls: &PyType, py: Python<'_>, cli: bool) -> PyResult<Self> {
+    #[staticmethod]
+    fn with_cli(py: Python<'_>, cli: bool) -> PyResult<Self> {
         let platform = PyModule::import(py, "platform")?;
         let python_version: Py<PyAny> = platform.getattr("python_version")?.into();
         let version_any = python_version.call0(py)?;

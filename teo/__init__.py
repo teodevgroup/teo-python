@@ -1,4 +1,4 @@
-from .teo import App, fetch_model_class
+from .teo import App
 from signal import signal, SIGINT
 from sys import exit
 
