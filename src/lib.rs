@@ -28,7 +28,14 @@ use crate::request::HandlerMatch;
 use crate::request::ctx::RequestCtx;
 
 #[pymodule]
-fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
+fn teo(py: Python, m: &PyModule) -> PyResult<()> {
+    py.run(r#"
+global teo_wrap_builtin
+def teo_wrap_builtin(cls, name, callable):
+    def wrapped(self, *args, **kwargs):
+        return callable(self, *args, **kwargs)
+    setattr(cls, name, wrapped)
+    "#, None, None)?;
     setup_dynamic_container()?;
     #[pyfunction]
     fn fetch_model_class_class(name: &str, py: Python) -> PyResult<PyObject> {

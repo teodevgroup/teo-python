@@ -5,6 +5,7 @@ pub mod model_ctx_wrapper;
 use std::collections::BTreeMap;
 use indexmap::IndexMap;
 use inflector::Inflector;
+use pyo3::ffi::PyTypeObject;
 use ::teo::prelude::App;
 use pyo3::{IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3::exceptions::PyRuntimeError;
@@ -210,6 +211,8 @@ pub(crate) fn synthesize_dynamic_nodejs_classes_for_namespace(py: Python<'_>, na
 }
 
 fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namespace: &'static Namespace) -> PyResult<()> {
+    let main = py.import("__main__")?;
+    let teo_wrap_builtin = main.getattr("teo_wrap_builtin")?;
     let builtins = py.import("builtins")?;
     let property_wrapper = builtins.getattr("property")?;
     let ctx_class = get_ctx_class(py, &namespace.path().join("."))?;
@@ -233,13 +236,13 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
         let model_class_class = get_model_class_class(py, &model_name)?;
         // find unique
         let find_unique = find_unique_function(&model_name, py)?;
-        model_class_class.setattr(py, "find_unique", find_unique)?;
+        teo_wrap_builtin.call1((model_class_class.as_ref(py), "find_unique", find_unique))?;
         // find first
         let find_first = find_first_function(&model_name, py)?;
-        model_class_class.setattr(py, "find_first", find_first)?;
+        teo_wrap_builtin.call1((model_class_class.as_ref(py), "find_first", find_first))?;
         // find many
         let find_many = find_many_function(&model_name, py)?;
-        model_class_class.setattr(py, "find_many", find_many)?;
+        teo_wrap_builtin.call1((model_class_class.as_ref(py), "find_many", find_many))?;
         // __repr__
         // let repr = repr_function(&model_name, model_class_class.as_ref(py), py)?;
         // model_class_class.setattr(py, "__repr__", repr)?;
