@@ -13,12 +13,7 @@ pub fn await_coroutine_if_needed(py: Python<'_>, transformed_py: &PyAny) -> PyRe
             }
         );
         let f = into_future_with_locals(&TaskLocals::new(event_loop), transformed_py)?;
-        // pyo3_asyncio::tokio::run(py, async move {
-        //     println!("HERE HOW?");
-        //     f.await
-        // })?
         pyo3_asyncio::tokio::run_until_complete(event_loop, async move {
-            println!("HERE HOW?");
             f.await
         })?
     } else {
