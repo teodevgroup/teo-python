@@ -1,9 +1,7 @@
 pub mod header_map;
 
 use std::path::PathBuf;
-
 use crate::object::value::{teo_value_to_py_any, py_any_to_teo_value};
-
 use self::header_map::ReadWriteHeaderMap;
 use pyo3::{pyclass, pymethods, PyObject, Python, PyResult, IntoPy};
 use teo::prelude::response::Response as TeoResponse;

@@ -10,7 +10,6 @@ pub struct App {
     teo_app: TeoApp,
 }
 
-
 #[pymethods]
 impl App {
 
