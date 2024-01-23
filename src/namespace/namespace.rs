@@ -1,7 +1,7 @@
 use pyo3::{pyclass, pymethods, PyResult, PyObject, Python, Py, PyErr};
-use teo::prelude::{Namespace as TeoNamespace, Model as TeoModel, model::Field as TeoField, model::Relation as TeoRelation, model::Property as TeoProperty, Enum as TeoEnum, Member as TeoEnumMember};
+use teo::prelude::{Namespace as TeoNamespace, Model as TeoModel, model::Field as TeoField, model::Relation as TeoRelation, model::Property as TeoProperty, Enum as TeoEnum, Member as TeoEnumMember, request, handler::Group as TeoHandlerGroup};
 
-use crate::{utils::check_callable::check_callable, object::arguments::teo_args_to_py_args, model::{model::Model, field::field::Field, relation::relation::Relation, property::property::Property}, result::IntoTeoResult, r#enum::{r#enum::Enum, member::member::EnumMember}};
+use crate::{utils::{check_callable::check_callable, await_coroutine_if_needed::await_coroutine_if_needed}, object::{arguments::teo_args_to_py_args, value::teo_value_to_py_any}, model::{model::Model, field::field::Field, relation::relation::Relation, property::property::Property}, result::{IntoTeoResult, IntoTeoPathResult}, r#enum::{r#enum::Enum, member::member::EnumMember}, request::Request, dynamic::py_ctx_object_from_teo_transaction_ctx, response::Response, handler::group::HandlerGroup};
 
 #[pyclass]
 pub struct Namespace {
@@ -147,6 +147,46 @@ impl Namespace {
                 Ok::<(), PyErr>(())
             }).into_teo_result()?;
             Ok(())
+        });
+        Ok(())
+    }
+
+    pub fn define_handler(&mut self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
+        check_callable(callback.as_ref(py))?;
+        let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
+        self.teo_namespace.define_handler(name.as_str(), move |ctx: request::Ctx| async move {
+            let result: PyResult<_> = Python::with_gil(|py| {
+                let request = Request {
+                    teo_request: ctx.request().clone()
+                };
+                let body = teo_value_to_py_any(py, &ctx.body())?;
+                let py_ctx = py_ctx_object_from_teo_transaction_ctx(py, ctx.transaction_ctx(), "")?;
+                let result = callback_owned.call1(py, (request, body, py_ctx))?;
+                let awaited_result = await_coroutine_if_needed(py, result.as_ref(py))?;
+                let response: Response = awaited_result.extract(py)?;
+                Ok(response.teo_response.clone())
+            });
+            result.into_teo_path_result()
+        });
+        Ok(())
+    }
+
+    pub fn define_handler_group(&mut self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
+        check_callable(callback.as_ref(py))?;
+        self.teo_namespace.define_handler_group(name.as_str(), |teo_handler_group: &mut TeoHandlerGroup| {
+            let static_model: &'static mut TeoHandlerGroup = unsafe { &mut *(teo_handler_group as * mut TeoHandlerGroup) };
+            let handler_group = HandlerGroup { teo_handler_group: static_model };
+            callback.call1(py, (handler_group,)).into_teo_result().unwrap();
+        });
+        Ok(())
+    }
+
+    pub fn define_model_handler_group(&mut self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
+        check_callable(callback.as_ref(py))?;
+        self.teo_namespace.define_model_handler_group(name.as_str(), |teo_handler_group: &mut TeoHandlerGroup| {
+            let static_model: &'static mut TeoHandlerGroup = unsafe { &mut *(teo_handler_group as * mut TeoHandlerGroup) };
+            let handler_group = HandlerGroup { teo_handler_group: static_model };
+            callback.call1(py, (handler_group,)).into_teo_result().unwrap();
         });
         Ok(())
     }

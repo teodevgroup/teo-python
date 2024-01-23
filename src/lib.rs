@@ -23,6 +23,9 @@ use crate::model::model::Model;
 use crate::model::field::field::Field;
 use crate::model::relation::relation::Relation;
 use crate::model::property::property::Property;
+use crate::handler::group::HandlerGroup;
+use crate::request::HandlerMatch;
+use crate::request::ctx::RequestCtx;
 
 #[pymodule]
 fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -44,6 +47,7 @@ fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fetch_ctx_class, m)?)?;
     m.add_class::<App>()?;
     m.add_class::<Namespace>()?;
+    m.add_class::<HandlerGroup>()?;
     m.add_class::<Request>()?;
     m.add_class::<Response>()?;
     m.add_class::<ReadOnlyHeaderMap>()?;
@@ -54,5 +58,7 @@ fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Field>()?;
     m.add_class::<Relation>()?;
     m.add_class::<Property>()?;
+    m.add_class::<HandlerMatch>()?;
+    m.add_class::<RequestCtx>()?;
     Ok(())
 }
