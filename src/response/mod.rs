@@ -1,4 +1,4 @@
-mod header_map;
+pub mod header_map;
 
 use std::path::PathBuf;
 

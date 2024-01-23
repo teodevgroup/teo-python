@@ -12,9 +12,17 @@ pub mod response;
 pub mod middleware;
 
 use pyo3::prelude::*;
+use request::{Request, ReadOnlyHeaderMap};
+use response::{Response, header_map::ReadWriteHeaderMap};
 use crate::dynamic::{get_model_class_class, get_model_object_class, get_ctx_class, setup_dynamic_container};
 use crate::app::app::App;
 use crate::namespace::namespace::Namespace;
+use crate::r#enum::r#enum::Enum;
+use crate::r#enum::member::member::EnumMember;
+use crate::model::model::Model;
+use crate::model::field::field::Field;
+use crate::model::relation::relation::Relation;
+use crate::model::property::property::Property;
 
 #[pymodule]
 fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -36,5 +44,15 @@ fn teo(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fetch_ctx_class, m)?)?;
     m.add_class::<App>()?;
     m.add_class::<Namespace>()?;
+    m.add_class::<Request>()?;
+    m.add_class::<Response>()?;
+    m.add_class::<ReadOnlyHeaderMap>()?;
+    m.add_class::<ReadWriteHeaderMap>()?;
+    m.add_class::<Enum>()?;
+    m.add_class::<EnumMember>()?;
+    m.add_class::<Model>()?;
+    m.add_class::<Field>()?;
+    m.add_class::<Relation>()?;
+    m.add_class::<Property>()?;
     Ok(())
 }
