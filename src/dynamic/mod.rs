@@ -235,14 +235,17 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
         ctx_class.setattr(py, model_property_name.as_str(), model_property_wrapped)?;
         let model_class_class = get_model_class_class(py, &model_name)?;
         // find unique
-        let find_unique = find_unique_function(&model_name, py)?;
+        let find_unique = find_unique_function(py)?;
         teo_wrap_builtin.call1((model_class_class.as_ref(py), "find_unique", find_unique))?;
         // find first
-        let find_first = find_first_function(&model_name, py)?;
+        let find_first = find_first_function(py)?;
         teo_wrap_builtin.call1((model_class_class.as_ref(py), "find_first", find_first))?;
         // find many
-        let find_many = find_many_function(&model_name, py)?;
+        let find_many = find_many_function(py)?;
         teo_wrap_builtin.call1((model_class_class.as_ref(py), "find_many", find_many))?;
+        // create
+        let create = create_function(py)?;
+        teo_wrap_builtin.call1((model_class_class.as_ref(py), "create", create))?;
         // __repr__
         // let repr = repr_function(&model_name, model_class_class.as_ref(py), py)?;
         // model_class_class.setattr(py, "__repr__", repr)?;
@@ -271,7 +274,7 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
 }
 
 
-fn find_unique_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResult<&'py PyCFunction> {
+fn find_unique_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
     Ok(PyCFunction::new_closure(py, Some("find_unique"), Some("Find a unique record."), move |args, _kwargs| {
         Python::with_gil(|py| {
             let slf = args.get_item(0)?.into_py(py);
@@ -301,7 +304,7 @@ fn find_unique_function<'py>(model_name: &'static str, py: Python<'py>) -> PyRes
     })?)
 }
 
-fn find_first_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResult<&'py PyCFunction> {
+fn find_first_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
     Ok(PyCFunction::new_closure(py, Some("find_first"), Some("Find a record."), move |args, _kwargs| {
         Python::with_gil(|py| {
             let slf = args.get_item(0)?.into_py(py);
@@ -331,7 +334,7 @@ fn find_first_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResu
     })?)
 }
 
-fn find_many_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResult<&'py PyCFunction> {
+fn find_many_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
     Ok(PyCFunction::new_closure(py, Some("find_many"), Some("Find many records."), move |args, _kwargs| {
         Python::with_gil(|py| {
             let slf = args.get_item(0)?.into_py(py);
@@ -352,6 +355,30 @@ fn find_many_function<'py>(model_name: &'static str, py: Python<'py>) -> PyResul
                         py_result.append(instance)?;
                     }
                     Ok(py_result.into_py(py))
+                })
+            })())?;
+            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+        })
+    })?)
+}
+
+fn create_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("create"), Some("Create a new record."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?.into_py(py);
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let create_arg = if args.len() > 1 {
+                let py_dict = args.get_item(1)?;
+                check_py_dict(py_dict)?;
+                py_any_to_teo_value(py, py_dict)?
+            } else {
+                Value::Dictionary(IndexMap::new())
+            };
+            let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                let result: model::Object = model_ctx_wrapper.ctx.create_object(&create_arg).await.into_py_result_with_gil()?;
+                Python::with_gil(|py| {
+                    let instance = py_model_object_from_teo_model_object(py, result)?;
+                    Ok(instance.into_py(py))
                 })
             })())?;
             Ok::<PyObject, PyErr>(coroutine.into_py(py))
