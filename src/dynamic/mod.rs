@@ -265,11 +265,24 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
         let is_modified = is_modified_function(py)?;
         teo_wrap_builtin.call1((model_object_class.as_ref(py), "is_modified", is_modified))?;
         // set
+        let set = set_function(py)?;
+        teo_wrap_builtin.call1((model_object_class.as_ref(py), "set", set))?;
         // update
+        let update = update_function(py)?;
+        teo_wrap_builtin.call1((model_object_class.as_ref(py), "update", update))?;
         // save
+        let save = save_function(py)?;
+        teo_wrap_builtin.call1((model_object_class.as_ref(py), "save", save))?;
         // delete
+        let delete = delete_function(py)?;
+        teo_wrap_builtin.call1((model_object_class.as_ref(py), "delete", delete))?;
         // to teon
+        let to_teon = to_teon_function(py)?;
+        teo_wrap_builtin.call1((model_object_class.as_ref(py), "to_teon", to_teon))?;
         // __repr__
+        let repr = repr_function(py)?;
+        teo_wrap_builtin.call1((model_object_class.as_ref(py), "__repr__", repr))?;
+
     }
     for namespace in namespace.namespaces.values() {
         let namespace_name = Box::leak(Box::new(namespace.path().join("."))).as_str();
@@ -499,31 +512,115 @@ fn is_modified_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
     })?)
 }
 
-// fn repr_function<'py>(model_name: &'static str, cls: &'py PyAny, py: Python<'py>) -> PyResult<&'py PyCFunction> {
-//     let function_name = Box::leak(Box::new(format!("{model_name}.__repr__"))).as_str();
-//     Ok(PyCFunction::new_closure(py, cls, Some(function_name), Some("Represent."), move |args, kwargs| {
-//         Python::with_gil(|py| {
-//             println!("see args and kwargs: {:?} {:?}", args, kwargs);
-//             let slf = args.get_item(0)?;
-//             let object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
-//             let object = &object_wrapper.object;
-//             let mut fields = "".to_owned();
-//             for (index, field) in object.model().fields().iter().enumerate() {
-//                 if index != 0 {
-//                     fields += ", ";
-//                 }
-//                 let value = object.get_value(field.name()).into_py_result(py)?;
-//                 let py_object = teo_value_to_py_any(py, &value)?;
-//                 let py_repr_result = py_object.call_method0(py, "__repr__")?;
-//                 let inner_py_repr: &str = py_repr_result.extract(py)?;
-//                 fields += field.name();
-//                 fields += "=";
-//                 fields += inner_py_repr;
-//             }
-//             let result = format!("{}({})", object.model().name(), fields);
-//             Ok::<String, PyErr>(result)
-//         })
-//     })?)
-//}
+fn set_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("set"), Some("Set values to this object."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?.into_py(py);
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+            let set_arg = if args.len() > 1 {
+                let py_dict = args.get_item(1)?;
+                check_py_dict(py_dict)?;
+                py_any_to_teo_value(py, py_dict)?
+            } else {
+                Value::Dictionary(IndexMap::new())
+            };
+            let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                let result: () = model_object_wrapper.object.set_teon(&set_arg).await.into_py_result_with_gil()?;
+                Python::with_gil(|py| {
+                    Ok(result.into_py(py))
+                })
+            })())?;
+            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+        })
+    })?)
+}
 
-//__repr__
+fn update_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("update"), Some("Update values on this object."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?.into_py(py);
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+            let set_arg = if args.len() > 1 {
+                let py_dict = args.get_item(1)?;
+                check_py_dict(py_dict)?;
+                py_any_to_teo_value(py, py_dict)?
+            } else {
+                Value::Dictionary(IndexMap::new())
+            };
+            let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                let result: () = model_object_wrapper.object.update_teon(&set_arg).await.into_py_result_with_gil()?;
+                Python::with_gil(|py| {
+                    Ok(result.into_py(py))
+                })
+            })())?;
+            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+        })
+    })?)
+}
+
+fn save_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("save"), Some("Save this object."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?.into_py(py);
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+            let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                let result: () = model_object_wrapper.object.save().await.into_py_result_with_gil()?;
+                Python::with_gil(|py| {
+                    Ok(result.into_py(py))
+                })
+            })())?;
+            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+        })
+    })?)
+}
+
+fn delete_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("delete"), Some("Delete this object."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?.into_py(py);
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+            let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                let result: () = model_object_wrapper.object.delete().await.into_py_result_with_gil()?;
+                Python::with_gil(|py| {
+                    Ok(result.into_py(py))
+                })
+            })())?;
+            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+        })
+    })?)
+}
+
+fn to_teon_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("to_teon"), Some("Convert this object to a Teon object."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?.into_py(py);
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+            let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                let result: Value = model_object_wrapper.object.to_teon().await.into_py_result_with_gil()?;
+                Python::with_gil(|py| {
+                    teo_value_to_py_any(py, &result)
+                })
+            })())?;
+            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+        })
+    })?)
+}
+
+fn repr_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("__repr__"), None, move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?.into_py(py);
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+            let result = PyDict::new(py);
+            let value_map = model_object_wrapper.object.inner.value_map.lock().unwrap();
+            for (k, v) in value_map.iter() {
+                result.set_item(k, teo_value_to_py_any(py, v)?)?;
+            }
+            let dict_repr = result.call_method("__repr__", (), None)?;
+            let dict_repr_str: &str = dict_repr.extract()?;
+            let prefix = format!("{}(", model_object_wrapper.object.model().path().join("."));
+            let suffix = ")";
+            Ok::<PyObject, PyErr>(format!("{}{}{}", prefix, dict_repr_str, suffix).into_py(py))
+        })
+    })?)
+}
