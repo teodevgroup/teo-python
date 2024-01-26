@@ -233,6 +233,7 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
         })?;
         let model_property_wrapped = property_wrapper.call1((model_property,))?;
         ctx_class.setattr(py, model_property_name.as_str(), model_property_wrapped)?;
+        // class object methods
         let model_class_class = get_model_class_class(py, &model_name)?;
         // find unique
         let find_unique = find_unique_function(py)?;
@@ -246,11 +247,29 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
         // create
         let create = create_function(py)?;
         teo_wrap_builtin.call1((model_class_class.as_ref(py), "create", create))?;
-        // __repr__
-        // let repr = repr_function(&model_name, model_class_class.as_ref(py), py)?;
-        // model_class_class.setattr(py, "__repr__", repr)?;
+        // count
+        let count = count_function(py)?;
+        teo_wrap_builtin.call1((model_class_class.as_ref(py), "count", count))?;
+        // aggregate
+        let aggregate = aggregate_function(py)?;
+        teo_wrap_builtin.call1((model_class_class.as_ref(py), "aggregate", aggregate))?;
+        // group by
+        let group_by = group_by_function(py)?;
+        teo_wrap_builtin.call1((model_class_class.as_ref(py), "group_by", group_by))?;
+        // model object methods
         let model_object_class = get_model_object_class(py, &model_name)?;
-
+        // is new
+        let is_new = is_new_function(py)?;
+        teo_wrap_builtin.call1((model_object_class.as_ref(py), "is_new", is_new))?;
+        // is modified
+        let is_modified = is_modified_function(py)?;
+        teo_wrap_builtin.call1((model_object_class.as_ref(py), "is_modified", is_modified))?;
+        // set
+        // update
+        // save
+        // delete
+        // to teon
+        // __repr__
     }
     for namespace in namespace.namespaces.values() {
         let namespace_name = Box::leak(Box::new(namespace.path().join("."))).as_str();
@@ -382,6 +401,100 @@ fn create_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
                 })
             })())?;
             Ok::<PyObject, PyErr>(coroutine.into_py(py))
+        })
+    })?)
+}
+
+fn count_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("count"), Some("Count records."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?.into_py(py);
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let count_arg = if args.len() > 1 {
+                let py_dict = args.get_item(1)?;
+                check_py_dict(py_dict)?;
+                py_any_to_teo_value(py, py_dict)?
+            } else {
+                Value::Dictionary(IndexMap::new())
+            };
+            let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                let result: usize = model_ctx_wrapper.ctx.count(&count_arg).await.into_py_result_with_gil()?;
+                Python::with_gil(|py| {
+                    Ok(result.into_py(py))
+                })
+            })())?;
+            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+        })
+    })?)
+}
+
+fn aggregate_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("aggregate"), Some("Aggregate on records."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?.into_py(py);
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let aggregate_arg = if args.len() > 1 {
+                let py_dict = args.get_item(1)?;
+                check_py_dict(py_dict)?;
+                py_any_to_teo_value(py, py_dict)?
+            } else {
+                Value::Dictionary(IndexMap::new())
+            };
+            let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                let result: Value = model_ctx_wrapper.ctx.aggregate(&aggregate_arg).await.into_py_result_with_gil()?;
+                Python::with_gil(|py| {
+                    teo_value_to_py_any(py, &result)
+                })
+            })())?;
+            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+        })
+    })?)
+}
+
+fn group_by_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("group_by"), Some("Group by on records."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?.into_py(py);
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let group_by_arg = if args.len() > 1 {
+                let py_dict = args.get_item(1)?;
+                check_py_dict(py_dict)?;
+                py_any_to_teo_value(py, py_dict)?
+            } else {
+                Value::Dictionary(IndexMap::new())
+            };
+            let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                let result: Vec<Value> = model_ctx_wrapper.ctx.group_by(&group_by_arg).await.into_py_result_with_gil()?;
+                Python::with_gil(|py| {
+                    let py_result = PyList::empty(py);
+                    for value in result {
+                        let instance = teo_value_to_py_any(py, &value)?;
+                        py_result.append(instance)?;
+                    }
+                    Ok(py_result.into_py(py))
+                })
+            })())?;
+            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+        })
+    })?)
+}
+
+fn is_new_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("is_new"), Some("Whether this model object is new."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?.into_py(py);
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+            Ok::<PyObject, PyErr>(model_object_wrapper.object.is_new().into_py(py))
+        })
+    })?)
+}
+
+fn is_modified_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("is_modified"), Some("Whether this model object is modified."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?.into_py(py);
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+            Ok::<PyObject, PyErr>(model_object_wrapper.object.is_modified().into_py(py))
         })
     })?)
 }
