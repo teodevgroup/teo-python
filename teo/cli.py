@@ -3,5 +3,5 @@ from teo import App
 
 
 def main():
-    app = App()
+    app = App.with_cli(True)
     run(app.run())
