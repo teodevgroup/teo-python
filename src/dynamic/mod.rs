@@ -282,7 +282,33 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
         // __repr__
         let repr = repr_function(py)?;
         teo_wrap_builtin.call1((model_object_class.as_ref(py), "__repr__", repr))?;
-
+        // fields
+        for field in model.fields() {
+            let field_name = Box::leak(Box::new(field.name.clone())).as_str();
+            let field_property_getter = PyCFunction::new_closure(py, Some(field_name), None, move |args, _kwargs| {
+                Python::with_gil(|py| {
+                    let slf = args.get_item(0)?.into_py(py);
+                    let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                    let value: Value = model_object_wrapper.object.get_value(field_name).unwrap();
+                    Ok::<PyObject, PyErr>(teo_value_to_py_any(py, &value)?)    
+                })
+            })?;
+            let field_property_wrapped = property_wrapper.call1((field_property_getter,))?;
+            let field_property_setter = PyCFunction::new_closure(py, Some(field_name), None, move |args, _kwargs| {
+                Python::with_gil(|py| {
+                    let slf = args.get_item(0)?.into_py(py);
+                    let value = args.get_item(1)?.into_py(py);
+                    let value = py_any_to_teo_value(py, value.as_ref(py))?;
+                    let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                    model_object_wrapper.object.set_value(field_name, value).unwrap();
+                    Ok::<(), PyErr>(())    
+                })
+            })?;
+            let field_property_wrapped = field_property_wrapped.call_method1("setter", (field_property_setter,))?;
+            model_object_class.setattr(py, field_name, field_property_wrapped)?;
+        }
+        // relations
+        // properties
     }
     for namespace in namespace.namespaces.values() {
         let namespace_name = Box::leak(Box::new(namespace.path().join("."))).as_str();
