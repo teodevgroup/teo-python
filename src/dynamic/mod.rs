@@ -16,7 +16,8 @@ use crate::dynamic::model_object_wrapper::ModelObjectWrapper;
 use crate::object::model::teo_model_object_to_py_any;
 use crate::object::py_any_to_teo_object;
 use crate::object::value::{teo_value_to_py_any, py_any_to_teo_value};
-use crate::result::{IntoPyResult, IntoPyResultWithGil};
+use crate::result::{IntoPyResult, IntoPyResultWithGil, IntoTeoPathResult};
+use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed;
 use crate::utils::check_py_dict::check_py_dict;
 
 use self::model_ctx_wrapper::ModelCtxWrapper;
@@ -456,7 +457,6 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
                     })
                 })?;
                 teo_wrap_builtin.call1((model_object_class.as_ref(py), set_name, set))?;
-
             }
         }
         // properties
@@ -517,7 +517,30 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
         let namespace_property_wrapped = property_wrapper.call1((namespace_property,))?;
         ctx_class.setattr(py, namespace.path().last().unwrap().to_snake_case().as_str(), namespace_property_wrapped)?;
     }
-    // TODO: transaction
+    // transaction
+    let transaction = PyCFunction::new_closure(py, Some("transaction"), Some("Run transaction."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?;
+            let transaction_ctx_wrapper: TransactionCtxWrapper = slf.getattr("__teo_transaction_ctx__")?.extract()?;
+            let argument = args.get_item(1)?.into_py(py);
+            let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                let retval = transaction_ctx_wrapper.ctx.run_transaction(|ctx: transaction::Ctx| async move {
+                    let ctx_python = Python::with_gil(|py| {
+                        let args = py_ctx_object_from_teo_transaction_ctx(py, ctx, "")?;
+                        Ok(args)
+                    })?;
+                    let coroutine_or_value = argument.call1(py, (ctx_python,)).into_teo_path_result()?;
+                    await_coroutine_if_needed(py, coroutine_or_value.as_ref(py)).into_teo_path_result()
+                }).await.into_py_result_with_gil()?;
+                Python::with_gil(|py| {
+                    Ok::<PyObject, PyErr>(retval.into_py(py))    
+                })
+            })())?;
+            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+        })
+    })?;
+    teo_wrap_builtin.call1((ctx_class.as_ref(py), "transaction", transaction))?;
+    // finish
     ctx_class.setattr(py, "__teo_initialized__", true)?;
     Ok(())
 }
