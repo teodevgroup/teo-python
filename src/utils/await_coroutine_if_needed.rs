@@ -1,6 +1,20 @@
-use pyo3::{IntoPy, PyAny, PyObject, PyResult, Python};
+use pyo3::{IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_asyncio::{into_future_with_locals, TaskLocals};
 use crate::utils::is_coroutine::is_coroutine;
+
+// fn check_event_loop() -> PyResult<Option<PyObject>> {
+//     Python::with_gil(|py| {
+//         let asyncio = py.import("asyncio")?;
+//         let event_loop = asyncio.call_method0("get_event_loop");
+//         if event_loop.is_ok() {
+//             return Ok(None)
+//         } else {
+//             let event_loop = asyncio.call_method0("new_event_loop")?;
+//             asyncio.call_method1("set_event_loop", (event_loop,))?;
+//             return Ok(Some(event_loop.into_py(py)))
+//         }
+//     })
+// }
 
 pub async fn await_coroutine_if_needed_async_value(transformed_py: PyObject) -> PyResult<PyObject> {
     let is_coroutine_bool = Python::with_gil(|py| {
@@ -8,7 +22,13 @@ pub async fn await_coroutine_if_needed_async_value(transformed_py: PyObject) -> 
     })?;
     if is_coroutine_bool {
         let f = Python::with_gil(|py| {
-            pyo3_asyncio::tokio::into_future(transformed_py.as_ref(py))
+            let event_loop = pyo3_asyncio::tokio::get_current_loop(py)?;
+            let f = into_future_with_locals(&TaskLocals::new(event_loop), transformed_py.as_ref(py))?;
+            // pyo3_asyncio::tokio::run_until_complete(event_loop.as_ref(py), async move {
+            //     let result = f.await;
+            //     Ok(result)
+            // })?    
+            Ok::<_, PyErr>(f)
         })?;
         f.await
     } else {
