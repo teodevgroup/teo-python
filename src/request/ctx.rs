@@ -5,8 +5,9 @@ use crate::{object::value::teo_value_to_py_any, dynamic::py_ctx_object_from_teo_
 use super::{Request, HandlerMatch};
 
 #[pyclass]
+#[derive(Clone)]
 pub struct RequestCtx {
-    teo_inner: TeoRequestCtx,
+    pub(crate) teo_inner: TeoRequestCtx,
 }
 
 /// HTTP request.

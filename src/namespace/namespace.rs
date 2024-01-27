@@ -1,7 +1,7 @@
-use pyo3::{pyclass, pymethods, PyResult, PyObject, Python, Py, PyErr};
-use teo::prelude::{Namespace as TeoNamespace, Model as TeoModel, model::Field as TeoField, model::Relation as TeoRelation, model::Property as TeoProperty, Enum as TeoEnum, Member as TeoEnumMember, request, handler::Group as TeoHandlerGroup};
+use pyo3::{pyclass, pymethods, types::PyCFunction, IntoPy, Py, PyErr, PyObject, PyResult, Python};
+use teo::prelude::{handler::Group as TeoHandlerGroup, model::Field as TeoField, model::Property as TeoProperty, model::Relation as TeoRelation, request, Enum as TeoEnum, Member as TeoEnumMember, Middleware, Model as TeoModel, Namespace as TeoNamespace, Next};
 
-use crate::{utils::{check_callable::check_callable, await_coroutine_if_needed::await_coroutine_if_needed}, object::{arguments::teo_args_to_py_args, value::teo_value_to_py_any}, model::{model::Model, field::field::Field, relation::relation::Relation, property::property::Property}, result::{IntoTeoResult, IntoTeoPathResult}, r#enum::{r#enum::Enum, member::member::EnumMember}, request::Request, dynamic::py_ctx_object_from_teo_transaction_ctx, response::Response, handler::group::HandlerGroup};
+use crate::{utils::{check_callable::check_callable, await_coroutine_if_needed::await_coroutine_if_needed}, object::{arguments::teo_args_to_py_args, value::teo_value_to_py_any}, model::{model::Model, field::field::Field, relation::relation::Relation, property::property::Property}, result::{IntoPyResultWithGil, IntoTeoPathResult, IntoTeoResult}, r#enum::{r#enum::Enum, member::member::EnumMember}, request::{Request, RequestCtx}, dynamic::{py_ctx_object_from_teo_transaction_ctx, teo_transaction_ctx_from_py_ctx_object}, response::Response, handler::group::HandlerGroup};
 
 #[pyclass]
 pub struct Namespace {
@@ -187,6 +187,52 @@ impl Namespace {
             let static_model: &'static mut TeoHandlerGroup = unsafe { &mut *(teo_handler_group as * mut TeoHandlerGroup) };
             let handler_group = HandlerGroup { teo_handler_group: static_model };
             callback.call1(py, (handler_group,)).into_teo_result().unwrap();
+        });
+        Ok(())
+    }
+
+    pub fn define_middleware(&mut self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
+        let name = Box::leak(Box::new(name)).as_str();
+        check_callable(callback.as_ref(py))?;
+        let shared_callback = &*Box::leak(Box::new(callback));
+        self.teo_namespace.define_middleware(name, move |arguments| async move {
+            Python::with_gil(|py| {
+                let py_args = teo_args_to_py_args(py, &arguments)?;
+                let result_function = shared_callback.call1(py, (py_args,))?;
+                let shared_result_function = &*Box::leak(Box::new(result_function));
+                let wrapped_result = move |ctx: request::Ctx, next: &'static dyn Next| async move {
+                    Python::with_gil(|py| {
+                        let py_ctx = RequestCtx {
+                            teo_inner: ctx
+                        };
+                        let py_next = PyCFunction::new_closure(py, Some(name), None, |args, _kwargs| {
+                            Python::with_gil(|py| {
+                                let ctx: RequestCtx = args.get_item(0)?.extract()?;
+                                let teo_ctx = ctx.teo_inner.clone();
+                                let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async {
+                                    let result: teo::prelude::Response = next.call(teo_ctx).await.into_py_result_with_gil()?;
+                                    Python::with_gil(|py| {
+                                        let response = Response {
+                                            teo_response: result
+                                        };
+                                        Ok::<PyObject, PyErr>(response.into_py(py))    
+                                    })
+                                })())?;
+                                Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                            })
+                        }).unwrap();
+
+                        let coroutine = shared_result_function.call1(py, (py_ctx, py_next)).into_teo_result()?;
+                        let result = await_coroutine_if_needed(py, coroutine.as_ref(py)).into_teo_result()?;
+                        let response: Response = result.extract(py).into_teo_result()?;
+                        Ok(response.teo_response)
+                    })
+                };
+                let wrapped_box = Box::new(wrapped_result);
+                let wrapped_raw = Box::leak(wrapped_box);
+                let leak_static_result: &'static dyn Middleware = unsafe { &*(wrapped_raw as * const dyn Middleware) };
+                return Ok(leak_static_result);    
+            }).into_teo_result()
         });
         Ok(())
     }

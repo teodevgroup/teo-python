@@ -20,7 +20,7 @@ impl HandlerMatch {
 
     pub fn captures(&self, py: Python<'_>) -> PyResult<PyObject> {
         let captures_map = self.teo_inner.captures();
-        let mut py_dict = PyDict::new(py);
+        let py_dict = PyDict::new(py);
         for (k, value) in captures_map.iter() {
             py_dict.set_item(k, value)?;
         }

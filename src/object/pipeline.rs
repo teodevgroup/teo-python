@@ -1,5 +1,5 @@
 
-use pyo3::{pyclass, PyResult, Python, PyAny, IntoPy, PyObject};
+use pyo3::{pyclass, PyResult, Python, IntoPy, PyObject};
 use teo::prelude::Pipeline as TeoPipeline;
 
 #[pyclass]
