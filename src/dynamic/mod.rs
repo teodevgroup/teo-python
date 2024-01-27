@@ -16,7 +16,7 @@ use crate::object::model::teo_model_object_to_py_any;
 use crate::object::py_any_to_teo_object;
 use crate::object::value::{teo_value_to_py_any, py_any_to_teo_value};
 use crate::result::{IntoPyResultWithGil, IntoTeoPathResult};
-use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed;
+use crate::utils::await_coroutine_if_needed::{await_coroutine_if_needed, await_coroutine_if_needed_async, await_coroutine_if_needed_async_value};
 use crate::utils::check_py_dict::check_py_dict;
 
 use self::model_ctx_wrapper::ModelCtxWrapper;
@@ -528,9 +528,9 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
                     let user_retval = Python::with_gil(move |py| {
                         let ctx_python = py_ctx_object_from_teo_transaction_ctx(py, ctx, "").into_teo_path_result()?;
                         let coroutine_or_value = shared_argument.call1(py, (ctx_python,)).into_teo_path_result()?;
-                        await_coroutine_if_needed(py, coroutine_or_value.as_ref(py)).into_teo_path_result()
+                        Ok::<PyObject, teo::prelude::path::Error>(coroutine_or_value)
                     })?;
-                    Ok(user_retval)
+                    Ok(await_coroutine_if_needed_async_value(user_retval).await.into_teo_path_result()?)
                 }).await.into_py_result_with_gil()?;
                 Python::with_gil(|py| {
                     Ok::<PyObject, PyErr>(retval.into_py(py))    

@@ -38,7 +38,7 @@ impl App {
             let transformed = Python::with_gil(|py| {
                 let callback = callback_owned.as_ref(py);
                 let transformed_py = callback.call1((py_ctx_object_from_teo_transaction_ctx(py, ctx, "")?,))?.into_py(py);
-                let is_coroutine = is_coroutine(transformed_py.as_ref(py), py)?;
+                let is_coroutine = is_coroutine(transformed_py.as_ref(py))?;
                 Ok((transformed_py, is_coroutine))
             }).into_teo_result()?;
             if transformed.1 {
@@ -59,7 +59,7 @@ impl App {
             let transformed = Python::with_gil(|py| {
                 let callback = callback_owned.as_ref(py);
                 let transformed_py = callback.call0()?.into_py(py);
-                let is_coroutine = is_coroutine(transformed_py.as_ref(py), py)?;
+                let is_coroutine = is_coroutine(transformed_py.as_ref(py))?;
                 Ok((transformed_py, is_coroutine))
             }).into_teo_result()?;
             if transformed.1 {
