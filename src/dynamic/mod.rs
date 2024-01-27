@@ -301,7 +301,7 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
                     let value = py_any_to_teo_value(py, value.as_ref(py))?;
                     let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
                     model_object_wrapper.object.set_value(field_name, value).unwrap();
-                    Ok::<(), PyErr>(())    
+                    Ok::<(), PyErr>(())
                 })
             })?;
             let field_property_wrapped = field_property_wrapped.call_method1("setter", (field_property_setter,))?;
@@ -309,6 +309,46 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
         }
         // relations
         // properties
+        for model_property in model.properties() {
+            let field_name = Box::leak(Box::new(model_property.name.clone())).as_str();
+            if model_property.setter.is_some() {
+                let name: &str = Box::leak(Box::new("set_".to_owned() + &field_name.to_snake_case())).as_str();
+                let setter = PyCFunction::new_closure(py, Some(name), None, move |args, _kwargs| {
+                    Python::with_gil(|py| {
+                        let slf = args.get_item(0)?.into_py(py);
+                        let value = args.get_item(1)?.into_py(py);
+                        let value = py_any_to_teo_value(py, value.as_ref(py))?;
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                        let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                            let result = model_object_wrapper.object.set_property(field_name, value).await.into_py_result_with_gil()?;
+                            Python::with_gil(|py| {
+                                Ok(result.into_py(py))
+                            })
+                        })())?;
+                        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                    })
+                })?;
+                teo_wrap_builtin.call1((model_object_class.as_ref(py), name, setter))?;
+            }
+            if model_property.getter.is_some() {
+                let name: &str = Box::leak(Box::new(field_name.to_snake_case())).as_str();
+                let getter = PyCFunction::new_closure(py, Some(name), None, move |args, _kwargs| {
+                    Python::with_gil(|py| {
+                        let slf = args.get_item(0)?.into_py(py);
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                        let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                            let result = model_object_wrapper.object.get_property_value(field_name).await.into_py_result_with_gil()?;
+                            Python::with_gil(|py| {
+                                let any = teo_value_to_py_any(py, &result)?;
+                                Ok(any.into_py(py))
+                            })
+                        })())?;
+                        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                    })
+                })?;
+                teo_wrap_builtin.call1((model_object_class.as_ref(py), name, getter))?;
+            }
+        }
     }
     for namespace in namespace.namespaces.values() {
         let namespace_name = Box::leak(Box::new(namespace.path().join("."))).as_str();
