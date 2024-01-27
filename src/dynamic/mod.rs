@@ -13,6 +13,7 @@ use pyo3::types::{PyCFunction, PyDict, PyList, PyNone};
 use teo::prelude::{Namespace, Value, model, transaction};
 use crate::dynamic::model_object_wrapper::ModelObjectWrapper;
 
+use crate::object::model::teo_model_object_to_py_any;
 use crate::object::value::{teo_value_to_py_any, py_any_to_teo_value};
 use crate::result::{IntoPyResult, IntoPyResultWithGil};
 use crate::utils::check_py_dict::check_py_dict;
@@ -120,8 +121,8 @@ pub(crate) fn teo_model_ctx_from_py_model_class_object(py: Python<'_>, model_cla
     Ok(wrapper.ctx.clone())
 }
 
-pub(crate) fn teo_model_object_from_py_model_object(py: Python<'_>, model_class_object: PyObject) -> PyResult<model::Object> {
-    let wrapper: ModelObjectWrapper = model_class_object.getattr(py, "__teo_object__")?.extract(py)?;
+pub(crate) fn teo_model_object_from_py_model_object(py: Python<'_>, model_object: PyObject) -> PyResult<model::Object> {
+    let wrapper: ModelObjectWrapper = model_object.getattr(py, "__teo_object__")?.extract(py)?;
     Ok(wrapper.object.clone())
 }
 
@@ -308,6 +309,110 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
             model_object_class.setattr(py, field_name, field_property_wrapped)?;
         }
         // relations
+        for relation in model.relations() {
+            let base_relation_name = Box::leak(Box::new(relation.name.to_snake_case())).as_str();
+            if relation.is_vec {
+                // to many
+                // get
+                let get = PyCFunction::new_closure(py, Some(base_relation_name), None, move |args, _kwargs| {
+                    Python::with_gil(|py| {
+                        let slf = args.get_item(0)?.into_py(py);
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                        let find_many_arg = if args.len() > 1 {
+                            let py_dict = args.get_item(1)?;
+                            check_py_dict(py_dict)?;
+                            py_any_to_teo_value(py, py_dict)?
+                        } else {
+                            Value::Dictionary(IndexMap::new())
+                        };
+                        let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                            let value: Vec<model::Object> = model_object_wrapper.object.force_get_relation_objects(&relation.name, &find_many_arg).await.into_py_result_with_gil()?;
+                            Python::with_gil(|py| {
+                                let list = PyList::empty(py);
+                                for v in value {
+                                    list.append(teo_model_object_to_py_any(py, &v)?)?;
+                                }
+                                Ok::<PyObject, PyErr>(list.into_py(py))    
+                            })
+                        })())?;
+                        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                    })
+                })?;
+                teo_wrap_builtin.call1((model_object_class.as_ref(py), base_relation_name, get))?;
+                // set
+                let set_name = Box::leak(Box::new("set_".to_owned() + base_relation_name)).as_str();
+                let set = PyCFunction::new_closure(py, Some(set_name), None, move |args, _kwargs| {
+                    Python::with_gil(|py| {
+                        let slf = args.get_item(0)?.into_py(py);
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                        let mut objects = vec![];
+                        if args.len() > 1 {
+                            let py_list: &PyList = args.get_item(1)?.extract()?;
+                            for item in py_list {
+                                objects.push(teo_model_object_from_py_model_object(py, item.into_py(py))?);
+                            }
+                        }
+                        let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                            model_object_wrapper.object.force_set_relation_objects(&relation.name, objects).await;
+                            Python::with_gil(|py| {
+                                Ok::<PyObject, PyErr>(().into_py(py))    
+                            })
+                        })())?;
+                        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                    })
+                })?;
+                teo_wrap_builtin.call1((model_object_class.as_ref(py), set_name, set))?;
+                // add
+                let add_to_name = Box::leak(Box::new("add_to_".to_owned() + base_relation_name)).as_str();
+                let add_to = PyCFunction::new_closure(py, Some(add_to_name), None, move |args, _kwargs| {
+                    Python::with_gil(|py| {
+                        let slf = args.get_item(0)?.into_py(py);
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                        let mut objects = vec![];
+                        if args.len() > 1 {
+                            let py_list: &PyList = args.get_item(1)?.extract()?;
+                            for item in py_list {
+                                objects.push(teo_model_object_from_py_model_object(py, item.into_py(py))?);
+                            }
+                        }
+                        let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                            model_object_wrapper.object.force_add_relation_objects(&relation.name, objects).await;
+                            Python::with_gil(|py| {
+                                Ok::<PyObject, PyErr>(().into_py(py))    
+                            })
+                        })())?;
+                        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                    })
+                })?;
+                teo_wrap_builtin.call1((model_object_class.as_ref(py), add_to_name, add_to))?;
+                // remove
+                let remove_from_name = Box::leak(Box::new("remove_from_".to_owned() + base_relation_name)).as_str();
+                let remove_from = PyCFunction::new_closure(py, Some(remove_from_name), None, move |args, _kwargs| {
+                    Python::with_gil(|py| {
+                        let slf = args.get_item(0)?.into_py(py);
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                        let mut objects = vec![];
+                        if args.len() > 1 {
+                            let py_list: &PyList = args.get_item(1)?.extract()?;
+                            for item in py_list {
+                                objects.push(teo_model_object_from_py_model_object(py, item.into_py(py))?);
+                            }
+                        }
+                        let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                            model_object_wrapper.object.force_remove_relation_objects(&relation.name, objects).await;
+                            Python::with_gil(|py| {
+                                Ok::<PyObject, PyErr>(().into_py(py))    
+                            })
+                        })())?;
+                        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                    })
+                })?;
+                teo_wrap_builtin.call1((model_object_class.as_ref(py), remove_from_name, remove_from))?;
+            } else {
+                // to single
+
+            }
+        }
         // properties
         for model_property in model.properties() {
             let field_name = Box::leak(Box::new(model_property.name.clone())).as_str();
