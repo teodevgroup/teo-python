@@ -153,6 +153,7 @@ impl Namespace {
 
     pub fn define_handler(&mut self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
         check_callable(callback.as_ref(py))?;
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio::tokio::get_current_locals(py)?));
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         self.teo_namespace.define_handler(name.as_str(), move |ctx: request::Ctx| async move {
             let result = Python::with_gil(|py| {
@@ -164,7 +165,7 @@ impl Namespace {
                 let result = callback_owned.call1(py, (request, body, py_ctx))?;
                 Ok::<PyObject, PyErr>(result)
             }).into_teo_path_result()?;
-            let awaited_result = await_coroutine_if_needed_async_value(result).await.into_teo_path_result()?;
+            let awaited_result = await_coroutine_if_needed_async_value(result, main_thread_locals).await.into_teo_path_result()?;
             Python::with_gil(|py| {
                 let response: Response = awaited_result.extract(py).into_teo_path_result()?;
                 Ok(response.teo_response.clone())

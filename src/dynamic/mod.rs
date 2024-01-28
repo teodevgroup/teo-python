@@ -213,6 +213,7 @@ pub(crate) fn synthesize_dynamic_nodejs_classes_for_namespace(py: Python<'_>, na
 }
 
 fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namespace: &'static Namespace) -> PyResult<()> {
+    let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio::tokio::get_current_locals(py)?));
     let main = py.import("__main__")?;
     let teo_wrap_builtin = main.getattr("teo_wrap_builtin")?;
     let teo_wrap_async = main.getattr("teo_wrap_async")?;
@@ -531,7 +532,7 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
                         let coroutine_or_value = shared_argument.call1(py, (ctx_python,)).into_teo_path_result()?;
                         Ok::<PyObject, teo::prelude::path::Error>(coroutine_or_value)
                     })?;
-                    Ok(await_coroutine_if_needed_async_value(user_retval).await.into_teo_path_result()?)
+                    Ok(await_coroutine_if_needed_async_value(user_retval, main_thread_locals).await.into_teo_path_result()?)
                 }).await.into_py_result_with_gil()?;
                 Python::with_gil(|py| {
                     Ok::<PyObject, PyErr>(retval.into_py(py))    
