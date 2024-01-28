@@ -5,7 +5,7 @@ use crate::dynamic::py_ctx_object_from_teo_transaction_ctx;
 use crate::object::value::teo_value_to_py_any;
 use crate::request::request::Request;
 use crate::response::Response;
-use crate::utils::await_coroutine_if_needed::{await_coroutine_if_needed, await_coroutine_if_needed_async_value};
+use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed_async_value;
 use crate::utils::check_callable::check_callable;
 use crate::result::IntoTeoPathResult;
 

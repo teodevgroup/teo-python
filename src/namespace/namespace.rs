@@ -1,7 +1,7 @@
 use pyo3::{pyclass, pymethods, types::PyCFunction, IntoPy, Py, PyErr, PyObject, PyResult, Python};
 use teo::prelude::{handler::Group as TeoHandlerGroup, model::Field as TeoField, model::Property as TeoProperty, model::Relation as TeoRelation, request, Enum as TeoEnum, Member as TeoEnumMember, Middleware, Model as TeoModel, Namespace as TeoNamespace, Next};
 
-use crate::{utils::{check_callable::check_callable, await_coroutine_if_needed::{await_coroutine_if_needed, await_coroutine_if_needed_async_value}}, object::{arguments::teo_args_to_py_args, value::teo_value_to_py_any}, model::{model::Model, field::field::Field, relation::relation::Relation, property::property::Property}, result::{IntoPyResultWithGil, IntoTeoPathResult, IntoTeoResult}, r#enum::{r#enum::Enum, member::member::EnumMember}, request::{Request, RequestCtx}, dynamic::{py_ctx_object_from_teo_transaction_ctx, teo_transaction_ctx_from_py_ctx_object}, response::Response, handler::group::HandlerGroup};
+use crate::{utils::{check_callable::check_callable, await_coroutine_if_needed::await_coroutine_if_needed_async_value}, object::{arguments::teo_args_to_py_args, value::teo_value_to_py_any}, model::{model::Model, field::field::Field, relation::relation::Relation, property::property::Property}, result::{IntoPyResultWithGil, IntoTeoPathResult, IntoTeoResult}, r#enum::{r#enum::Enum, member::member::EnumMember}, request::{Request, RequestCtx}, dynamic::py_ctx_object_from_teo_transaction_ctx, response::Response, handler::group::HandlerGroup};
 
 #[pyclass]
 pub struct Namespace {
@@ -217,28 +217,21 @@ impl Namespace {
                                 let ctx: RequestCtx = args.get_item(0)?.extract()?;
                                 let teo_ctx = ctx.teo_inner.clone();
                                 let coroutine = pyo3_asyncio::tokio::future_into_py_with_locals::<_, PyObject>(py, main_thread_locals.clone(), (|| async {
-                                    println!("here runs into 1");
                                     let result: teo::prelude::Response = next.call(teo_ctx).await.unwrap();
-                                    println!("here runs into 2");
                                     Python::with_gil(|py| {
-                                        println!("here runs into 3");
                                         let response = Response {
                                             teo_response: result
                                         };
-                                        println!("here runs into 4");
                                         Ok::<PyObject, PyErr>(response.into_py(py))    
                                     })
                                 })())?;
                                 Ok::<PyObject, PyErr>(coroutine.into_py(py))
                             })
                         }).unwrap();
-                        println!("here runs start 0");
                         let coroutine = shared_result_function.call1(py, (py_ctx, py_next)).into_teo_result()?;
                         Ok::<PyObject, teo::prelude::Error>(coroutine.into_py(py))
                     })?;
-                    println!("here runs start 1");
                     let result = await_coroutine_if_needed_async_value(coroutine, main_thread_locals).await.into_teo_result()?;
-                    println!("here runs end 0");
                     Python::with_gil(|py| {
                         let response: Response = result.extract(py).into_teo_result()?;
                         Ok(response.teo_response)    

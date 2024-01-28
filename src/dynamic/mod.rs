@@ -16,7 +16,7 @@ use crate::object::model::teo_model_object_to_py_any;
 use crate::object::py_any_to_teo_object;
 use crate::object::value::{teo_value_to_py_any, py_any_to_teo_value};
 use crate::result::{IntoPyResultWithGil, IntoTeoPathResult};
-use crate::utils::await_coroutine_if_needed::{await_coroutine_if_needed, await_coroutine_if_needed_async, await_coroutine_if_needed_async_value};
+use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed_async_value;
 use crate::utils::check_py_dict::check_py_dict;
 
 use self::model_ctx_wrapper::ModelCtxWrapper;

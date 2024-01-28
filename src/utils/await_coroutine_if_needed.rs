@@ -12,22 +12,6 @@ pub async fn await_coroutine_if_needed_async_value(transformed_py: PyObject, mai
             Ok::<_, PyErr>(f)
         })?;
         f.await
-        // if let Some(event_loop) = check_event_loop()? {
-        //     Python::with_gil(|py| {
-        //         let f = into_future_with_locals(&TaskLocals::new(event_loop.as_ref(py)), transformed_py.as_ref(py))?;
-        //         pyo3_asyncio::tokio::run_until_complete(event_loop.as_ref(py), async move {
-        //             let result = f.await;
-        //             result
-        //         })
-        //     })
-        // } else {
-        //     let f = Python::with_gil(|py| {
-        //         let event_loop = pyo3_asyncio::tokio::get_current_loop(py)?;
-        //         let f = into_future_with_locals(&TaskLocals::new(event_loop), transformed_py.as_ref(py))?;
-        //         Ok::<_, PyErr>(f)
-        //     })?;
-        //     f.await    
-        // }
     } else {
         Ok(Python::with_gil(|py| {
             transformed_py.into_py(py)
@@ -44,28 +28,4 @@ pub async fn await_coroutine_if_needed_async(transformed_py: &PyAny) -> PyResult
             transformed_py.into_py(py)
         }))
     }
-}
-
-pub fn await_coroutine_if_needed(py: Python<'_>, transformed_py: &PyAny) -> PyResult<PyObject> {
-    Ok(if is_coroutine(transformed_py)? {
-        println!("is coroutine");
-        let asyncio = py.import("asyncio")?;
-        let event_loop = asyncio.call_method0("get_event_loop").unwrap_or(
-            {
-                let event_loop = asyncio.call_method0("new_event_loop")?;
-                asyncio.call_method1("set_event_loop", (event_loop,))?;
-                event_loop
-            }
-        );
-        let f = into_future_with_locals(&TaskLocals::new(event_loop), transformed_py)?;
-        pyo3_asyncio::tokio::run_until_complete(event_loop, async move {
-            println!("run until complete");
-            let result = f.await;
-            println!("run until complete done");
-            result
-        })?
-    } else {
-        println!("is not coroutine");
-        transformed_py.into_py(py)
-    })
 }
