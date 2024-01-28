@@ -1,7 +1,7 @@
 use pyo3::{pyclass, pymethods, types::PyCFunction, IntoPy, Py, PyErr, PyObject, PyResult, Python};
 use teo::prelude::{handler::Group as TeoHandlerGroup, model::Field as TeoField, model::Property as TeoProperty, model::Relation as TeoRelation, request, Enum as TeoEnum, Member as TeoEnumMember, Middleware, Model as TeoModel, Namespace as TeoNamespace, Next};
 
-use crate::{utils::{check_callable::check_callable, await_coroutine_if_needed::await_coroutine_if_needed_async_value}, object::{arguments::teo_args_to_py_args, value::teo_value_to_py_any}, model::{model::Model, field::field::Field, relation::relation::Relation, property::property::Property}, result::{IntoPyResultWithGil, IntoTeoPathResult, IntoTeoResult}, r#enum::{r#enum::Enum, member::member::EnumMember}, request::{Request, RequestCtx}, dynamic::py_ctx_object_from_teo_transaction_ctx, response::Response, handler::group::HandlerGroup};
+use crate::{utils::{check_callable::check_callable, await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals}, object::{arguments::teo_args_to_py_args, value::teo_value_to_py_any}, model::{model::Model, field::field::Field, relation::relation::Relation, property::property::Property}, result::{IntoPyResultWithGil, IntoTeoPathResult, IntoTeoResult}, r#enum::{r#enum::Enum, member::member::EnumMember}, request::{Request, RequestCtx}, dynamic::py_ctx_object_from_teo_transaction_ctx, response::Response, handler::group::HandlerGroup};
 
 #[pyclass]
 pub struct Namespace {
@@ -165,7 +165,7 @@ impl Namespace {
                 let result = callback_owned.call1(py, (request, body, py_ctx))?;
                 Ok::<PyObject, PyErr>(result)
             }).into_teo_path_result()?;
-            let awaited_result = await_coroutine_if_needed_async_value(result, main_thread_locals).await.into_teo_path_result()?;
+            let awaited_result = await_coroutine_if_needed_value_with_locals(result, main_thread_locals).await.into_teo_path_result()?;
             Python::with_gil(|py| {
                 let response: Response = awaited_result.extract(py).into_teo_path_result()?;
                 Ok(response.teo_response.clone())
@@ -231,7 +231,7 @@ impl Namespace {
                         let coroutine = shared_result_function.call1(py, (py_ctx, py_next)).into_teo_result()?;
                         Ok::<PyObject, teo::prelude::Error>(coroutine.into_py(py))
                     })?;
-                    let result = await_coroutine_if_needed_async_value(coroutine, main_thread_locals).await.into_teo_result()?;
+                    let result = await_coroutine_if_needed_value_with_locals(coroutine, main_thread_locals).await.into_teo_result()?;
                     Python::with_gil(|py| {
                         let response: Response = result.extract(py).into_teo_result()?;
                         Ok(response.teo_response)    

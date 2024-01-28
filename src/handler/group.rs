@@ -5,7 +5,7 @@ use crate::dynamic::py_ctx_object_from_teo_transaction_ctx;
 use crate::object::value::teo_value_to_py_any;
 use crate::request::request::Request;
 use crate::response::Response;
-use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed_async_value;
+use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals;
 use crate::utils::check_callable::check_callable;
 use crate::result::IntoTeoPathResult;
 
@@ -31,7 +31,7 @@ impl HandlerGroup {
                 let result = callback_owned.call1(py, (request, body, py_ctx))?;
                 Ok::<PyObject, PyErr>(result)
             }).into_teo_path_result()?;
-            let awaited_result = await_coroutine_if_needed_async_value(result, main_thread_locals).await.into_teo_path_result()?;
+            let awaited_result = await_coroutine_if_needed_value_with_locals(result, main_thread_locals).await.into_teo_path_result()?;
             Python::with_gil(|py| {
                 let response: Response = awaited_result.extract(py).into_teo_path_result()?;
                 Ok(response.teo_response.clone())
