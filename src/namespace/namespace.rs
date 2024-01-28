@@ -217,7 +217,7 @@ impl Namespace {
                                 let ctx: RequestCtx = args.get_item(0)?.extract()?;
                                 let teo_ctx = ctx.teo_inner.clone();
                                 let coroutine = pyo3_asyncio::tokio::future_into_py_with_locals::<_, PyObject>(py, main_thread_locals.clone(), (|| async {
-                                    let result: teo::prelude::Response = next.call(teo_ctx).await.unwrap();
+                                    let result: teo::prelude::Response = next.call(teo_ctx).await.into_py_result_with_gil()?;
                                     Python::with_gil(|py| {
                                         let response = Response {
                                             teo_response: result
