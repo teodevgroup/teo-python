@@ -215,6 +215,7 @@ pub(crate) fn synthesize_dynamic_nodejs_classes_for_namespace(py: Python<'_>, na
 fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namespace: &'static Namespace) -> PyResult<()> {
     let main = py.import("__main__")?;
     let teo_wrap_builtin = main.getattr("teo_wrap_builtin")?;
+    let teo_wrap_async = main.getattr("teo_wrap_async")?;
     let builtins = py.import("builtins")?;
     let property_wrapper = builtins.getattr("property")?;
     let ctx_class = get_ctx_class(py, &namespace.path().join("."))?;
@@ -239,16 +240,16 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
         let model_class_class = get_model_class_class(py, &model_name)?;
         // find unique
         let find_unique = find_unique_function(py)?;
-        teo_wrap_builtin.call1((model_class_class.as_ref(py), "find_unique", find_unique))?;
+        teo_wrap_builtin.call1((model_class_class.as_ref(py), "find_unique", teo_wrap_async.call1((find_unique,))?))?;
         // find first
         let find_first = find_first_function(py)?;
-        teo_wrap_builtin.call1((model_class_class.as_ref(py), "find_first", find_first))?;
+        teo_wrap_builtin.call1((model_class_class.as_ref(py), "find_first", teo_wrap_async.call1((find_first,))?))?;
         // find many
         let find_many = find_many_function(py)?;
-        teo_wrap_builtin.call1((model_class_class.as_ref(py), "find_many", find_many))?;
+        teo_wrap_builtin.call1((model_class_class.as_ref(py), "find_many", teo_wrap_async.call1((find_many,))?))?;
         // create
         let create = create_function(py)?;
-        teo_wrap_builtin.call1((model_class_class.as_ref(py), "create", create))?;
+        teo_wrap_builtin.call1((model_class_class.as_ref(py), "create", teo_wrap_async.call1((create,))?))?;
         // count
         let count = count_function(py)?;
         teo_wrap_builtin.call1((model_class_class.as_ref(py), "count", count))?;

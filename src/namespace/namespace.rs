@@ -197,21 +197,25 @@ impl Namespace {
         let name = Box::leak(Box::new(name)).as_str();
         check_callable(callback.as_ref(py))?;
         let shared_callback = &*Box::leak(Box::new(callback));
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio::tokio::get_current_locals(py)?));
         self.teo_namespace.define_middleware(name, move |arguments| async move {
             Python::with_gil(|py| {
                 let py_args = teo_args_to_py_args(py, &arguments)?;
                 let result_function = shared_callback.call1(py, (py_args,))?;
-                let shared_result_function = &*Box::leak(Box::new(result_function));
+                let main = py.import("__main__")?;
+                let teo_wrap_async = main.getattr("teo_wrap_async")?.into_py(py);
+                let wrapped_result_function = teo_wrap_async.call1(py, (result_function,))?;
+                let shared_result_function = &*Box::leak(Box::new(wrapped_result_function));
                 let wrapped_result = move |ctx: request::Ctx, next: &'static dyn Next| async move {
                     let coroutine = Python::with_gil(|py| {
                         let py_ctx = RequestCtx {
                             teo_inner: ctx
                         };
-                        let py_next = PyCFunction::new_closure(py, Some(name), None, |args, _kwargs| {
+                        let py_next = PyCFunction::new_closure(py, Some(name), None, move |args, _kwargs| {
                             Python::with_gil(|py| {
                                 let ctx: RequestCtx = args.get_item(0)?.extract()?;
                                 let teo_ctx = ctx.teo_inner.clone();
-                                let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async {
+                                let coroutine = pyo3_asyncio::tokio::future_into_py_with_locals::<_, PyObject>(py, main_thread_locals.clone(), (|| async {
                                     println!("here runs into 1");
                                     let result: teo::prelude::Response = next.call(teo_ctx).await.unwrap();
                                     println!("here runs into 2");
@@ -229,10 +233,10 @@ impl Namespace {
                         }).unwrap();
                         println!("here runs start 0");
                         let coroutine = shared_result_function.call1(py, (py_ctx, py_next)).into_teo_result()?;
-                        Ok::<PyObject, teo::prelude::Error>(coroutine)
+                        Ok::<PyObject, teo::prelude::Error>(coroutine.into_py(py))
                     })?;
                     println!("here runs start 1");
-                    let result = await_coroutine_if_needed_async_value(coroutine).await.into_teo_result()?;
+                    let result = await_coroutine_if_needed_async_value(coroutine, main_thread_locals).await.into_teo_result()?;
                     println!("here runs end 0");
                     Python::with_gil(|py| {
                         let response: Response = result.extract(py).into_teo_result()?;

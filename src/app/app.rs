@@ -2,6 +2,7 @@ use pyo3::{pyclass, pymethods, Python, PyResult, types::{PyModule, PyType}, PyAn
 use pyo3_asyncio::tokio::future_into_py;
 use teo::cli::runtime_version::RuntimeVersion;
 use ::teo::prelude::{App as TeoApp, Entrance, transaction};
+use tokio::runtime::Builder;
 
 use crate::{utils::{check_callable::check_callable, is_coroutine::is_coroutine}, result::{IntoPyResult, IntoTeoResult, IntoPyResultWithGil}, namespace::namespace::Namespace, dynamic::{synthesize_dynamic_python_classes, py_ctx_object_from_teo_transaction_ctx}};
 
@@ -58,7 +59,7 @@ impl App {
         self.teo_app.program(name, |ctx: transaction::Ctx| async {
             let transformed = Python::with_gil(|py| {
                 let callback = callback_owned.as_ref(py);
-                let transformed_py = callback.call0()?.into_py(py);
+                let transformed_py = callback.call1((py_ctx_object_from_teo_transaction_ctx(py, ctx, "")?,))?.into_py(py);
                 let is_coroutine = is_coroutine(transformed_py.as_ref(py))?;
                 Ok((transformed_py, is_coroutine))
             }).into_teo_result()?;
@@ -74,6 +75,9 @@ impl App {
     }
 
     fn run(&self, py: Python<'_>) -> PyResult<PyObject> {
+        let mut builder = Builder::new_multi_thread();
+        builder.enable_all();
+        pyo3_asyncio::tokio::init(builder);
         let static_self: &'static App = unsafe { &*(self as * const App) };
         let coroutine = future_into_py(py, (|| async move {
             static_self.teo_app.prepare_for_run().await.into_py_result_with_gil()?;

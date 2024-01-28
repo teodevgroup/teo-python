@@ -35,6 +35,12 @@ def teo_wrap_builtin(cls, name, callable):
     def wrapped(self, *args, **kwargs):
         return callable(self, *args, **kwargs)
     setattr(cls, name, wrapped)
+
+global teo_wrap_async
+def teo_wrap_async(callable):
+    async def wrapped(self, *args, **kwargs):
+        return await callable(self, *args, **kwargs)
+    return wrapped
     "#, None, None)?;
     setup_dynamic_container()?;
     #[pyfunction]
