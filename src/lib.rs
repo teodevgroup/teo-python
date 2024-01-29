@@ -26,6 +26,12 @@ use crate::model::property::property::Property;
 use crate::handler::group::HandlerGroup;
 use crate::request::HandlerMatch;
 use crate::request::ctx::RequestCtx;
+use crate::object::value::ObjectId;
+use crate::object::value::OptionVariant;
+use crate::object::value::File;
+use crate::object::value::EnumVariant;
+use crate::object::value::Range;
+use crate::object::pipeline::Pipeline;
 
 #[pymodule]
 fn teo(py: Python, m: &PyModule) -> PyResult<()> {
@@ -73,5 +79,11 @@ def teo_wrap_async(callable):
     m.add_class::<Property>()?;
     m.add_class::<HandlerMatch>()?;
     m.add_class::<RequestCtx>()?;
+    m.add_class::<ObjectId>()?;
+    m.add_class::<File>()?;
+    m.add_class::<Range>()?;
+    m.add_class::<OptionVariant>()?;
+    m.add_class::<EnumVariant>()?;
+    m.add_class::<Pipeline>()?;
     Ok(())
 }
