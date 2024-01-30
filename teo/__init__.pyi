@@ -1,8 +1,11 @@
+"""This module contains classes and variables for Teo web framework."""
+
+
 class App:
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
-        Create a new app. Only one can be present in a program.
+        Create a new application. Only one can be presented in a program.
         """
 
     def main_namespace(self) -> Namespace:
@@ -13,7 +16,7 @@ class App:
 
     async def run(self):
         """
-        Start the app.
+        Run the application.
         """
 
 
