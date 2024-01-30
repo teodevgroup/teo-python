@@ -114,7 +114,8 @@ pub fn py_any_to_teo_value(py: Python<'_>, object: &PyAny) -> PyResult<Value> {
         let mut map: IndexMap<String, Value> = IndexMap::new();
         for k in dict.keys() {
             let k_str: &str = k.extract()?;
-            map.insert(k_str.to_owned(), py_any_to_teo_value(py, dict.get_item(k)?.unwrap())?);
+            let fixed_key = if k_str.ends_with("_") { k_str.strip_suffix("_").unwrap().to_owned() } else { k_str.to_owned() };
+            map.insert(fixed_key, py_any_to_teo_value(py, dict.get_item(k)?.unwrap())?);
         }
         Ok(Value::Dictionary(map))
     } else if object.is_instance_of::<Range>() {
