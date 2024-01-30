@@ -1,5 +1,10 @@
 """This module contains classes and variables for Teo web framework."""
+from __future__ import annotations
+from typing import TypeVar, Union
 
+T = TypeVar('T')
+
+Enumerable = Union[T, list[T]]
 
 class App:
 
