@@ -32,3 +32,10 @@ class Namespace:
 
     def define_handler(self):
         pass
+
+
+class ObjectId:
+    """
+    ObjectId represents the ObjectId data type in Teo schema.
+    """
+    pass
