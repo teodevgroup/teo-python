@@ -39,3 +39,15 @@ class ObjectId:
     ObjectId represents the ObjectId data type in Teo schema.
     """
     pass
+
+class File:
+    pass
+
+class Range:
+    pass
+
+class EnumVariant:
+    pass
+
+class OptionVariant:
+    pass
