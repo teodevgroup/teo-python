@@ -31,6 +31,7 @@ use crate::object::value::File;
 use crate::object::value::EnumVariant;
 use crate::object::value::Range;
 use crate::object::pipeline::Pipeline;
+use crate::object::interface_enum_variant::InterfaceEnumVariant;
 
 #[pymodule]
 fn teo(py: Python, m: &PyModule) -> PyResult<()> {
@@ -66,23 +67,24 @@ def teo_wrap_async(callable):
     m.add_class::<App>()?;
     m.add_class::<Namespace>()?;
     m.add_class::<HandlerGroup>()?;
-    m.add_class::<Request>()?;
-    m.add_class::<Response>()?;
-    m.add_class::<ReadOnlyHeaderMap>()?;
-    m.add_class::<ReadWriteHeaderMap>()?;
-    m.add_class::<Enum>()?;
-    m.add_class::<EnumMember>()?;
     m.add_class::<Model>()?;
     m.add_class::<Field>()?;
     m.add_class::<Relation>()?;
     m.add_class::<Property>()?;
+    m.add_class::<Enum>()?;
+    m.add_class::<EnumMember>()?;
+    m.add_class::<Response>()?;
+    m.add_class::<Request>()?;
+    m.add_class::<ReadOnlyHeaderMap>()?;
+    m.add_class::<ReadWriteHeaderMap>()?;
     m.add_class::<HandlerMatch>()?;
     m.add_class::<RequestCtx>()?;
     m.add_class::<ObjectId>()?;
-    m.add_class::<File>()?;
     m.add_class::<Range>()?;
     m.add_class::<OptionVariant>()?;
     m.add_class::<EnumVariant>()?;
+    m.add_class::<File>()?;
+    m.add_class::<InterfaceEnumVariant>()?;
     m.add_class::<Pipeline>()?;
     Ok(())
 }

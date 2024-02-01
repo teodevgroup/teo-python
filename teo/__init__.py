@@ -1,4 +1,9 @@
-from .teo import App, Namespace, Model, Field, Relation, Property, Enum, EnumMember, Response, Request, ReadOnlyHeaderMap, ReadWriteHeaderMap, HandlerMatch, HandlerGroup, RequestCtx, ObjectId, Range, OptionVariant, EnumVariant, File, Pipeline
+from .teo import (
+    App, Namespace, HandlerGroup, Model, Field, Relation, Property, Enum, 
+    EnumMember, Response, Request, ReadOnlyHeaderMap, ReadWriteHeaderMap, 
+    HandlerMatch, RequestCtx, ObjectId, Range, OptionVariant, EnumVariant, 
+    File, Pipeline, InterfaceEnumVariant, Pipeline
+)
 from typing import TypeVar, Union
 from signal import signal, SIGINT
 from sys import exit
