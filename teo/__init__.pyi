@@ -606,10 +606,6 @@ class Range[T]:
         """
         ...
 
-
-class File:
-    pass
-
 class EnumVariant:
 
     def to_string(self) -> str:
