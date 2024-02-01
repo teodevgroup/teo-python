@@ -13,8 +13,8 @@ impl EnumVariant {
         self.value.value.clone()
     }
     
-    #[classmethod]
-    pub fn from_string(cls: &PyType, value: &str) -> EnumVariant {
+    #[staticmethod]
+    pub fn from_string(value: &str) -> EnumVariant {
         Self {
             value: TeoEnumVariant {
                 value: value.to_owned(),

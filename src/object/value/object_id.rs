@@ -15,8 +15,8 @@ impl ObjectId {
         self.value.to_hex()
     }
 
-    #[classmethod]
-    pub fn from_string(cls: &PyType, string: &str) -> PyResult<ObjectId> {
+    #[staticmethod]
+    pub fn from_string(string: &str) -> PyResult<ObjectId> {
         match BsonObjectId::parse_str(&string) {
             Ok(value) => Ok(Self { value }),
             Err(_) => Err(PyValueError::new_err("string doesn't represent valid ObjectId"))
