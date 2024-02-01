@@ -9,7 +9,6 @@ pub mod model;
 pub mod handler;
 pub mod request;
 pub mod response;
-pub mod middleware;
 
 use pyo3::prelude::*;
 use request::{Request, ReadOnlyHeaderMap};
