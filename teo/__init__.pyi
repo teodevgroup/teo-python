@@ -14,13 +14,13 @@ class App:
         """
         pass
 
-    def setup(self, callback: Callable[[Any], None | Awaitable[None]]) -> None:
+    def setup(self, callback: Callable[[Any], None | Awaitable[None]], /) -> None:
         """
         Set a callback to run when server starts right after database is connected.
         """
         pass
 
-    def program(self, name: str, callback: Callable[[Any], None | Awaitable[None]]) -> None:
+    def program(self, name: str, callback: Callable[[Any], None | Awaitable[None]], /) -> None:
         """
         Define a custom program with `name`. The programs can be triggered with `teo run` command.
         """
@@ -61,115 +61,115 @@ class Namespace:
         """
         ...
 
-    def namespace(self, name: str) -> Optional[Namespace]:
+    def namespace(self, name: str, /) -> Optional[Namespace]:
         """
         Get a child namespace by name.
         """
         ...
 
-    def namespace_or_create(self, name: str) -> Namespace:
+    def namespace_or_create(self, name: str, /) -> Namespace:
         """
         Get a child namespace by name or create a new one with name.
         """
         ...
 
-    def namespace_at_path(self, path: list[str]) -> Optional[Namespace]:
+    def namespace_at_path(self, path: list[str], /) -> Optional[Namespace]:
         """
         Get a child namespace by path.
         """
         ...
 
-    def namespace_or_create_at_path(self, path: list[str]) -> Namespace:
+    def namespace_or_create_at_path(self, path: list[str], /) -> Namespace:
         """
         Get a child namespace by path or create a new one with path.        
         """
         ...
 
-    def define_model_decorator(self, name: str, callback: Callable[[Model], None]) -> None:
+    def define_model_decorator(self, name: str, callback: Callable[[Model], None], /) -> None:
         """
         Define a model decorator.
         """
         ...
 
-    def define_model_field_decorator(self, name: str, callback: Callable[[Field], None]) -> None:
+    def define_model_field_decorator(self, name: str, callback: Callable[[Field], None], /) -> None:
         """
         Define a model field decorator.
         """
         ...
 
-    def define_model_relation_decorator(self, name: str, callback: Callable[[Relation], None]) -> None:
+    def define_model_relation_decorator(self, name: str, callback: Callable[[Relation], None], /) -> None:
         """
         Define a model relation decorator.
         """
         ...
 
-    def define_model_property_decorator(self, name: str, callback: Callable[[Property], None]) -> None:
+    def define_model_property_decorator(self, name: str, callback: Callable[[Property], None], /) -> None:
         """
         Define a model property decorator.
         """
         ...
 
-    def define_enum_decorator(self, name: str, callback: Callable[[Enum], None]) -> None:
+    def define_enum_decorator(self, name: str, callback: Callable[[Enum], None], /) -> None:
         """
         Define a enum decorator.
         """
         ...
 
-    def define_enum_member_decorator(self, name: str, callback: Callable[[EnumMember], None]) -> None:
+    def define_enum_member_decorator(self, name: str, callback: Callable[[EnumMember], None], /) -> None:
         """
         Define a enum member decorator.
         """
         ...
 
-    def define_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any], Any | Awaitable[Any]]) -> None:
+    def define_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any], Any | Awaitable[Any]], /) -> None:
         """
         Define a pipeline item.
         """
         ...
 
-    def define_transform_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any], Any | Awaitable[Any]]) -> None:
+    def define_transform_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any], Any | Awaitable[Any]], /) -> None:
         """
         Define a transform pipeline item.
         """
         ...
 
-    def define_validator_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any], str | bool | None | Awaitable[str | bool | None]]) -> None:
+    def define_validator_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any], str | bool | None | Awaitable[str | bool | None]], /) -> None:
         """
         Define a validator pipeline item.
         """
         ...
 
-    def define_callback_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any], None | Awaitable[None]]) -> None:
+    def define_callback_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any], None | Awaitable[None]], /) -> None:
         """
         Define a callback pipeline item.
         """
         ...
 
-    def define_compare_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any, Any], str | bool | None | Awaitable[str | bool | None]]) -> None:
+    def define_compare_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any, Any], str | bool | None | Awaitable[str | bool | None]], /) -> None:
         """
         Define a compare pipeline item.
         """
         ...
 
-    def define_handler(self, name: str, callback: Callable[[Request, Any, Any], Response | Awaitable[Response]]) -> None:
+    def define_handler(self, name: str, callback: Callable[[Request, Any, Any], Response | Awaitable[Response]], /) -> None:
         """
         Define a handler.
         """
         ...
 
-    def define_handler_group(self, name: str, callback: Callable[[HandlerGroup], None]) -> None:
+    def define_handler_group(self, name: str, callback: Callable[[HandlerGroup], None], /) -> None:
         """
         Define a handler group with callback.
         """
         ...
 
-    def define_model_handler_group(self, name: str, callback: Callable[[HandlerGroup], None]) -> None:
+    def define_model_handler_group(self, name: str, callback: Callable[[HandlerGroup], None], /) -> None:
         """
         Define a model handler group with callback.
         """
         ...
 
-    def define_middleware(self, name: str, callback: Callable[[Any], Callable[[RequestCtx, Callable[[RequestCtx], Awaitable[Response]]], Awaitable[Response]]]) -> None:
+    def define_middleware(self, name: str, callback: Callable[[Any], Callable[[RequestCtx, Callable[[RequestCtx], Awaitable[Response]]], Awaitable[Response]]], /) -> None:
         """
         Define a middleware.
         """
@@ -180,7 +180,7 @@ class HandlerGroup:
     A handler group contains handlers and it takes a namespace in the request URL.
     """
 
-    def define_handler(self, name: str, callback: Callable[[Request, Any, Any], Response | Awaitable[Response]]) -> None:
+    def define_handler(self, name: str, callback: Callable[[Request, Any, Any], Response | Awaitable[Response]], /) -> None:
         """
         Define a handler.
         """
@@ -191,13 +191,13 @@ class Model:
     A model in Teo schema.
     """
 
-    def set_data(self, key: str, value: Any) -> None:
+    def set_data(self, key: str, value: Any, /) -> None:
         """
         Attach custom data with key to this model.
         """
         ...
 
-    def data(self, key: str) -> Optional[Any]:
+    def data(self, key: str, /) -> Optional[Any]:
         """
         Get attached custom data by key.
         """
@@ -208,13 +208,13 @@ class Field:
     A model field in Teo schema.
     """
 
-    def set_data(self, key: str, value: Any) -> None:
+    def set_data(self, key: str, value: Any, /) -> None:
         """
         Attach custom data with key to this model field.
         """
         ...
 
-    def data(self, key: str) -> Optional[Any]:
+    def data(self, key: str, /) -> Optional[Any]:
         """
         Get attached custom data by key.
         """
@@ -225,13 +225,13 @@ class Relation:
     A model relation in Teo schema.
     """
 
-    def set_data(self, key: str, value: Any) -> None:
+    def set_data(self, key: str, value: Any, /) -> None:
         """
         Attach custom data with key to this model relation.
         """
         ...
 
-    def data(self, key: str) -> Optional[Any]:
+    def data(self, key: str, /) -> Optional[Any]:
         """
         Get attached custom data by key.
         """
@@ -242,13 +242,13 @@ class Property:
     A model property in Teo schema.
     """
 
-    def set_data(self, key: str, value: Any) -> None:
+    def set_data(self, key: str, value: Any, /) -> None:
         """
         Attach custom data with key to this model property.
         """
         ...
 
-    def data(self, key: str) -> Optional[Any]:
+    def data(self, key: str, /) -> Optional[Any]:
         """
         Get attached custom data by key.
         """
@@ -259,13 +259,13 @@ class Enum:
     An enum in Teo schema.
     """
 
-    def set_data(self, key: str, value: Any) -> None:
+    def set_data(self, key: str, value: Any, /) -> None:
         """
         Attach custom data with key to this enum.
         """
         ...
 
-    def data(self, key: str) -> Optional[Any]:
+    def data(self, key: str, /) -> Optional[Any]:
         """
         Get attached custom data by key.
         """
@@ -276,13 +276,13 @@ class EnumMember:
     An enum member in Teo schema.
     """
 
-    def set_data(self, key: str, value: Any) -> None:
+    def set_data(self, key: str, value: Any, /) -> None:
         """
         Attach custom data with key to this enum member.
         """
         ...
 
-    def data(self, key: str) -> Optional[Any]:
+    def data(self, key: str, /) -> Optional[Any]:
         """
         Get attached custom data by key.
         """
@@ -301,55 +301,55 @@ class Response:
         ...
 
     @staticmethod
-    def string(content: str, content_type: str) -> Response:
+    def string(content: str, content_type: str, /) -> Response:
         """
         Create a string response.
         """
         ...
 
     @staticmethod
-    def teon(value: Any) -> Response:
+    def teon(value: Any, /) -> Response:
         """
         Create a Teon response.
         """
         ...
 
     @staticmethod
-    def html(content: str) -> Response:
+    def html(content: str, /) -> Response:
         """
         Create an HTML response.
         """
         ...
 
     @staticmethod
-    def data(value: Any) -> Response:
+    def data(value: Any, /) -> Response:
         """
         Create a Teon response with `value` wrapped in `data` key.
         """
         ...
 
     @staticmethod
-    def data_meta(data: Any, meta: Any) -> Response:
+    def data_meta(data: Any, meta: Any, /) -> Response:
         """
         Create a Teon response with `data` and `meta` field.
         """
         ...
 
     @staticmethod
-    def file(path: str) -> Response:
+    def file(path: str, /) -> Response:
         """
         Create a file response with `path`.
         """
         ...
 
     @staticmethod
-    def redirect(path: str) -> Response:
+    def redirect(path: str, /) -> Response:
         """
         Create a redirect response.
         """
         ...
 
-    def set_code(self, code: int) -> None:
+    def set_code(self, code: int, /) -> None:
         """
         Set the response' status code.
         """
@@ -426,19 +426,19 @@ class ReadWriteHeaderMap:
         """
         ...
 
-    def contains_key(self, key: str) -> bool:
+    def contains_key(self, key: str, /) -> bool:
         """
         Whether the header map contains an entry by key.
         """
         ...
 
-    def get(self, key: str) -> Optional[str]:
+    def get(self, key: str, /) -> Optional[str]:
         """
         Get header value by key.
         """
         ...
 
-    def set(self, key: str, value: str) -> None:
+    def set(self, key: str, value: str, /) -> None:
         """
         Set a header value.
         """
@@ -494,13 +494,13 @@ class ReadOnlyHeaderMap:
         """
         ...
 
-    def contains_key(self, key: str) -> bool:
+    def contains_key(self, key: str, /) -> bool:
         """
         Whether the header map contains an entry by key.
         """
         ...
 
-    def get(self, key: str) -> Optional[str]:
+    def get(self, key: str, /) -> Optional[str]:
         """
         Get header value by key.
         """
@@ -616,7 +616,7 @@ class EnumVariant:
         ...
 
     @staticmethod
-    def from_string(value: str) -> EnumVariant:
+    def from_string(value: str, /) -> EnumVariant:
         ...
 
 class OptionVariant:
