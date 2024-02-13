@@ -1,10 +1,10 @@
-use pyo3::{pyclass, pymethods, Python, PyResult, types::{PyModule, PyType}, PyAny, Py, exceptions::PyRuntimeError, PyErr, PyObject, IntoPy};
+use pyo3::{pyclass, pymethods, Python, PyResult, types::PyModule, PyAny, Py, PyErr, PyObject, IntoPy};
 use pyo3_asyncio::tokio::future_into_py;
 use teo::cli::runtime_version::RuntimeVersion;
 use ::teo::prelude::{App as TeoApp, Entrance, transaction};
 use tokio::runtime::Builder;
 
-use crate::{utils::{check_callable::check_callable, is_coroutine::is_coroutine}, result::{IntoPyResult, IntoTeoResult, IntoPyResultWithGil}, namespace::namespace::Namespace, dynamic::{synthesize_dynamic_python_classes, py_ctx_object_from_teo_transaction_ctx}};
+use crate::{utils::{check_callable::check_callable, is_coroutine::is_coroutine}, result::{IntoTeoResult, IntoPyResultWithGil}, namespace::namespace::Namespace, dynamic::{synthesize_dynamic_python_classes, py_ctx_object_from_teo_transaction_ctx}};
 
 #[pyclass]
 pub struct App {
@@ -74,7 +74,7 @@ impl App {
         Ok(())
     }
 
-    fn run(&self, py: Python<'_>) -> PyResult<PyObject> {
+    fn _run(&self, py: Python<'_>) -> PyResult<PyObject> {
         let mut builder = Builder::new_multi_thread();
         builder.enable_all();
         pyo3_asyncio::tokio::init(builder);

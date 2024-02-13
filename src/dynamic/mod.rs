@@ -33,6 +33,7 @@ pub fn setup_dynamic_container() -> PyResult<()> {
     Ok(())
 }
 
+#[allow(invalid_reference_casting)]
 fn classes_mut() -> &'static mut BTreeMap<String, PyObject> {
     unsafe {
         let const_ptr = CLASSES.unwrap() as *const BTreeMap<String, PyObject>;
@@ -41,6 +42,7 @@ fn classes_mut() -> &'static mut BTreeMap<String, PyObject> {
     }
 }
 
+#[allow(invalid_reference_casting)]
 fn objects_mut() -> &'static mut BTreeMap<String, PyObject> {
     unsafe {
         let const_ptr = OBJECTS.unwrap() as *const BTreeMap<String, PyObject>;
@@ -49,6 +51,7 @@ fn objects_mut() -> &'static mut BTreeMap<String, PyObject> {
     }
 }
 
+#[allow(invalid_reference_casting)]
 fn ctxs_mut() -> &'static mut BTreeMap<String, PyObject> {
     unsafe {
         let const_ptr = CTXS.unwrap() as *const BTreeMap<String, PyObject>;
