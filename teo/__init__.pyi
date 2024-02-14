@@ -85,37 +85,37 @@ class Namespace:
         """
         ...
 
-    def define_model_decorator(self, name: str, callback: Callable[[Model], None], /) -> None:
+    def define_model_decorator(self, name: str, callback: Callable[[dict[str, Any], Model], None], /) -> None:
         """
         Define a model decorator.
         """
         ...
 
-    def define_model_field_decorator(self, name: str, callback: Callable[[Field], None], /) -> None:
+    def define_model_field_decorator(self, name: str, callback: Callable[[dict[str, Any], Field], None], /) -> None:
         """
         Define a model field decorator.
         """
         ...
 
-    def define_model_relation_decorator(self, name: str, callback: Callable[[Relation], None], /) -> None:
+    def define_model_relation_decorator(self, name: str, callback: Callable[[dict[str, Any], Relation], None], /) -> None:
         """
         Define a model relation decorator.
         """
         ...
 
-    def define_model_property_decorator(self, name: str, callback: Callable[[Property], None], /) -> None:
+    def define_model_property_decorator(self, name: str, callback: Callable[[dict[str, Any], Property], None], /) -> None:
         """
         Define a model property decorator.
         """
         ...
 
-    def define_enum_decorator(self, name: str, callback: Callable[[Enum], None], /) -> None:
+    def define_enum_decorator(self, name: str, callback: Callable[[dict[str, Any], Enum], None], /) -> None:
         """
         Define a enum decorator.
         """
         ...
 
-    def define_enum_member_decorator(self, name: str, callback: Callable[[EnumMember], None], /) -> None:
+    def define_enum_member_decorator(self, name: str, callback: Callable[[dict[str, Any], EnumMember], None], /) -> None:
         """
         Define a enum member decorator.
         """
