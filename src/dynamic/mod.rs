@@ -254,9 +254,12 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
         // create
         let create = create_function(py)?;
         teo_wrap_builtin.call1((model_class_class.as_ref(py), "create", teo_wrap_async.call1((create,))?))?;
-        // count
-        let count = count_function(py)?;
-        teo_wrap_builtin.call1((model_class_class.as_ref(py), "count", count))?;
+        // count objects
+        let count_objects = count_objects_function(py)?;
+        teo_wrap_builtin.call1((model_class_class.as_ref(py), "count_objects", count_objects))?;
+        // count fields
+        let count_fields = count_fields_function(py)?;
+        teo_wrap_builtin.call1((model_class_class.as_ref(py), "count_fields", count_fields))?;
         // aggregate
         let aggregate = aggregate_function(py)?;
         teo_wrap_builtin.call1((model_class_class.as_ref(py), "aggregate", aggregate))?;
@@ -663,8 +666,8 @@ fn create_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
     })?)
 }
 
-fn count_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
-    Ok(PyCFunction::new_closure(py, Some("count"), Some("Count records."), move |args, _kwargs| {
+fn count_objects_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("count_objects"), Some("Count records."), move |args, _kwargs| {
         Python::with_gil(|py| {
             let slf = args.get_item(0)?.into_py(py);
             let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
@@ -676,9 +679,32 @@ fn count_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
                 Value::Dictionary(IndexMap::new())
             };
             let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
-                let result: usize = model_ctx_wrapper.ctx.count(&count_arg).await.into_py_result_with_gil()?;
+                let result: usize = model_ctx_wrapper.ctx.count_objects(&count_arg).await.into_py_result_with_gil()?;
                 Python::with_gil(|py| {
                     Ok(result.into_py(py))
+                })
+            })())?;
+            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+        })
+    })?)
+}
+
+fn count_fields_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("count_fields"), Some("Count records."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?.into_py(py);
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let count_arg = if args.len() > 1 {
+                let py_dict = args.get_item(1)?;
+                check_py_dict(py_dict)?;
+                py_any_to_teo_value(py, py_dict)?
+            } else {
+                Value::Dictionary(IndexMap::new())
+            };
+            let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                let result: Value = model_ctx_wrapper.ctx.count_fields(&count_arg).await.into_py_result_with_gil()?;
+                Python::with_gil(|py| {
+                    teo_value_to_py_any(py, &result)
                 })
             })())?;
             Ok::<PyObject, PyErr>(coroutine.into_py(py))
