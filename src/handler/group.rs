@@ -4,6 +4,7 @@ use teo::prelude::{handler::Group as TeoHandlerGroup, request};
 use crate::dynamic::py_ctx_object_from_teo_transaction_ctx;
 use crate::object::value::teo_value_to_py_any;
 use crate::request::request::Request;
+use crate::request::RequestCtx;
 use crate::response::Response;
 use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals;
 use crate::utils::check_callable::check_callable;
@@ -23,12 +24,10 @@ impl HandlerGroup {
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         self.teo_handler_group.define_handler(name.as_str(), move |ctx: request::Ctx| async move {
             let result = Python::with_gil(|py| {
-                let request = Request {
-                    teo_request: ctx.request().clone()
+                let request_ctx = RequestCtx {
+                    teo_inner: ctx
                 };
-                let body = teo_value_to_py_any(py, &ctx.body())?;
-                let py_ctx = py_ctx_object_from_teo_transaction_ctx(py, ctx.transaction_ctx(), "")?;
-                let result = callback_owned.call1(py, (request, body, py_ctx))?;
+                let result = callback_owned.call1(py, (request_ctx,))?;
                 Ok::<PyObject, PyErr>(result)
             }).into_teo_path_result()?;
             let awaited_result = await_coroutine_if_needed_value_with_locals(result, main_thread_locals).await.into_teo_path_result()?;

@@ -151,7 +151,7 @@ class Namespace:
         """
         ...
 
-    def define_handler(self, name: str, callback: Callable[[Request, Any, Any], Response | Awaitable[Response]], /) -> None:
+    def define_handler(self, name: str, callback: Callable[[RequestCtx], Response | Awaitable[Response]], /) -> None:
         """
         Define a handler.
         """
@@ -180,7 +180,7 @@ class HandlerGroup:
     A handler group contains handlers and it takes a namespace in the request URL.
     """
 
-    def define_handler(self, name: str, callback: Callable[[Request, Any, Any], Response | Awaitable[Response]], /) -> None:
+    def define_handler(self, name: str, callback: Callable[[RequestCtx], Response | Awaitable[Response]], /) -> None:
         """
         Define a handler.
         """
