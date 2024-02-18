@@ -2,7 +2,7 @@ from .teo import (
     App, Namespace, HandlerGroup, Model, Field, Relation, Property, Enum, 
     EnumMember, Response, Request, ReadOnlyHeaderMap, ReadWriteHeaderMap, 
     HandlerMatch, RequestCtx, ObjectId, Range, OptionVariant, EnumVariant, 
-    File, Pipeline, InterfaceEnumVariant, Pipeline
+    File, Pipeline, InterfaceEnumVariant, Pipeline, serve_static_files
 )
 from typing import TypeVar, Union
 from signal import signal, SIGINT
