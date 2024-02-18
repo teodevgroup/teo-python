@@ -558,6 +558,11 @@ class RequestCtx:
         """
         ...
 
+    def path_arguments(self) -> Any:
+        """
+        Get the path arguments.
+        """
+
     
 class ObjectId:
     """

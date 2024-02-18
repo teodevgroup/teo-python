@@ -34,4 +34,8 @@ impl RequestCtx {
             teo_inner: static_self.teo_inner.handler_match()
         }
     }
+
+    pub fn path_arguments(&self, py: Python<'_>) -> PyResult<PyObject> {
+        self.handler_match().captures(py)
+    }
 }
