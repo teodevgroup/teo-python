@@ -653,3 +653,8 @@ class File:
     The file name extension of the file.
     """
     filename_ext: str
+
+def serve_static_files(base: str, path: str) -> Response:
+    """
+    Serve static files.
+    """

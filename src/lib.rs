@@ -11,8 +11,10 @@ pub mod request;
 pub mod response;
 
 use pyo3::prelude::*;
+use ::teo::prelude::serve_static_files as teo_serve_static_files;
 use request::{Request, ReadOnlyHeaderMap};
 use response::{Response, header_map::ReadWriteHeaderMap};
+use crate::result::IntoPyResult;
 use crate::dynamic::{get_model_class_class, get_model_object_class, get_ctx_class, setup_dynamic_container};
 use crate::app::app::App;
 use crate::namespace::namespace::Namespace;
@@ -61,6 +63,12 @@ def teo_wrap_async(callable):
     fn fetch_ctx_class(name: &str, py: Python) -> PyResult<PyObject> {
         get_ctx_class(py, name)
     }
+    #[pyfunction]
+    fn serve_static_files(base: &str, path: &str, py: Python<'_>) -> PyResult<Response> {
+        let teo_response = teo_serve_static_files(base, path).into_py_result(py)?;
+        Ok(Response { teo_response })
+    }
+    m.add_function(wrap_pyfunction!(serve_static_files, m)?)?;
     m.add_function(wrap_pyfunction!(fetch_model_class_class, m)?)?;
     m.add_function(wrap_pyfunction!(fetch_model_object_class, m)?)?;
     m.add_function(wrap_pyfunction!(fetch_ctx_class, m)?)?;
