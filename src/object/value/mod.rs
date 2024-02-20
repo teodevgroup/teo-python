@@ -33,7 +33,10 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObje
         Value::Float(f) => f.into_py(py),
         Value::Bool(b) => b.into_py(py),
         Value::Date(d) => d.into_py(py),
-        Value::DateTime(d) => d.into_py(py),
+        Value::DateTime(d) => {
+            println!("see this datetime will into py: {}", d);
+            d.into_py(py)
+        },
         Value::Decimal(b) => big_decimal_to_python_decimal(b.clone(), py)?,
         Value::Array(v) => {
             let list = PyList::empty(py);
@@ -96,12 +99,12 @@ pub fn py_any_to_teo_value(py: Python<'_>, object: &PyAny) -> PyResult<Value> {
     } else if object.is_instance_of::<PyFloat>() {
         let f: f64 = object.extract()?;
         Ok(Value::Float(f))
-    } else if object.is_instance_of::<PyDate>() {
-        let d: NaiveDate = object.extract()?;
-        Ok(Value::Date(d))
     } else if object.is_instance_of::<PyDateTime>() {
         let d: DateTime<Utc> = object.extract()?;
         Ok(Value::DateTime(d))
+    } else if object.is_instance_of::<PyDate>() {
+        let d: NaiveDate = object.extract()?;
+        Ok(Value::Date(d))
     } else if object.is_instance_of::<PyList>() {
         let v: Vec<&PyAny> = object.extract()?;
         let mut vec = vec![];
