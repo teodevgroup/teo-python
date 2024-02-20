@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods};
+use pyo3::{pyclass, pymethods, types::PyDict, IntoPy, PyResult, Python};
 use teo::prelude::File as TeoFile;
 
 /// File
@@ -19,22 +19,18 @@ pub struct File {
 #[pymethods]
 impl File {
 
-    // pub fn __repr__(&self) -> PyResult<String> {
-    //     Python::with_gil(|py| {
-    //         let slf = args.get_item(0)?.into_py(py);
-    //         let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
-    //         let result = PyDict::new(py);
-    //         let value_map = model_object_wrapper.object.inner.value_map.lock().unwrap();
-    //         for (k, v) in value_map.iter() {
-    //             result.set_item(k, teo_value_to_py_any(py, v)?)?;
-    //         }
-    //         let dict_repr = result.call_method("__repr__", (), None)?;
-    //         let dict_repr_str: &str = dict_repr.extract()?;
-    //         let prefix = format!("{}(", model_object_wrapper.object.model().path().join("."));
-    //         let suffix = ")";
-    //         Ok::<PyObject, PyErr>(format!("{}{}{}", prefix, dict_repr_str, suffix).into_py(py))
-    //     })
-    // }
+    pub fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        let prefix = "File(";
+        let suffix = ")";
+        let result = PyDict::new(py);
+        result.set_item("filepath", self.filepath.as_str())?;
+        result.set_item("content_type", self.content_type.as_ref().into_py(py))?;
+        result.set_item("filename", self.filename.as_str())?;
+        result.set_item("filename_ext", self.content_type.as_ref().into_py(py))?;
+        let dict_repr = result.call_method("__repr__", (), None)?;
+        let dict_repr_str: &str = dict_repr.extract()?;
+        Ok(format!("{}{}{}", prefix, dict_repr_str, suffix))
+    }
 }
 
 impl From<&TeoFile> for File {
