@@ -294,8 +294,9 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
         teo_wrap_builtin.call1((model_object_class.as_ref(py), "__repr__", repr))?;
         // fields
         for field in model.fields() {
+            let snake_case_field_name = Box::leak(Box::new(field.name.to_snake_case())).as_str();
             let field_name = Box::leak(Box::new(field.name.clone())).as_str();
-            let field_property_getter = PyCFunction::new_closure(py, Some(field_name), None, move |args, _kwargs| {
+            let field_property_getter = PyCFunction::new_closure(py, Some(snake_case_field_name), None, move |args, _kwargs| {
                 Python::with_gil(|py| {
                     let slf = args.get_item(0)?.into_py(py);
                     let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
@@ -304,7 +305,7 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
                 })
             })?;
             let field_property_wrapped = property_wrapper.call1((field_property_getter,))?;
-            let field_property_setter = PyCFunction::new_closure(py, Some(field_name), None, move |args, _kwargs| {
+            let field_property_setter = PyCFunction::new_closure(py, Some(snake_case_field_name), None, move |args, _kwargs| {
                 Python::with_gil(|py| {
                     let slf = args.get_item(0)?.into_py(py);
                     let value = args.get_item(1)?.into_py(py);
@@ -315,7 +316,7 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
                 })
             })?;
             let field_property_wrapped = field_property_wrapped.call_method1("setter", (field_property_setter,))?;
-            model_object_class.setattr(py, field_name, field_property_wrapped)?;
+            model_object_class.setattr(py, snake_case_field_name, field_property_wrapped)?;
         }
         // relations
         for relation in model.relations() {
@@ -468,7 +469,7 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
         }
         // properties
         for model_property in model.properties() {
-            let field_name = Box::leak(Box::new(model_property.name.clone())).as_str();
+            let field_name: &str = Box::leak(Box::new(model_property.name.clone())).as_str();
             if model_property.setter.is_some() {
                 let name: &str = Box::leak(Box::new("set_".to_owned() + &field_name.to_snake_case())).as_str();
                 let setter = PyCFunction::new_closure(py, Some(name), None, move |args, _kwargs| {
