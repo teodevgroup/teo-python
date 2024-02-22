@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, Python, PyResult, types::PyModule, PyAny, Py, PyErr, PyObject, IntoPy};
+use pyo3::{pyclass, pymethods, types::{PyList, PyModule}, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_asyncio::tokio::future_into_py;
 use teo::cli::runtime_version::RuntimeVersion;
 use ::teo::prelude::{App as TeoApp, Entrance, transaction};
@@ -27,8 +27,12 @@ impl App {
         let version_str: &str = version_any.extract::<&str>(py)?;
         let environment_version = RuntimeVersion::Python(version_str.to_owned());
         let entrance = if cli { Entrance::CLI } else { Entrance::APP };
+        let sys = PyModule::import(py, "sys")?;
+        let argv: &PyList = sys.getattr("argv")?.extract()?;
+        let mut rust_argv: Vec<String> = argv.iter().map(|s| s.to_string()).collect();
+        rust_argv.insert(0, "python".to_string());
         Ok(App { 
-            teo_app: TeoApp::new_with_entrance_and_runtime_version(Some(entrance), Some(environment_version)).unwrap() 
+            teo_app: TeoApp::new_with_entrance_and_runtime_version(Some(entrance), Some(environment_version), Some(rust_argv)).unwrap() 
         })
     }
 
