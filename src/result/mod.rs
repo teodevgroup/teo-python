@@ -1,5 +1,5 @@
 use indexmap::IndexMap;
-use pyo3::{exceptions::PyRuntimeError, import_exception, types::PyType, IntoPy, PyErr, PyObject, PyResult, Python};
+use pyo3::{import_exception, types::PyType, IntoPy, PyErr, PyObject, PyResult, Python};
 
 import_exception!(teo, TeoException);
 
@@ -24,7 +24,7 @@ impl<T> IntoTeoResult<T> for PyResult<T> {
                         error.code = code;
                         error.title = title;
                         error.prefixes = prefixes;
-                        error.fields = errors;
+                        error.errors = errors;
                         error.assign_platform_native_object(e);
                         Err(error)
                     } else {
@@ -56,7 +56,7 @@ impl<T> IntoPyResult<T> for teo::prelude::Result<T> {
                     py_object.setattr(py, "message", e.message())?;
                     py_object.setattr(py, "title", e.title.clone())?;
                     py_object.setattr(py, "code", e.code)?;
-                    py_object.setattr(py, "errors", e.fields.clone())?;
+                    py_object.setattr(py, "errors", e.errors.clone())?;
                     py_object.setattr(py, "prefixes", e.prefixes.clone())?;
                     Err(err)
                 }
