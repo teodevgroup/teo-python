@@ -658,3 +658,14 @@ def serve_static_files(base: str, path: str) -> Response:
     """
     Serve static files.
     """
+
+class TeoException(Exception):
+
+    message: str
+    code: Optional[int]
+    title: Optional[str]
+    fields: Optional[dict[str, str]]
+    prefixes: list[str]
+
+    def __init__(self, message: str, code: Optional[int] = None) -> None:
+        pass
