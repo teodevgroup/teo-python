@@ -26,8 +26,11 @@ class TeoException(Exception):
     code: Optional[int]
     title: Optional[str]
     fields: Optional[dict[str, str]]
-    prefixes: list[str]
+    prefixes: Optional[list[str]]
 
     def __init__(self, message: str, code: Optional[int] = None) -> None:
         self.message = message
         self.code = code
+        self.title = None
+        self.fields = None
+        self.prefixes = None

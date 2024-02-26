@@ -33,10 +33,7 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObje
         Value::Float(f) => f.into_py(py),
         Value::Bool(b) => b.into_py(py),
         Value::Date(d) => d.into_py(py),
-        Value::DateTime(d) => {
-            println!("see this datetime will into py: {}", d);
-            d.into_py(py)
-        },
+        Value::DateTime(d) => d.into_py(py),
         Value::Decimal(b) => big_decimal_to_python_decimal(b.clone(), py)?,
         Value::Array(v) => {
             let list = PyList::empty(py);
