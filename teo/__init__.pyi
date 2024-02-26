@@ -669,3 +669,25 @@ class TeoException(Exception):
 
     def __init__(self, message: str, code: Optional[int] = None) -> None:
         pass
+
+    def prefixed(self, prefix: str) -> TeoException:
+        pass
+    
+    def pathed(self, path: str, message: str) -> TeoException:
+        pass
+    
+    @staticmethod
+    def not_found(message: str = "not found") -> TeoException:
+        pass
+    
+    @staticmethod
+    def value_error(message: str = "value is invalid") -> TeoException:
+        pass
+    
+    @staticmethod
+    def internal_server_error(message: str = "internal server error") -> TeoException:
+        pass
+    
+    @staticmethod
+    def unauthorized(message: str = "unauthorized") -> TeoException:
+        pass
