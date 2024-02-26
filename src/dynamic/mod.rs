@@ -15,7 +15,7 @@ use crate::dynamic::model_object_wrapper::ModelObjectWrapper;
 use crate::object::model::teo_model_object_to_py_any;
 use crate::object::py_any_to_teo_object;
 use crate::object::value::{teo_value_to_py_any, py_any_to_teo_value};
-use crate::result::{IntoPyResultWithGil, IntoTeoPathResult};
+use crate::result::{IntoPyResultWithGil, IntoTeoResult};
 use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals;
 use crate::utils::check_py_dict::check_py_dict;
 
@@ -535,11 +535,11 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
             let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (move || async move {
                 let retval: pyo3::prelude::Py<PyAny> = transaction_ctx_wrapper.ctx.run_transaction(move |ctx: transaction::Ctx| async move {
                     let user_retval = Python::with_gil(move |py| {
-                        let ctx_python = py_ctx_object_from_teo_transaction_ctx(py, ctx, "").into_teo_path_result()?;
-                        let coroutine_or_value = shared_argument.call1(py, (ctx_python,)).into_teo_path_result()?;
-                        Ok::<PyObject, teo::prelude::path::Error>(coroutine_or_value)
+                        let ctx_python = py_ctx_object_from_teo_transaction_ctx(py, ctx, "").into_teo_result()?;
+                        let coroutine_or_value = shared_argument.call1(py, (ctx_python,)).into_teo_result()?;
+                        Ok::<PyObject, teo::prelude::Error>(coroutine_or_value)
                     })?;
-                    Ok(await_coroutine_if_needed_value_with_locals(user_retval, main_thread_locals).await.into_teo_path_result()?)
+                    Ok(await_coroutine_if_needed_value_with_locals(user_retval, main_thread_locals).await.into_teo_result()?)
                 }).await.into_py_result_with_gil()?;
                 Python::with_gil(|py| {
                     Ok::<PyObject, PyErr>(retval.into_py(py))    

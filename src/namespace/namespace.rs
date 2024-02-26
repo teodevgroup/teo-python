@@ -1,7 +1,7 @@
 use pyo3::{pyclass, pymethods, types::PyCFunction, IntoPy, Py, PyErr, PyObject, PyResult, Python};
 use teo::prelude::{handler::Group as TeoHandlerGroup, model::Field as TeoField, model::Property as TeoProperty, model::Relation as TeoRelation, pipeline::{self, item::validator::Validity}, request, Enum as TeoEnum, Member as TeoEnumMember, Middleware, Model as TeoModel, Namespace as TeoNamespace, Next, Value};
 
-use crate::{utils::{check_callable::check_callable, await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals}, object::{arguments::teo_args_to_py_args, model::teo_model_object_to_py_any, py_any_to_teo_object, teo_object_to_py_any, value::{py_any_to_teo_value, teo_value_to_py_any}}, model::{model::Model, field::field::Field, relation::relation::Relation, property::property::Property}, result::{IntoPyResultWithGil, IntoTeoPathResult, IntoTeoResult}, r#enum::{r#enum::Enum, member::member::EnumMember}, request::{Request, RequestCtx}, dynamic::py_ctx_object_from_teo_transaction_ctx, response::Response, handler::group::HandlerGroup};
+use crate::{utils::{check_callable::check_callable, await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals}, object::{arguments::teo_args_to_py_args, model::teo_model_object_to_py_any, py_any_to_teo_object, teo_object_to_py_any, value::{py_any_to_teo_value, teo_value_to_py_any}}, model::{model::Model, field::field::Field, relation::relation::Relation, property::property::Property}, result::{IntoPyResultWithGil, IntoTeoResult}, r#enum::{r#enum::Enum, member::member::EnumMember}, request::{Request, RequestCtx}, dynamic::py_ctx_object_from_teo_transaction_ctx, response::Response, handler::group::HandlerGroup};
 
 #[pyclass]
 pub struct Namespace {
@@ -272,10 +272,10 @@ impl Namespace {
                 };
                 let result = callback_owned.call1(py, (request_ctx,))?;
                 Ok::<PyObject, PyErr>(result)
-            }).into_teo_path_result()?;
-            let awaited_result = await_coroutine_if_needed_value_with_locals(result, main_thread_locals).await.into_teo_path_result()?;
+            }).into_teo_result()?;
+            let awaited_result = await_coroutine_if_needed_value_with_locals(result, main_thread_locals).await.into_teo_result()?;
             Python::with_gil(|py| {
-                let response: Response = awaited_result.extract(py).into_teo_path_result()?;
+                let response: Response = awaited_result.extract(py).into_teo_result()?;
                 Ok(response.teo_response.clone())
             })
         });
