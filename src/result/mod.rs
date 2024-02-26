@@ -1,5 +1,5 @@
 use indexmap::IndexMap;
-use pyo3::{exceptions::PyRuntimeError, import_exception, types::{PyList, PyType}, IntoPy, PyErr, PyObject, PyResult, Python};
+use pyo3::{exceptions::PyRuntimeError, import_exception, types::PyType, IntoPy, PyErr, PyObject, PyResult, Python};
 
 import_exception!(teo, TeoException);
 
@@ -19,12 +19,12 @@ impl<T> IntoTeoResult<T> for PyResult<T> {
                         let code: Option<u16> = py_object.getattr(py, "code").into_teo_result()?.extract(py).into_teo_result()?;
                         let title: Option<String> = py_object.getattr(py, "title").into_teo_result()?.extract(py).into_teo_result()?;
                         let prefixes: Option<Vec<String>> = py_object.getattr(py, "prefixes").into_teo_result()?.extract(py).into_teo_result()?;
-                        let fields: Option<IndexMap<String, String>> = py_object.getattr(py, "fields").into_teo_result()?.extract(py).into_teo_result()?;
+                        let errors: Option<IndexMap<String, String>> = py_object.getattr(py, "errors").into_teo_result()?.extract(py).into_teo_result()?;
                         let mut error = ::teo::prelude::Error::new(message);
                         error.code = code;
                         error.title = title;
                         error.prefixes = prefixes;
-                        error.fields = fields;
+                        error.fields = errors;
                         error.assign_platform_native_object(e);
                         Err(error)
                     } else {
@@ -51,8 +51,14 @@ impl<T> IntoPyResult<T> for teo::prelude::Result<T> {
                 if let Some(err) = meta {
                     Err(PyErr::from_value(err.into_py(py).as_ref(py)))
                 } else {
-                    
-                    Err(PyRuntimeError::new_err(e.message().to_owned()))
+                    let err = TeoException::new_err("");
+                    let py_object: PyObject = err.clone_ref(py).into_py(py);
+                    py_object.setattr(py, "message", e.message())?;
+                    py_object.setattr(py, "title", e.title.clone())?;
+                    py_object.setattr(py, "code", e.code)?;
+                    py_object.setattr(py, "errors", e.fields.clone())?;
+                    py_object.setattr(py, "prefixes", e.prefixes.clone())?;
+                    Err(err)
                 }
             },
         }

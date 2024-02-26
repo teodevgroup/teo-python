@@ -27,14 +27,14 @@ class TeoException(Exception):
     message: str
     code: Optional[int]
     title: Optional[str]
-    fields: Optional[dict[str, str]]
+    errors: Optional[dict[str, str]]
     prefixes: Optional[list[str]]
 
     def __init__(self, message: str, code: Optional[int] = None) -> None:
         self.message = message
         self.code = code
         self.title = None
-        self.fields = None
+        self.errors = None
         self.prefixes = None
 
     def prefixed(self, prefix: str) -> TeoException:
@@ -46,7 +46,7 @@ class TeoException(Exception):
     
     def pathed(self, path: str, message: str) -> TeoException:
         slf = copy(self)
-        slf.fields = { path: message }
+        slf.errors = { path: message }
         return slf
     
     @staticmethod

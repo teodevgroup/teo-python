@@ -664,7 +664,7 @@ class TeoException(Exception):
     message: str
     code: Optional[int]
     title: Optional[str]
-    fields: Optional[dict[str, str]]
+    errors: Optional[dict[str, str]]
     prefixes: list[str]
 
     def __init__(self, message: str, code: Optional[int] = None) -> None:
