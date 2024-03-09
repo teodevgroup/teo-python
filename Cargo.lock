@@ -3796,9 +3796,7 @@ dependencies = [
 
 [[package]]
 name = "teo"
-version = "0.2.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc9e7bc9ed3a0c0488e30807d06aa3b6578f30ff3e119e66acc5c521ed67de1c"
+version = "0.2.13"
 dependencies = [
  "actix-files",
  "actix-http",
@@ -3850,8 +3848,6 @@ dependencies = [
 [[package]]
 name = "teo-generator"
 version = "0.2.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e949e167a005cd71ce33fa9feaf56c747addc795eec70243701fbccec4a8528"
 dependencies = [
  "askama",
  "async-recursion",
@@ -3875,9 +3871,7 @@ dependencies = [
 
 [[package]]
 name = "teo-mongodb-connector"
-version = "0.2.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75c9c838c66a29255431c8a5939a22cd0bae8f20798e1b657cfa8a5ce4d432c4"
+version = "0.2.13"
 dependencies = [
  "async-recursion",
  "async-trait",
@@ -3901,9 +3895,7 @@ dependencies = [
 
 [[package]]
 name = "teo-parser"
-version = "0.2.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac015a9fc34825861eda1e0e974157b18d86a42d306b13073e507dda588b5bee"
+version = "0.2.13"
 dependencies = [
  "array_tool",
  "colored",
@@ -3927,7 +3919,7 @@ dependencies = [
 
 [[package]]
 name = "teo-py"
-version = "0.2.11"
+version = "0.2.13"
 dependencies = [
  "bigdecimal",
  "bson",
@@ -3944,17 +3936,13 @@ dependencies = [
 [[package]]
 name = "teo-result"
 version = "0.2.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8d61a0d23770dd302816a52c40c3193a810227e5c8bcb81a93172ceb242834f"
 dependencies = [
  "indexmap 2.2.3",
 ]
 
 [[package]]
 name = "teo-runtime"
-version = "0.2.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3717cff7f6fdb5dac13199c9baca37b6be2bfb90a5c0e103e41fff9ecd6e3238"
+version = "0.2.13"
 dependencies = [
  "async-recursion",
  "async-trait",
@@ -3990,9 +3978,7 @@ dependencies = [
 
 [[package]]
 name = "teo-sql-connector"
-version = "0.2.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "edae9d31c2f53740d1788c268ac26f56dcd04bb685ae3a7664ee084db9e53c11"
+version = "0.2.13"
 dependencies = [
  "array_tool",
  "async-recursion",
@@ -4019,9 +4005,7 @@ dependencies = [
 
 [[package]]
 name = "teo-teon"
-version = "0.2.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10c12d877ab7e84cbac353c8edf66859fa497cd2b26247e6fa5cb516635f4030"
+version = "0.2.13"
 dependencies = [
  "bigdecimal",
  "bson",
