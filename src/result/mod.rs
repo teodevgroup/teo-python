@@ -1,5 +1,5 @@
 use indexmap::IndexMap;
-use pyo3::{import_exception, types::PyType, IntoPy, PyErr, PyObject, PyResult, Python};
+use pyo3::{import_exception, types::{PyDict, PyType}, IntoPy, PyErr, PyObject, PyResult, Python};
 
 import_exception!(teo, TeoException);
 
@@ -19,7 +19,19 @@ impl<T> IntoTeoResult<T> for PyResult<T> {
                         let code: Option<u16> = py_object.getattr(py, "code").into_teo_result()?.extract(py).into_teo_result()?;
                         let title: Option<String> = py_object.getattr(py, "title").into_teo_result()?.extract(py).into_teo_result()?;
                         let prefixes: Option<Vec<String>> = py_object.getattr(py, "prefixes").into_teo_result()?.extract(py).into_teo_result()?;
-                        let errors: Option<IndexMap<String, String>> = py_object.getattr(py, "errors").into_teo_result()?.extract(py).into_teo_result()?;
+                        let errors_py = py_object.getattr(py, "errors").into_teo_result()?;
+                        let errors = if errors_py.is_none(py) {
+                            None
+                        } else {
+                            let dict: &PyDict = errors_py.extract(py).into_teo_result()?;
+                            let mut map_result: IndexMap<String, String> = IndexMap::new();
+                            for (k, v) in dict.iter() {
+                                let k_string: String = k.extract().into_teo_result()?;
+                                let v_string: String = v.extract().into_teo_result()?;
+                                map_result.insert(k_string, v_string);
+                            }
+                            Some(map_result)
+                        };
                         let mut error = ::teo::prelude::Error::new(message);
                         error.code = code;
                         error.title = title;
@@ -56,7 +68,15 @@ impl<T> IntoPyResult<T> for teo::prelude::Result<T> {
                     py_object.setattr(py, "message", e.message())?;
                     py_object.setattr(py, "title", e.title.clone())?;
                     py_object.setattr(py, "code", e.code)?;
-                    py_object.setattr(py, "errors", e.errors.clone())?;
+                    if let Some(errors) = e.errors {
+                        let dict = PyDict::new(py);
+                        for (k, v) in errors {
+                            dict.set_item(k, v)?;
+                        }
+                        py_object.setattr(py, "errors", dict)?;
+                    } else {
+                        py_object.setattr(py, "errors", ())?;
+                    }
                     py_object.setattr(py, "prefixes", e.prefixes.clone())?;
                     Err(err)
                 }
