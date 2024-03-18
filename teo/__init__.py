@@ -25,17 +25,13 @@ signal(SIGINT, lambda _, __: exit(0))
 class TeoException(Exception):
 
     message: str
-    code: Optional[int]
-    title: Optional[str]
+    code: int
     errors: Optional[dict[str, str]]
-    prefixes: Optional[list[str]]
 
-    def __init__(self, message: str, code: Optional[int] = None) -> None:
+    def __init__(self, message: str, code: Optional[int] = None, errors: Optional[dict[str, str] = None) -> None:
         self.message = message
         self.code = code
-        self.title = None
-        self.errors = None
-        self.prefixes = None
+        self.errors = errors
 
     def prefixed(self, prefix: str) -> TeoException:
         slf = copy(self)
@@ -52,23 +48,19 @@ class TeoException(Exception):
     @staticmethod
     def not_found(message: str = "not found") -> TeoException:
         slf = TeoException(message, 404)
-        slf.title = "NotFound"
         return slf
     
     @staticmethod
     def value_error(message: str = "value is invalid") -> TeoException:
         slf = TeoException(message, 400)
-        slf.title = "ValueError"
         return slf
     
     @staticmethod
     def internal_server_error(message: str = "internal server error") -> TeoException:
         slf = TeoException(message, 500)
-        slf.title = "InternalServerError"
         return slf
     
     @staticmethod
     def unauthorized(message: str = "unauthorized") -> TeoException:
         slf = TeoException(message, 401)
-        slf.title = "Unauthorized"
         return slf
