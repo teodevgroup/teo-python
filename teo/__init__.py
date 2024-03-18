@@ -35,7 +35,7 @@ class TeoException(Exception):
         return dumps(object)
 
     def __init__(self, message: str, code: Optional[int] = None, errors: Optional[dict[str, str] = None) -> None:
-        self.http_message = message
+        self.error_message = message
         self.code = code
         self.errors = errors
 
