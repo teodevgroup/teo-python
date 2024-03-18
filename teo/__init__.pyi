@@ -672,10 +672,10 @@ class TeoException(Exception):
     def __init__(self, message: str, code: Optional[int] = None, errors: Optional[dict[str, str] = None) -> None:
         pass
 
-    def prefixed(self, prefix: str) -> TeoException:
+    def message_prefixed(self, prefix: str) -> TeoException:
         pass
 
-    def pathed(self, path: str, message: str) -> TeoException:
+    def path_prefixed(self, prefix: str) -> TeoException:
         pass
 
     @staticmethod

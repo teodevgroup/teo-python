@@ -35,22 +35,22 @@ class TeoException(Exception):
         return dumps(object)
 
     def __init__(self, message: str, code: Optional[int] = None, errors: Optional[dict[str, str] = None) -> None:
-        self.error_message = message
         self.code = code
+        self.error_message = message
         self.errors = errors
 
-    def prefixed(self, prefix: str) -> TeoException:
-        slf = copy(self)
-        if slf.prefixes is None:
-            slf.prefixes = []
-        slf.prefixes.insert(0, prefix)
-        return slf
-    
-    def pathed(self, path: str, message: str) -> TeoException:
-        slf = copy(self)
-        slf.errors = { path: message }
-        return slf
-    
+    def message_prefixed(self, prefix: str) -> TeoException:
+        retval = clone(self)
+        retval.code = self.code
+        retval.error_message = self.error_message if self.errors is not None else f'{prefix}: {self.message}'
+        retval.errors = None if self.errors is None else { k: f'{prefix}: {v}' for (k, v) in self.errors }
+
+    def path_prefixed(self, prefix: str) -> TeoException:
+        retval = clone(self)
+        retval.code = self.code
+        retval.error_message = self.error_message
+        retval.errors = None if self.errors is None else { f'{prefix}.{k}': v for (k, v) in self.errors }
+
     @staticmethod
     def not_found(message: str = "not found") -> TeoException:
         slf = TeoException(message, 404)
