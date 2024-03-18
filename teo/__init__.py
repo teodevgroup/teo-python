@@ -9,6 +9,7 @@ from typing import TypeVar, Union, Optional
 from signal import signal, SIGINT
 from sys import exit
 from copy import copy
+from json import dumps
 
 
 T = TypeVar('T')
@@ -24,12 +25,17 @@ signal(SIGINT, lambda _, __: exit(0))
 
 class TeoException(Exception):
 
-    message: str
+    error_message: str
     code: int
     errors: Optional[dict[str, str]]
 
+    @property
+    def message(&self) -> str:
+        object = { "code": self.code, "message": self.error_message, "errors": self.errors }
+        return dumps(object)
+
     def __init__(self, message: str, code: Optional[int] = None, errors: Optional[dict[str, str] = None) -> None:
-        self.message = message
+        self.http_message = message
         self.code = code
         self.errors = errors
 
@@ -51,7 +57,7 @@ class TeoException(Exception):
         return slf
     
     @staticmethod
-    def value_error(message: str = "value is invalid") -> TeoException:
+    def invalid_request(message: str = "value is invalid") -> TeoException:
         slf = TeoException(message, 400)
         return slf
     

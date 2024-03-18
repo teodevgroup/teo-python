@@ -661,33 +661,35 @@ def serve_static_files(base: str, path: str) -> Response:
 
 class TeoException(Exception):
 
-    message: str
-    code: Optional[int]
-    title: Optional[str]
+    error_message: str
+    code: int
     errors: Optional[dict[str, str]]
-    prefixes: list[str]
 
-    def __init__(self, message: str, code: Optional[int] = None) -> None:
+    @property
+    def message(&self) -> str:
+        pass
+
+    def __init__(self, message: str, code: Optional[int] = None, errors: Optional[dict[str, str] = None) -> None:
         pass
 
     def prefixed(self, prefix: str) -> TeoException:
         pass
-    
+
     def pathed(self, path: str, message: str) -> TeoException:
         pass
-    
+
     @staticmethod
     def not_found(message: str = "not found") -> TeoException:
         pass
-    
+
     @staticmethod
-    def value_error(message: str = "value is invalid") -> TeoException:
+    def invalid_request(message: str = "value is invalid") -> TeoException:
         pass
-    
+
     @staticmethod
     def internal_server_error(message: str = "internal server error") -> TeoException:
         pass
-    
+
     @staticmethod
     def unauthorized(message: str = "unauthorized") -> TeoException:
         pass
