@@ -1,5 +1,4 @@
 pub mod utils;
-pub mod result;
 pub mod app;
 pub mod namespace;
 pub mod dynamic;
@@ -14,7 +13,6 @@ use pyo3::prelude::*;
 use ::teo::prelude::serve_static_files as teo_serve_static_files;
 use request::{Request, ReadOnlyHeaderMap};
 use response::{Response, header_map::ReadWriteHeaderMap};
-use crate::result::IntoPyResult;
 use crate::dynamic::{get_model_class_class, get_model_object_class, get_ctx_class, setup_dynamic_container};
 use crate::app::app::App;
 use crate::namespace::namespace::Namespace;
