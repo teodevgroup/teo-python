@@ -678,6 +678,9 @@ class TeoException(Exception):
     def path_prefixed(self, prefix: str) -> TeoException:
         pass
 
+    def map_path(self, mapper: Callable[[str], str]) -> TeoException:
+        pass
+
     @staticmethod
     def not_found(message: str = "not found") -> TeoException:
         pass

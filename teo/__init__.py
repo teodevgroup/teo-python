@@ -5,7 +5,7 @@ from .teo import (
     HandlerMatch, RequestCtx, ObjectId, Range, OptionVariant, EnumVariant, 
     File, Pipeline, InterfaceEnumVariant, Pipeline, serve_static_files
 )
-from typing import TypeVar, Union, Optional
+from typing import TypeVar, Union, Optional, Callable
 from signal import signal, SIGINT
 from sys import exit
 from copy import copy
@@ -50,6 +50,12 @@ class TeoException(Exception):
         retval.code = self.code
         retval.error_message = self.error_message
         retval.errors = None if self.errors is None else { f'{prefix}.{k}': v for (k, v) in self.errors }
+
+    def map_path(self, mapper: Callable[[str], str]) -> TeoException:
+        retval = clone(self)
+        retval.code = self.code
+        retval.error_message = self.error_message
+        retval.errors = None if self.errors is None else { mapper(k): v for (k, v) in self.errors }
 
     @staticmethod
     def not_found(message: str = "not found") -> TeoException:
