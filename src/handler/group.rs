@@ -8,7 +8,6 @@ use crate::request::RequestCtx;
 use crate::response::Response;
 use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals;
 use crate::utils::check_callable::check_callable;
-use crate::result::IntoTeoResult;
 
 #[pyclass]
 pub struct HandlerGroup {
@@ -29,10 +28,10 @@ impl HandlerGroup {
                 };
                 let result = callback_owned.call1(py, (request_ctx,))?;
                 Ok::<PyObject, PyErr>(result)
-            }).into_teo_result()?;
-            let awaited_result = await_coroutine_if_needed_value_with_locals(result, main_thread_locals).await.into_teo_result()?;
+            })?;
+            let awaited_result = await_coroutine_if_needed_value_with_locals(result, main_thread_locals).await?;
             Python::with_gil(|py| {
-                let response: Response = awaited_result.extract(py).into_teo_result()?;
+                let response: Response = awaited_result.extract(py)?;
                 Ok(response.teo_response.clone())
             })
         });

@@ -63,7 +63,7 @@ def teo_wrap_async(callable):
     }
     #[pyfunction]
     fn serve_static_files(base: &str, path: &str, py: Python<'_>) -> PyResult<Response> {
-        let teo_response = teo_serve_static_files(base, path).into_py_result(py)?;
+        let teo_response = teo_serve_static_files(base, path)?;
         Ok(Response { teo_response })
     }
     m.add_function(wrap_pyfunction!(serve_static_files, m)?)?;

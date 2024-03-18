@@ -2,9 +2,10 @@ use pyo3::{pyclass, pymethods, types::{PyList, PyModule}, IntoPy, Py, PyAny, PyE
 use pyo3_asyncio::tokio::future_into_py;
 use teo::cli::runtime_version::RuntimeVersion;
 use ::teo::prelude::{App as TeoApp, Entrance, transaction};
+use teo_result::Error;
 use tokio::runtime::Builder;
 
-use crate::{utils::{check_callable::check_callable, is_coroutine::is_coroutine}, result::{IntoTeoResult, IntoPyResultWithGil}, namespace::namespace::Namespace, dynamic::{synthesize_dynamic_python_classes, py_ctx_object_from_teo_transaction_ctx}};
+use crate::{utils::{check_callable::check_callable, is_coroutine::is_coroutine}, namespace::namespace::Namespace, dynamic::{synthesize_dynamic_python_classes, py_ctx_object_from_teo_transaction_ctx}};
 
 #[pyclass]
 pub struct App {
@@ -44,13 +45,13 @@ impl App {
                 let callback = callback_owned.as_ref(py);
                 let transformed_py = callback.call1((py_ctx_object_from_teo_transaction_ctx(py, ctx, "")?,))?.into_py(py);
                 let is_coroutine = is_coroutine(transformed_py.as_ref(py))?;
-                Ok((transformed_py, is_coroutine))
-            }).into_teo_result()?;
+                Ok::<_, Error>((transformed_py, is_coroutine))
+            })?;
             if transformed.1 {
                 let fut = Python::with_gil(|py| {
                     pyo3_asyncio::tokio::into_future(transformed.0.as_ref(py))
-                }).into_teo_result()?;
-                let _ = fut.await.into_teo_result()?;
+                })?;
+                let _ = fut.await?;
             }
             Ok(())
         });
@@ -65,13 +66,13 @@ impl App {
                 let callback = callback_owned.as_ref(py);
                 let transformed_py = callback.call1((py_ctx_object_from_teo_transaction_ctx(py, ctx, "")?,))?.into_py(py);
                 let is_coroutine = is_coroutine(transformed_py.as_ref(py))?;
-                Ok((transformed_py, is_coroutine))
-            }).into_teo_result()?;
+                Ok::<_, Error>((transformed_py, is_coroutine))
+            })?;
             if transformed.1 {
                 let fut = Python::with_gil(|py| {
                     pyo3_asyncio::tokio::into_future(transformed.0.as_ref(py))
-                }).into_teo_result()?;
-                let _ = fut.await.into_teo_result()?;
+                })?;
+                let _ = fut.await?;
             }
             Ok(())
         });
@@ -84,12 +85,12 @@ impl App {
         pyo3_asyncio::tokio::init(builder);
         let static_self: &'static App = unsafe { &*(self as * const App) };
         let coroutine = future_into_py(py, (|| async move {
-            static_self.teo_app.prepare_for_run().await.into_py_result_with_gil()?;
+            static_self.teo_app.prepare_for_run().await?;
             Python::with_gil(|py| {
                 synthesize_dynamic_python_classes(py, &static_self.teo_app)?;
                 Ok::<(), PyErr>(())
             })?;
-            static_self.teo_app.run_without_prepare().await.into_py_result_with_gil()?;
+            static_self.teo_app.run_without_prepare().await?;
             Ok(())
         })())?;
         Ok::<PyObject, PyErr>(coroutine.into_py(py))

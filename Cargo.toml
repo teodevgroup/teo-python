@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 teo = { version = "0.2.19", path = "../teo" }
+teo-result = { version = "0.2.19", path = "../teo-result", features = ["pyo3"] }
 pyo3 = { version = "0.20.3", features = ["extension-module", "chrono", "indexmap"] }
 pyo3-asyncio = { version = "0.20.0", features = ["attributes", "tokio-runtime"] }
 tokio = { version = "1.0" }
