@@ -666,10 +666,10 @@ class TeoException(Exception):
     errors: Optional[dict[str, str]]
 
     @property
-    def message(&self) -> str:
+    def message(self) -> str:
         pass
 
-    def __init__(self, message: str, code: Optional[int] = None, errors: Optional[dict[str, str] = None) -> None:
+    def __init__(self, message: str, code: int = 500, errors: Optional[dict[str, str]] = None) -> None:
         pass
 
     def message_prefixed(self, prefix: str) -> TeoException:

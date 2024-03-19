@@ -30,32 +30,35 @@ class TeoException(Exception):
     errors: Optional[dict[str, str]]
 
     @property
-    def message(&self) -> str:
+    def message(self) -> str:
         object = { "code": self.code, "message": self.error_message, "errors": self.errors }
         return dumps(object)
 
-    def __init__(self, message: str, code: Optional[int] = None, errors: Optional[dict[str, str] = None) -> None:
+    def __init__(self, message: str, code: int = 500, errors: Optional[dict[str, str]] = None) -> None:
         self.code = code
         self.error_message = message
         self.errors = errors
 
     def message_prefixed(self, prefix: str) -> TeoException:
-        retval = clone(self)
+        retval = copy(self)
         retval.code = self.code
         retval.error_message = self.error_message if self.errors is not None else f'{prefix}: {self.message}'
         retval.errors = None if self.errors is None else { k: f'{prefix}: {v}' for (k, v) in self.errors }
+        return retval
 
     def path_prefixed(self, prefix: str) -> TeoException:
-        retval = clone(self)
+        retval = copy(self)
         retval.code = self.code
         retval.error_message = self.error_message
         retval.errors = None if self.errors is None else { f'{prefix}.{k}': v for (k, v) in self.errors }
+        return retval
 
     def map_path(self, mapper: Callable[[str], str]) -> TeoException:
-        retval = clone(self)
+        retval = copy(self)
         retval.code = self.code
         retval.error_message = self.error_message
         retval.errors = None if self.errors is None else { mapper(k): v for (k, v) in self.errors }
+        return retval
 
     @staticmethod
     def not_found(message: str = "not found") -> TeoException:
