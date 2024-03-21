@@ -29,10 +29,10 @@ class TeoException(Exception):
     code: int
     errors: Optional[dict[str, str]]
 
-    @property
-    def message(self) -> str:
-        object = { "code": self.code, "message": self.error_message, "errors": self.errors }
-        return dumps(object)
+    # @property
+    # def message(self) -> str:
+    #     object = { "code": self.code, "message": self.error_message, "errors": self.errors }
+    #     return dumps(object)
 
     def __init__(self, message: str, code: int = 500, errors: Optional[dict[str, str]] = None) -> None:
         self.code = code
@@ -42,7 +42,7 @@ class TeoException(Exception):
     def message_prefixed(self, prefix: str) -> TeoException:
         retval = copy(self)
         retval.code = self.code
-        retval.error_message = self.error_message if self.errors is not None else f'{prefix}: {self.message}'
+        retval.error_message = self.error_message if self.errors is not None else f'{prefix}: {self.error_message}'
         retval.errors = None if self.errors is None else { k: f'{prefix}: {v}' for (k, v) in self.errors }
         return retval
 
