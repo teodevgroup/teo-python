@@ -1,7 +1,6 @@
 pub mod object_id;
 pub mod file;
 pub mod range;
-pub mod enum_variant;
 pub mod option_variant;
 pub mod decimal;
 
@@ -12,7 +11,6 @@ use teo::prelude::Value;
 pub use object_id::ObjectId;
 pub use file::File;
 pub use range::Range;
-pub use enum_variant::EnumVariant;
 pub use option_variant::OptionVariant;
 use std::str::FromStr;
 use bigdecimal::BigDecimal;
@@ -21,6 +19,8 @@ use chrono::prelude::{NaiveDate, Utc, DateTime};
 
 
 use self::decimal::big_decimal_to_python_decimal;
+
+use super::{interface_enum_variant::teo_interface_enum_variant_to_py_any, model::teo_model_object_to_py_any, pipeline::teo_pipeline_to_py_any, r#struct::teo_struct_object_to_py_any};
 
 pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObject> {
     Ok(match value {
@@ -57,9 +57,6 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObje
         Value::Tuple(tuple) => {
             PyTuple::new(py, tuple.iter().map(|v| teo_value_to_py_any(py, v)).collect::<PyResult<Vec<PyObject>>>()?).into_py(py)
         }
-        Value::EnumVariant(enum_variant) => {
-            PyString::new(py, enum_variant.value.as_str()).into_py(py)
-        }
         Value::OptionVariant(option_variant) => {
             let instance = OptionVariant { value: option_variant.clone() };
             instance.into_py(py)
@@ -74,6 +71,10 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObje
             let instance = File::from(file);
             instance.into_py(py)
         }
+        Value::ModelObject(model_object) => teo_model_object_to_py_any(py, model_object)?,
+        Value::StructObject(struct_object) => teo_struct_object_to_py_any(struct_object)?,
+        Value::Pipeline(pipeline) => teo_pipeline_to_py_any(py, pipeline)?,
+        Value::InterfaceEnumVariant(interface_enum_variant) => teo_interface_enum_variant_to_py_any(py, interface_enum_variant)?,
         _ => Err(PyValueError::new_err("cannot convert Teo value to Python value"))?,
     })
 }

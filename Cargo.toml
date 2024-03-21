@@ -1,6 +1,6 @@
 [package]
 name = "teo-py"
-version = "0.2.19"
+version = "0.2.20"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,8 +9,8 @@ name = "teo"
 crate-type = ["cdylib"]
 
 [dependencies]
-teo = { version = "0.2.19" }
-teo-result = { version = "0.2.19", features = ["pyo3"] }
+teo = { version = "0.2.20", path = "../teo" }
+teo-result = { version = "0.2.19", features = ["pyo3"], path = "../teo-result" }
 pyo3 = { version = "0.20.3", features = ["extension-module", "chrono", "indexmap"] }
 pyo3-asyncio = { version = "0.20.0", features = ["attributes", "tokio-runtime"] }
 tokio = { version = "1.0" }

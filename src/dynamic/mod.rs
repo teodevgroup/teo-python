@@ -13,7 +13,6 @@ use teo::prelude::{Namespace, Value, model, transaction};
 use crate::dynamic::model_object_wrapper::ModelObjectWrapper;
 
 use crate::object::model::teo_model_object_to_py_any;
-use crate::object::py_any_to_teo_object;
 use crate::object::value::{teo_value_to_py_any, py_any_to_teo_value};
 use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals;
 use crate::utils::check_py_dict::check_py_dict;
@@ -445,7 +444,7 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
                         let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
                         let next_argument = if args.len() > 1 {
                             let arg1 = args.get_item(1)?;
-                            let teo_object = py_any_to_teo_object(py, arg1.into_py(py))?;
+                            let teo_object = py_any_to_teo_value(py, arg1)?;
                             if let Some(model_object) = teo_object.as_model_object()  {
                                 Some(model_object.clone())
                             } else {

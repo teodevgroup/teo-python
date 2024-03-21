@@ -2,7 +2,7 @@ use pyo3::{pyclass, pymethods, types::PyCFunction, IntoPy, Py, PyErr, PyObject, 
 use teo::prelude::{handler::Group as TeoHandlerGroup, model::Field as TeoField, model::Property as TeoProperty, model::Relation as TeoRelation, pipeline::{self, item::validator::Validity}, request, Enum as TeoEnum, Member as TeoEnumMember, Middleware, Model as TeoModel, Namespace as TeoNamespace, Next, Value};
 use teo_result::Error;
 
-use crate::{utils::{check_callable::check_callable, await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals}, object::{arguments::teo_args_to_py_args, model::teo_model_object_to_py_any, py_any_to_teo_object, teo_object_to_py_any, value::{py_any_to_teo_value, teo_value_to_py_any}}, model::{model::Model, field::field::Field, relation::relation::Relation, property::property::Property}, r#enum::{r#enum::Enum, member::member::EnumMember}, request::{Request, RequestCtx}, dynamic::py_ctx_object_from_teo_transaction_ctx, response::Response, handler::group::HandlerGroup};
+use crate::{utils::{check_callable::check_callable, await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals}, object::{arguments::teo_args_to_py_args, model::teo_model_object_to_py_any, value::{py_any_to_teo_value, teo_value_to_py_any}}, model::{model::Model, field::field::Field, relation::relation::Relation, property::property::Property}, r#enum::{r#enum::Enum, member::member::EnumMember}, request::{Request, RequestCtx}, dynamic::py_ctx_object_from_teo_transaction_ctx, response::Response, handler::group::HandlerGroup};
 
 #[pyclass]
 pub struct Namespace {
@@ -158,7 +158,7 @@ impl Namespace {
         let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio::tokio::get_current_locals(py)?));
         self.teo_namespace.define_pipeline_item(name, move |args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
-                let value = teo_object_to_py_any(py, ctx.value())?;
+                let value = teo_value_to_py_any(py, ctx.value())?;
                 let args = teo_args_to_py_args(py, &args)?;
                 let object = teo_model_object_to_py_any(py, ctx.object())?;
                 let ctx = py_ctx_object_from_teo_transaction_ctx(py, ctx.transaction_ctx(), "")?;
@@ -167,7 +167,7 @@ impl Namespace {
             })?;
             let awaited_result = await_coroutine_if_needed_value_with_locals(result, main_thread_locals).await?;
             Python::with_gil(|py| {
-                let result = py_any_to_teo_object(py, awaited_result)?;
+                let result = py_any_to_teo_value(py, awaited_result.as_ref(py))?;
                 Ok(result)
             })
         });
@@ -184,7 +184,7 @@ impl Namespace {
         let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio::tokio::get_current_locals(py)?));
         self.teo_namespace.define_validator_pipeline_item(name, move |_: Value, args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
-                let value = teo_object_to_py_any(py, ctx.value())?;
+                let value = teo_value_to_py_any(py, ctx.value())?;
                 let args = teo_args_to_py_args(py, &args)?;
                 let object = teo_model_object_to_py_any(py, ctx.object())?;
                 let ctx = py_ctx_object_from_teo_transaction_ctx(py, ctx.transaction_ctx(), "")?;
@@ -194,7 +194,7 @@ impl Namespace {
             let awaited_result = await_coroutine_if_needed_value_with_locals(result, main_thread_locals).await?;
             Python::with_gil(|py| {
                 let result = py_any_to_teo_value(py, awaited_result.as_ref(py))?;
-                Ok::<Validity, teo::prelude::Error>(match result {
+                Ok::<Validity, Error>(match result {
                     Value::String(s) => {
                         Validity::Invalid(s.to_owned())
                     },
@@ -216,7 +216,7 @@ impl Namespace {
         let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio::tokio::get_current_locals(py)?));
         self.teo_namespace.define_callback_pipeline_item(name, move |args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
-                let value = teo_object_to_py_any(py, ctx.value())?;
+                let value = teo_value_to_py_any(py, ctx.value())?;
                 let args = teo_args_to_py_args(py, &args)?;
                 let object = teo_model_object_to_py_any(py, ctx.object())?;
                 let ctx = py_ctx_object_from_teo_transaction_ctx(py, ctx.transaction_ctx(), "")?;

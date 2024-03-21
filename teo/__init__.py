@@ -2,7 +2,7 @@ from __future__ import annotations
 from .teo import (
     App, Namespace, HandlerGroup, Model, Field, Relation, Property, Enum, 
     EnumMember, Response, Request, ReadOnlyHeaderMap, ReadWriteHeaderMap, 
-    HandlerMatch, RequestCtx, ObjectId, Range, OptionVariant, EnumVariant, 
+    HandlerMatch, RequestCtx, ObjectId, Range, OptionVariant, 
     File, Pipeline, InterfaceEnumVariant, Pipeline, serve_static_files
 )
 from typing import TypeVar, Union, Optional, Callable

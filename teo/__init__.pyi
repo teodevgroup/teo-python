@@ -611,15 +611,6 @@ class Range[T]:
         """
         ...
 
-class EnumVariant:
-
-    def to_string(self) -> str:
-        ...
-
-    @staticmethod
-    def from_string(value: str, /) -> EnumVariant:
-        ...
-
 class OptionVariant:
     pass
 
