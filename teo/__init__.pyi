@@ -20,7 +20,7 @@ class App:
         """
         pass
 
-    def program(self, name: str, callback: Callable[[Any], None | Awaitable[None]], /) -> None:
+    def program(self, name: str, desc: Optional[str], callback: Callable[[Any], None | Awaitable[None]], /) -> None:
         """
         Define a custom program with `name`. The programs can be triggered with `teo run` command.
         """

@@ -58,10 +58,11 @@ impl App {
         Ok(())
     }
 
-    fn program<'p>(&self, _py: Python<'p>, name: &str, callback: &PyAny) -> PyResult<()> {
+    #[pyo3(signature = (name, desc, callback))]
+    fn program<'p>(&self, _py: Python<'p>, name: &str, desc: Option<&str>, callback: &PyAny) -> PyResult<()> {
         check_callable(callback)?;
         let callback_owned = Box::leak(Box::new(Py::from(callback)));
-        self.teo_app.program(name, |ctx: transaction::Ctx| async {
+        self.teo_app.program(name, desc, |ctx: transaction::Ctx| async {
             let transformed = Python::with_gil(|py| {
                 let callback = callback_owned.as_ref(py);
                 let transformed_py = callback.call1((py_ctx_object_from_teo_transaction_ctx(py, ctx, "")?,))?.into_py(py);
