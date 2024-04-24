@@ -8,7 +8,7 @@ use inflector::Inflector;
 use ::teo::prelude::App;
 use pyo3::{IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3::exceptions::PyRuntimeError;
-use pyo3::types::{PyCFunction, PyDict, PyList};
+use pyo3::types::{PyCFunction, PyDict, PyList, PyString};
 use teo::prelude::{Namespace, Value, model, transaction};
 use crate::dynamic::model_object_wrapper::ModelObjectWrapper;
 
@@ -264,6 +264,11 @@ fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namesp
         // group by
         let group_by = group_by_function(py)?;
         teo_wrap_builtin.call1((model_class_class.as_ref(py), "group_by", group_by))?;
+        // sql
+        if namespace.database.is_some() && namespace.database.unwrap().is_sql() {
+            let sql = sql_function(py)?;
+            teo_wrap_builtin.call1((model_class_class.as_ref(py), "sql", sql))?;    
+        }
         // model object methods
         let model_object_class = get_model_object_class(py, &model_name)?;
         // is new
@@ -748,6 +753,29 @@ fn group_by_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
             };
             let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
                 let result: Vec<Value> = model_ctx_wrapper.ctx.group_by(&group_by_arg).await?;
+                Python::with_gil(|py| {
+                    let py_result = PyList::empty(py);
+                    for value in result {
+                        let instance = teo_value_to_py_any(py, &value)?;
+                        py_result.append(instance)?;
+                    }
+                    Ok(py_result.into_py(py))
+                })
+            })())?;
+            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+        })
+    })?)
+}
+
+fn sql_function<'py>(py: Python<'py>) -> PyResult<&'py PyCFunction> {
+    Ok(PyCFunction::new_closure(py, Some("sql"), Some("Run custom SQL clause."), move |args, _kwargs| {
+        Python::with_gil(|py| {
+            let slf = args.get_item(0)?.into_py(py);
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let sql_string_any: &PyAny = args.get_item(1)?;
+            let sql_string: String = sql_string_any.extract()?;
+            let coroutine = pyo3_asyncio::tokio::future_into_py::<_, PyObject>(py, (|| async move {
+                let result: Vec<Value> = model_ctx_wrapper.ctx.sql(&sql_string).await?;
                 Python::with_gil(|py| {
                     let py_result = PyList::empty(py);
                     for value in result {
