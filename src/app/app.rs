@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, types::{PyList, PyModule}, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
+use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyList, PyModule}, Bound, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_asyncio_0_21::tokio::future_into_py;
 use teo::cli::runtime_version::RuntimeVersion;
 use ::teo::prelude::{App as TeoApp, Entrance, transaction};
@@ -22,13 +22,13 @@ impl App {
 
     #[staticmethod]
     fn with_cli(py: Python<'_>, cli: bool) -> PyResult<Self> {
-        let platform = PyModule::import(py, "platform")?;
+        let platform = PyModule::import_bound(py, "platform")?;
         let python_version: Py<PyAny> = platform.getattr("python_version")?.into();
         let version_any = python_version.call0(py)?;
         let version_str: &str = version_any.extract::<&str>(py)?;
         let environment_version = RuntimeVersion::Python(version_str.to_owned());
         let entrance = if cli { Entrance::CLI } else { Entrance::APP };
-        let sys = PyModule::import(py, "sys")?;
+        let sys = PyModule::import_bound(py, "sys")?;
         let argv: &PyList = sys.getattr("argv")?.extract()?;
         let mut rust_argv: Vec<String> = argv.iter().map(|s| s.to_string()).collect();
         rust_argv.insert(0, "python".to_string());
@@ -37,19 +37,17 @@ impl App {
         })
     }
 
-    fn setup<'p>(&self, _py: Python<'p>, callback: &PyAny) -> PyResult<()> {
-        check_callable(callback)?;
-        let callback_owned = Box::leak(Box::new(Py::from(callback)));
+    fn setup<'p>(&self, _py: Python<'p>, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
         self.teo_app.setup(|ctx: transaction::Ctx| async {
             let transformed = Python::with_gil(|py| {
-                let callback = callback_owned.as_ref(py);
                 let transformed_py = callback.call1((py_ctx_object_from_teo_transaction_ctx(py, ctx, "")?,))?.into_py(py);
-                let is_coroutine = is_coroutine(transformed_py.as_ref(py))?;
+                let is_coroutine = is_coroutine(transformed_py.extract::<&PyAny>(py)?)?;
                 Ok::<_, Error>((transformed_py, is_coroutine))
             })?;
             if transformed.1 {
                 let fut = Python::with_gil(|py| {
-                    pyo3_asyncio_0_21::tokio::into_future(transformed.0.as_ref(py))
+                    pyo3_asyncio_0_21::tokio::into_future(transformed.0.bind(py).clone())
                 })?;
                 let _ = fut.await?;
             }
@@ -98,6 +96,6 @@ impl App {
     }
 
     fn main_namespace(&self) -> Namespace {
-        Namespace { teo_namespace: self.teo_app.main_namespace_mut() }
+        Namespace { teo_namespace: self.teo_app.namespace_builder().clone() }
     }
 }
