@@ -1,12 +1,12 @@
-use pyo3::{pyclass, pymethods, types::PyCFunction, IntoPy, Py, PyErr, PyObject, PyResult, Python};
-use teo::prelude::{handler::Group as TeoHandlerGroup, model::Field as TeoField, model::Property as TeoProperty, model::Relation as TeoRelation, pipeline::{self, item::validator::Validity}, request, Enum as TeoEnum, Member as TeoEnumMember, Middleware, Model as TeoModel, Namespace as TeoNamespace, Next, Value};
+use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction}, Bound, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
+use teo::prelude::{r#enum, handler::{self, Group as TeoHandlerGroup}, model::{Field as TeoField, Property as TeoProperty, Relation as TeoRelation}, namespace, pipeline::{self, item::validator::Validity}, request, Enum as TeoEnum, Member as TeoEnumMember, Middleware, Model as TeoModel, Namespace as TeoNamespace, Next, Value};
 use teo_result::Error;
 
 use crate::{utils::{check_callable::check_callable, await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals}, object::{arguments::teo_args_to_py_args, model::teo_model_object_to_py_any, value::{py_any_to_teo_value, teo_value_to_py_any}}, model::{model::Model, field::field::Field, relation::relation::Relation, property::property::Property}, r#enum::{r#enum::Enum, member::member::EnumMember}, request::{Request, RequestCtx}, dynamic::py_ctx_object_from_teo_transaction_ctx, response::Response, handler::group::HandlerGroup};
 
 #[pyclass]
 pub struct Namespace {
-    pub(crate) teo_namespace: &'static mut TeoNamespace,
+    pub(crate) teo_namespace: namespace::Builder,
 }
 
 #[pymethods]
@@ -20,39 +20,34 @@ impl Namespace {
         self.teo_namespace.is_std()
     }
 
-    pub fn path(&self) -> Vec<&str> {
-        self.teo_namespace.path()
+    pub fn path(&self) -> Vec<String> {
+        self.teo_namespace.path().clone()
     }
 
-    pub fn namespace(&mut self, name: String) -> Option<Namespace> {
-        let static_self: &'static mut Namespace = unsafe { &mut *(self as * const Namespace as * mut Namespace) };
-        static_self.teo_namespace.namespace_mut(name.as_str()).map(|n| Namespace { teo_namespace: n })
+    pub fn namespace(&self, name: String) -> Option<Namespace> {
+        self.teo_namespace.namespace(name.as_str()).map(|n| Namespace { teo_namespace: n })
     }
 
-    pub fn namespace_or_create(&mut self, name: String) -> Namespace {
-        let static_self: &'static mut Namespace = unsafe { &mut *(self as * const Namespace as * mut Namespace) };
-        Namespace { teo_namespace: static_self.teo_namespace.namespace_mut_or_create(name.as_str()) }
+    pub fn namespace_or_create(&self, name: String) -> Namespace {
+        Namespace { teo_namespace: self.teo_namespace.namespace_or_create(name.as_str()) }
     }
 
-    pub fn namespace_at_path(&mut self, path: Vec<&str>) -> Option<Namespace> {
-        let static_self: &'static mut Namespace = unsafe { &mut *(self as * const Namespace as * mut Namespace) };
-        static_self.teo_namespace.namespace_mut_at_path(&path).map(|n| Namespace { teo_namespace: n })
+    pub fn namespace_at_path(&self, path: Vec<String>) -> Option<Namespace> {
+        self.teo_namespace.namespace_at_path(&path).map(|n| Namespace { teo_namespace: n })
     }
 
-    pub fn namespace_or_create_at_path(&mut self, path: Vec<&str>) -> Namespace {
-        let static_self: &'static mut Namespace = unsafe { &mut *(self as * const Namespace as * mut Namespace) };
-        Namespace { teo_namespace: static_self.teo_namespace.namespace_mut_or_create_at_path(&path) }
+    pub fn namespace_or_create_at_path(&self, path: Vec<String>) -> Namespace {
+        Namespace { teo_namespace: self.teo_namespace.namespace_or_create_at_path(&path) }
     }
 
-    pub fn define_model_decorator(&mut self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
-        check_callable(callback.as_ref(py))?;
+    pub fn define_model_decorator(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         self.teo_namespace.define_model_decorator(name, |arguments, model| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments)?;
-                let static_model: &'static mut TeoModel = unsafe { &mut *(model as * mut TeoModel) };
                 let model_wrapped = Model {
-                    teo_model: static_model
+                    teo_model: model.clone()
                 };
                 callback_owned.call1(py, (arguments, model_wrapped))?;
                 Ok::<(), PyErr>(())
@@ -62,17 +57,16 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_model_field_decorator(&mut self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
-        check_callable(callback.as_ref(py))?;
+    pub fn define_model_field_decorator(&self, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         self.teo_namespace.define_model_field_decorator(name, |arguments, field| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments)?;
-                let static_field: &'static mut TeoField = unsafe { &mut *(field as * mut TeoField) };
-                let model_wrapped = Field {
-                    teo_field: static_field
+                let field_wrapped = Field {
+                    teo_field: field.clone()
                 };
-                callback_owned.call1(py, (arguments, model_wrapped))?;
+                callback_owned.call1(py, (arguments, field_wrapped))?;
                 Ok::<(), PyErr>(())
             })?;
             Ok(())
@@ -80,17 +74,16 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_model_relation_decorator(&mut self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
-        check_callable(callback.as_ref(py))?;
+    pub fn define_model_relation_decorator(&self, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         self.teo_namespace.define_model_relation_decorator(name, |arguments, relation| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments)?;
-                let static_relation: &'static mut TeoRelation = unsafe { &mut *(relation as * mut TeoRelation) };
-                let model_wrapped = Relation {
-                    teo_relation: static_relation
+                let relation_wrapped = Relation {
+                    teo_relation: relation.clone()
                 };
-                callback_owned.call1(py, (arguments, model_wrapped))?;
+                callback_owned.call1(py, (arguments, relation_wrapped))?;
                 Ok::<(), PyErr>(())
             })?;
             Ok(())
@@ -98,17 +91,16 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_model_property_decorator(&mut self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
-        check_callable(callback.as_ref(py))?;
+    pub fn define_model_property_decorator(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         self.teo_namespace.define_model_property_decorator(name, |arguments, property| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments)?;
-                let static_property: &'static mut TeoProperty = unsafe { &mut *(property as * mut TeoProperty) };
-                let model_wrapped = Property {
-                    teo_property: static_property
+                let property_wrapped = Property {
+                    teo_property: property.clone()
                 };
-                callback_owned.call1(py, (arguments, model_wrapped))?;
+                callback_owned.call1(py, (arguments, property_wrapped))?;
                 Ok::<(), PyErr>(())
             })?;
             Ok(())
@@ -116,17 +108,16 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_enum_decorator(&mut self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
-        check_callable(callback.as_ref(py))?;
+    pub fn define_enum_decorator(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
-        self.teo_namespace.define_enum_decorator(name, |arguments, teo_enum: &mut TeoEnum| {
+        self.teo_namespace.define_enum_decorator(name, |arguments, teo_enum: &r#enum::Builder| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments)?;
-                let static_teo_enum: &'static mut TeoEnum = unsafe { &mut *(teo_enum as * mut TeoEnum) };
-                let model_wrapped = Enum {
-                    teo_enum: static_teo_enum
+                let enum_wrapped = Enum {
+                    teo_enum: teo_enum.clone()
                 };
-                callback_owned.call1(py, (arguments, model_wrapped))?;
+                callback_owned.call1(py, (arguments, enum_wrapped))?;
                 Ok::<(), PyErr>(())
             })?;
             Ok(())
@@ -134,17 +125,16 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_enum_member_decorator(&mut self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
-        check_callable(callback.as_ref(py))?;
+    pub fn define_enum_member_decorator(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
-        self.teo_namespace.define_enum_member_decorator(name, |arguments, teo_enum: &mut TeoEnumMember| {
+        self.teo_namespace.define_enum_member_decorator(name, |arguments, member: &r#enum::member::Builder| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments)?;
-                let static_teo_enum: &'static mut TeoEnumMember = unsafe { &mut *(teo_enum as * mut TeoEnumMember) };
-                let model_wrapped = EnumMember {
-                    teo_enum_member: static_teo_enum
+                let enum_member_wrapped = EnumMember {
+                    teo_enum_member: member.clone()
                 };
-                callback_owned.call1(py, (arguments, model_wrapped))?;
+                callback_owned.call1(py, (arguments, enum_member_wrapped))?;
                 Ok::<(), PyErr>(())
             })?;
             Ok(())
@@ -152,10 +142,10 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_pipeline_item(&mut self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
-        check_callable(callback.as_ref(py))?;
+    pub fn define_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio::tokio::get_current_locals(py)?));
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
         self.teo_namespace.define_pipeline_item(name, move |args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
                 let value = teo_value_to_py_any(py, ctx.value())?;
@@ -167,21 +157,21 @@ impl Namespace {
             })?;
             let awaited_result = await_coroutine_if_needed_value_with_locals(result, main_thread_locals).await?;
             Python::with_gil(|py| {
-                let result = py_any_to_teo_value(py, awaited_result.as_ref(py))?;
+                let result = py_any_to_teo_value(py, awaited_result.extract::<&PyAny>(py)?)?;
                 Ok(result)
             })
         });
         Ok(())
     }
 
-    pub fn define_transform_pipeline_item(&mut self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
+    pub fn define_transform_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         self.define_pipeline_item(py, name, callback)
     }
 
-    pub fn define_validator_pipeline_item(&mut self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
-        check_callable(callback.as_ref(py))?;
+    pub fn define_validator_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio::tokio::get_current_locals(py)?));
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
         self.teo_namespace.define_validator_pipeline_item(name, move |_: Value, args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
                 let value = teo_value_to_py_any(py, ctx.value())?;
@@ -210,10 +200,10 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_callback_pipeline_item(&mut self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
-        check_callable(callback.as_ref(py))?;
+    pub fn define_callback_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio::tokio::get_current_locals(py)?));
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
         self.teo_namespace.define_callback_pipeline_item(name, move |args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
                 let value = teo_value_to_py_any(py, ctx.value())?;
@@ -229,10 +219,10 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_compare_pipeline_item(&mut self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
-        check_callable(callback.as_ref(py))?;
+    pub fn define_compare_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio::tokio::get_current_locals(py)?));
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
         self.teo_namespace.define_compare_pipeline_item(name, move |old: Value, new: Value, args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
                 let value_old = teo_value_to_py_any(py, &old)?;
@@ -262,9 +252,9 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_handler(&mut self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
-        check_callable(callback.as_ref(py))?;
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio::tokio::get_current_locals(py)?));
+    pub fn define_handler(&self, py: Python<'_>, name: String, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         self.teo_namespace.define_handler(name.as_str(), move |ctx: request::Ctx| async move {
             let result = Python::with_gil(|py| {
@@ -283,36 +273,34 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_handler_group(&mut self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
-        check_callable(callback.as_ref(py))?;
-        self.teo_namespace.define_handler_group(name.as_str(), |teo_handler_group: &mut TeoHandlerGroup| {
-            let static_model: &'static mut TeoHandlerGroup = unsafe { &mut *(teo_handler_group as * mut TeoHandlerGroup) };
-            let handler_group = HandlerGroup { teo_handler_group: static_model };
-            callback.call1(py, (handler_group,)).unwrap();
+    pub fn define_handler_group(&self, name: String, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
+        self.teo_namespace.define_handler_group(name.as_str(), |teo_handler_group: &handler::group::Builder| {
+            let handler_group = HandlerGroup { teo_handler_group: teo_handler_group.clone() };
+            callback.call1((handler_group,)).unwrap();
         });
         Ok(())
     }
 
-    pub fn define_model_handler_group(&mut self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
-        check_callable(callback.as_ref(py))?;
-        self.teo_namespace.define_model_handler_group(name.as_str(), |teo_handler_group: &mut TeoHandlerGroup| {
-            let static_model: &'static mut TeoHandlerGroup = unsafe { &mut *(teo_handler_group as * mut TeoHandlerGroup) };
-            let handler_group = HandlerGroup { teo_handler_group: static_model };
-            callback.call1(py, (handler_group,)).unwrap();
+    pub fn define_model_handler_group(&self, py: Python<'_>, name: String, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
+        self.teo_namespace.define_model_handler_group(name.as_str(), |teo_handler_group: &handler::group::Builder| {
+            let handler_group = HandlerGroup { teo_handler_group: teo_handler_group.clone() };
+            callback.call1((handler_group,)).unwrap();
         });
         Ok(())
     }
 
-    pub fn define_middleware(&mut self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
+    pub fn define_middleware(&self, py: Python<'_>, name: String, callback: Bound<PyAny>) -> PyResult<()> {
         let name = Box::leak(Box::new(name)).as_str();
-        check_callable(callback.as_ref(py))?;
+        check_callable(&callback)?;
         let shared_callback = &*Box::leak(Box::new(callback));
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio::tokio::get_current_locals(py)?));
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
         self.teo_namespace.define_middleware(name, move |arguments| async move {
             Python::with_gil(|py| {
                 let py_args = teo_args_to_py_args(py, &arguments)?;
-                let result_function = shared_callback.call1(py, (py_args,))?;
-                let main = py.import("__main__")?;
+                let result_function = shared_callback.call1((py_args,))?;
+                let main = py.import_bound("__main__")?;
                 let teo_wrap_async = main.getattr("teo_wrap_async")?.into_py(py);
                 let wrapped_result_function = teo_wrap_async.call1(py, (result_function,))?;
                 let shared_result_function = &*Box::leak(Box::new(wrapped_result_function));
@@ -321,11 +309,11 @@ impl Namespace {
                         let py_ctx = RequestCtx {
                             teo_inner: ctx
                         };
-                        let py_next = PyCFunction::new_closure(py, Some(name), None, move |args, _kwargs| {
+                        let py_next = PyCFunction::new_closure_bound(py, Some(name), None, move |args, _kwargs| {
                             Python::with_gil(|py| {
                                 let ctx: RequestCtx = args.get_item(0)?.extract()?;
                                 let teo_ctx = ctx.teo_inner.clone();
-                                let coroutine = pyo3_asyncio::tokio::future_into_py_with_locals::<_, PyObject>(py, main_thread_locals.clone(), (|| async {
+                                let coroutine = pyo3_asyncio_0_21::tokio::future_into_py_with_locals::<_, PyObject>(py, main_thread_locals.clone(), (|| async {
                                     let result: teo::prelude::Response = next.call(teo_ctx).await?;
                                     Python::with_gil(|py| {
                                         let response = Response {

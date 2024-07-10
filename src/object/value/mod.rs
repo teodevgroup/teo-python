@@ -5,7 +5,7 @@ pub mod option_variant;
 pub mod decimal;
 
 use indexmap::IndexMap;
-use pyo3::{Python, PyAny, PyResult, IntoPy, types::{PyList, PyDict, PyTuple, PyString}, exceptions::PyValueError, PyObject, PyTryInto};
+use pyo3::{exceptions::PyValueError, types::{PyAnyMethods, PyDict, PyDictMethods, PyList, PyListMethods, PyString, PyTuple}, Bound, IntoPy, PyAny, PyObject, PyResult, PyTryInto, Python};
 use regex::Regex;
 use teo::prelude::Value;
 pub use object_id::ObjectId;
@@ -36,7 +36,7 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObje
         Value::DateTime(d) => d.into_py(py),
         Value::Decimal(b) => big_decimal_to_python_decimal(b.clone(), py)?,
         Value::Array(v) => {
-            let list = PyList::empty(py);
+            let list = PyList::empty_bound(py);
             for value in v {
                 list.append(teo_value_to_py_any(py, value)?)?;
             }
@@ -44,7 +44,7 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObje
         },
 
         Value::Dictionary(m) => {
-            let dict = PyDict::new(py);
+            let dict = PyDict::new_bound(py);
             for (k, v) in m {
                 dict.set_item(k, teo_value_to_py_any(py, v)?)?;
             }
@@ -55,14 +55,14 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObje
             instance.into_py(py)
         }
         Value::Tuple(tuple) => {
-            PyTuple::new(py, tuple.iter().map(|v| teo_value_to_py_any(py, v)).collect::<PyResult<Vec<PyObject>>>()?).into_py(py)
+            PyTuple::new_bound(py, tuple.iter().map(|v| teo_value_to_py_any(py, v)).collect::<PyResult<Vec<PyObject>>>()?).into_py(py)
         }
         Value::OptionVariant(option_variant) => {
             let instance = OptionVariant { value: option_variant.clone() };
             instance.into_py(py)
         }
         Value::Regex(regex) => {
-            let re = py.import("re")?;
+            let re = py.import_bound("re")?;
             let compile = re.getattr("compile")?;
             let result = compile.call((regex.as_str(),), None)?;
             result.into_py(py)
@@ -111,7 +111,7 @@ pub fn py_any_to_teo_value(py: Python<'_>, object: &PyAny) -> PyResult<Value> {
         }
         Ok(Value::Array(vec))
     } else if object.is_instance_of::<PyDict>() {
-        let dict: &PyDict = PyTryInto::try_into(object)?;
+        let dict: &PyDict = object.downcast()?;
         let mut map: IndexMap<String, Value> = IndexMap::new();
         for k in dict.keys() {
             let k_str: &str = k.extract()?;
@@ -133,14 +133,14 @@ pub fn py_any_to_teo_value(py: Python<'_>, object: &PyAny) -> PyResult<Value> {
         let file: File = object.extract()?;
         Ok(Value::File((&file).into()))
     } else {
-        let decimal_module = py.import("decimal")?;
+        let decimal_module = py.import_bound("decimal")?;
         let decimal_class = decimal_module.getattr("Decimal")?;
-        let re_module = py.import("re")?;
+        let re_module = py.import_bound("re")?;
         let pattern_class = re_module.getattr("Pattern")?;
-        if object.is_instance(decimal_class)? {
+        if object.is_instance(decimal_class.extract::<&PyAny>()?)? {
             let s: String = object.call_method0("__str__")?.extract()?;
             Ok(Value::Decimal(BigDecimal::from_str(&s).unwrap()))
-        } else if object.is_instance(pattern_class)? {
+        } else if object.is_instance(pattern_class.extract::<&PyAny>()?)? {
             let pattern_any = object.getattr("pattern")?.into_py(py);
             let pattern_str: &str = pattern_any.extract(py)?;
             let r: Regex = Regex::new(pattern_str).unwrap();

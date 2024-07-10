@@ -10,8 +10,8 @@ pub struct HandlerMatch {
 #[pymethods]
 impl HandlerMatch {
 
-    pub fn path(&self) -> Vec<&str> {
-        self.teo_inner.path()
+    pub fn path(&self) -> Vec<String> {
+        self.teo_inner.path().clone()
     }
 
     pub fn handler_name(&self) -> &str {

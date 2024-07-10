@@ -471,38 +471,16 @@ class Request:
         Get the request's content type.
         """
         ...
+    
+    def header(self, name: str) -> Optional[str]:
+        """
+        Get a header value by name.
+        """
+        ...
 
-    def headers(self) -> ReadOnlyHeaderMap:
+    def headers(self) -> dict[str, str]:
         """
         Get the request's headers.
-        """
-
-class ReadOnlyHeaderMap:
-    """
-    The readonly headers of the request. 
-    """
-
-    def keys(self) -> list[str]:
-        """
-        Get the header keys.
-        """
-        ...
-
-    def len(self) -> int:
-        """
-        Get the number of header entries in this map.
-        """
-        ...
-
-    def contains_key(self, key: str, /) -> bool:
-        """
-        Whether the header map contains an entry by key.
-        """
-        ...
-
-    def get(self, key: str, /) -> Optional[str]:
-        """
-        Get header value by key.
         """
         ...
 

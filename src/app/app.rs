@@ -1,5 +1,5 @@
 use pyo3::{pyclass, pymethods, types::{PyList, PyModule}, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
-use pyo3_asyncio::tokio::future_into_py;
+use pyo3_asyncio_0_21::tokio::future_into_py;
 use teo::cli::runtime_version::RuntimeVersion;
 use ::teo::prelude::{App as TeoApp, Entrance, transaction};
 use teo_result::Error;
@@ -49,7 +49,7 @@ impl App {
             })?;
             if transformed.1 {
                 let fut = Python::with_gil(|py| {
-                    pyo3_asyncio::tokio::into_future(transformed.0.as_ref(py))
+                    pyo3_asyncio_0_21::tokio::into_future(transformed.0.as_ref(py))
                 })?;
                 let _ = fut.await?;
             }
@@ -71,7 +71,7 @@ impl App {
             })?;
             if transformed.1 {
                 let fut = Python::with_gil(|py| {
-                    pyo3_asyncio::tokio::into_future(transformed.0.as_ref(py))
+                    pyo3_asyncio_0_21::tokio::into_future(transformed.0.as_ref(py))
                 })?;
                 let _ = fut.await?;
             }
@@ -83,7 +83,7 @@ impl App {
     fn _run(&self, py: Python<'_>) -> PyResult<PyObject> {
         let mut builder = Builder::new_multi_thread();
         builder.enable_all();
-        pyo3_asyncio::tokio::init(builder);
+        pyo3_asyncio_0_21::tokio::init(builder);
         let static_self: &'static App = unsafe { &*(self as * const App) };
         let coroutine = future_into_py(py, (|| async move {
             static_self.teo_app.prepare_for_run().await?;

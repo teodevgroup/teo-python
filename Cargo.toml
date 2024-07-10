@@ -1,6 +1,6 @@
 [package]
 name = "teo-py"
-version = "0.2.36"
+version = "0.3.0-alpha.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,10 +9,10 @@ name = "teo"
 crate-type = ["cdylib"]
 
 [dependencies]
-teo = { version = "0.2.36" }
-teo-result = { version = "0.2.23", features = ["pyo3"] }
-pyo3 = { version = "0.20.3", features = ["extension-module", "chrono", "indexmap"] }
-pyo3-asyncio = { version = "0.20.0", features = ["attributes", "tokio-runtime"] }
+teo = { version = "0.3.0-alpha.0", path = "../teo" }
+teo-result = { version = "0.3.0-alpha.0", features = ["pyo3"], path = "../teo-result" }
+pyo3 = { version = "0.21.2", features = ["extension-module", "chrono", "indexmap"] }
+pyo3-asyncio-0-21 = { version = "0.21.0", features = ["attributes", "tokio-runtime"] }
 tokio = { version = "1.0" }
 bson = { version = "2.7.0", features = ["chrono-0_4", "serde_with"] }
 bigdecimal = "=0.3.1"

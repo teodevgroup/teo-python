@@ -1,8 +1,6 @@
 
-use pyo3::{pyclass, pymethods};
+use pyo3::{PyObject, pyclass, pymethods, types::{PyAnyMethods, PyDict}, Bound, IntoPy, PyResult, Python};
 use teo::prelude::Request as TeoRequest;
-
-use super::header_map::ReadOnlyHeaderMap;
 
 
 #[pyclass]
@@ -30,9 +28,15 @@ impl Request {
         self.teo_request.content_type()
     }
 
-    pub fn headers(&self) -> ReadOnlyHeaderMap {
-        ReadOnlyHeaderMap {
-            inner: self.teo_request.headers().clone()
+    pub fn header(&self, name: &str) -> Option<&str> {
+        self.teo_request.headers().get(name).map(|hv| hv.to_str().unwrap())
+    }
+
+    pub fn headers(&self, py: Python<'_>) -> PyResult<PyObject> {
+        let dict = PyDict::new_bound(py);
+        for (key, value) in self.teo_request.headers().iter() {
+            dict.set_item(key.as_str(), value.to_str().unwrap())?;
         }
+        Ok(dict.into_py(py))
     }
 }

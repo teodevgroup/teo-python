@@ -1,7 +1,7 @@
 from __future__ import annotations
 from .teo import (
     App, Namespace, HandlerGroup, Model, Field, Relation, Property, Enum, 
-    EnumMember, Response, Request, ReadOnlyHeaderMap, ReadWriteHeaderMap, 
+    EnumMember, Response, Request, ReadWriteHeaderMap, 
     HandlerMatch, RequestCtx, ObjectId, Range, OptionVariant, 
     File, Pipeline, InterfaceEnumVariant, Pipeline, serve_static_files
 )
