@@ -47,6 +47,6 @@ impl Request {
     }
 
     pub fn cookies(&self) -> PyResult<Vec<Cookie>> {
-        Ok(self.teo_request.cookies_cloned()?.into_iter().map(|c| Cookie { actix_cookie: c.clone() }).collect())
+        Ok(self.teo_request.cookies()?.iter().map(|c| Cookie { actix_cookie: c.clone() }).collect())
     }
 }
