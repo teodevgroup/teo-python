@@ -291,15 +291,15 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_middleware(&self, py: Python<'_>, name: String, callback: Bound<PyAny>) -> PyResult<()> {
+    pub fn define_middleware(&self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
         let name = Box::leak(Box::new(name)).as_str();
-        check_callable(&callback)?;
+        check_callable(&callback.bind(py))?;
         let shared_callback = &*Box::leak(Box::new(callback));
         let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
         self.teo_namespace.define_middleware(name, move |arguments| async move {
             Python::with_gil(|py| {
                 let py_args = teo_args_to_py_args(py, &arguments)?;
-                let result_function = shared_callback.call1((py_args,))?;
+                let result_function = shared_callback.call1(py, (py_args,))?;
                 let main = py.import_bound("__main__")?;
                 let teo_wrap_async = main.getattr("teo_wrap_async")?.into_py(py);
                 let wrapped_result_function = teo_wrap_async.call1(py, (result_function,))?;
