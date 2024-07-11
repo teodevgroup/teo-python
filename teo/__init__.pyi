@@ -570,6 +570,18 @@ class Cookie:
         """
         ...
 
+    def make_removal(self) -> None:
+        """
+        Make the cookie removal.
+        """
+        ...
+
+    def make_permanent(self) -> None:
+        """
+        Make the cookie permanent.
+        """
+        ...
+
 class Expiration:
     """
     Represents cookie expiration.

@@ -108,6 +108,13 @@ impl Cookie {
             Ok(result) => Ok(Cookie { actix_cookie: result }),
             Err(_) => Err(teo::result::Error::internal_server_error_message("invalid cookie string"))?
         }
-        
+    }
+
+    pub fn make_removal(&mut self) {
+        self.actix_cookie.make_removal()
+    }
+
+    pub fn make_permanent(&mut self) {
+        self.actix_cookie.make_permanent()
     }
 }
