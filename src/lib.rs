@@ -11,7 +11,7 @@ pub mod response;
 
 use pyo3::prelude::*;
 use ::teo::prelude::serve_static_files as teo_serve_static_files;
-use request::Request;
+use request::{Expiration, Request};
 use response::{Response, header_map::ReadWriteHeaderMap};
 use crate::dynamic::{get_model_class_class, get_model_object_class, get_ctx_class, setup_dynamic_container};
 use crate::app::app::App;
@@ -82,6 +82,7 @@ def teo_wrap_async(callable):
     m.add_class::<Response>()?;
     m.add_class::<Request>()?;
     m.add_class::<Cookie>()?;
+    m.add_class::<Expiration>()?;
     m.add_class::<ReadWriteHeaderMap>()?;
     m.add_class::<HandlerMatch>()?;
     m.add_class::<RequestCtx>()?;

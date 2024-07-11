@@ -1,6 +1,7 @@
 """This module contains classes and variables for Teo web framework."""
 from __future__ import annotations
-from typing import TypeVar, Union, Callable, Any, Awaitable, Optional
+from typing import TypeVar, Union, Callable, Any, Awaitable, Optional, Literal
+from datetime import datetime
 
 T = TypeVar('T')
 
@@ -447,6 +448,164 @@ class Cookie:
     """
     The cookie.
     """
+
+    def name(self) -> str:
+        """
+        Get the cookie's name.
+        """
+        ...
+
+    def value(self) -> str:
+        """
+        Get the cookie's value.
+        """
+        ...
+
+    def path(self) -> Optional[str]:
+        """
+        Get the cookie's path.
+        """
+        ...
+
+    def domain(self) -> Optional[str]:
+        """
+        Get the cookie's domain.
+        """
+        ...
+
+    def max_age(self) -> Optional[int]:
+        """
+        Get the cookie's max age.
+        """
+        ...
+
+    def expires(self) -> Optional[Expiration]:
+        """
+        Get the cookie's expiration.
+        """
+        ...
+
+    def secure(self) -> Optional[bool]:
+        """
+        Whether the cookie is secure.
+        """
+        ...
+
+    def http_only(self) -> Optional[bool]:
+        """
+        Whether the cookie is http only.
+        """
+        ...
+
+    def same_site(self) -> Optional[Literal["strict", "lax", "none"]]:
+        """
+        Get the cookie's same site.
+        """
+        ...
+
+    def set_name(self, name: str) -> None:
+        """
+        Set the cookie's name.
+        """
+        ...
+
+    def set_value(self, value: str) -> None:
+        """
+        Set the cookie's value.
+        """
+        ...
+
+    def set_path(self, path: str) -> None:
+        """
+        Set the cookie's path.
+        """
+        ...
+
+    def set_domain(self, domain: str) -> None:
+        """
+        Set the cookie's domain.
+        """
+        ...
+
+    def set_max_age(self, max_age: int) -> None:
+        """
+        Set the cookie's max age.
+        """
+        ...
+
+    def set_expires(self, expires: Expiration) -> None:
+        """
+        Set the cookie's expiration.
+        """
+        ...
+
+    def set_secure(self, secure: bool) -> None:
+        """
+        Set whether the cookie is secure.
+        """
+        ...
+
+    def set_http_only(self, http_only: bool) -> None:
+        """
+        Set whether the cookie is http only.
+        """
+        ...
+
+    def set_same_site(self, same_site: Literal["strict", "lax", "none"]) -> None:
+        """
+        Set the cookie's same site.
+        """
+        ...
+
+    def to_string(self) -> str:
+        """
+        Convert the cookie to string.
+        """
+        ...
+
+    @staticmethod
+    def from_string(string: str) -> Cookie:
+        """
+        Create a new cookie from a string.
+        """
+        ...
+
+class Expiration:
+    """
+    Represents cookie expiration.
+    """
+
+    @staticmethod
+    def create_session():
+        """
+        Create a session expiration.
+        """
+        ...
+
+    @staticmethod
+    def create_datetime(datetime: datetime):
+        """
+        Create a datetime expiration.
+        """
+        ...
+
+    def is_session(self) -> bool:
+        """
+        Whether the expiration is session.
+        """
+        ...
+
+    def is_datetime(self) -> bool:
+        """
+        Whether the expiration is datetime.
+        """
+        ...
+
+    def datetime(self) -> Optional[datetime]:
+        """
+        Get the expiration datetime.
+        """
+        ...
 
 class Request:
     """

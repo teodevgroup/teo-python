@@ -96,4 +96,18 @@ impl Cookie {
             _ => Err(teo::result::Error::internal_server_error_message("invalid same site"))?
         }))
     }
+
+    pub fn to_string(&self) -> String {
+        self.actix_cookie.to_string()
+    }
+
+    #[staticmethod]
+    pub fn from_string(s: String) -> PyResult<Cookie> {
+        let result = ActixCookie::parse(s);
+        match result {
+            Ok(result) => Ok(Cookie { actix_cookie: result }),
+            Err(_) => Err(teo::result::Error::internal_server_error_message("invalid cookie string"))?
+        }
+        
+    }
 }
