@@ -16,10 +16,7 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 use pyo3::types::{PyBool, PyDate, PyDateTime, PyFloat, PyInt};
 use chrono::prelude::{NaiveDate, Utc, DateTime};
-
-
 use self::decimal::big_decimal_to_python_decimal;
-
 use super::{interface_enum_variant::teo_interface_enum_variant_to_py_any, model::teo_model_object_to_py_any, pipeline::teo_pipeline_to_py_any, r#struct::teo_struct_object_to_py_any};
 
 pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObject> {
