@@ -443,6 +443,11 @@ class ReadWriteHeaderMap:
         Set a header value.
         """
 
+class Cookie:
+    """
+    The cookie.
+    """
+
 class Request:
     """
     An HTTP request.
@@ -481,6 +486,18 @@ class Request:
     def headers(self) -> dict[str, str]:
         """
         Get the request's headers.
+        """
+        ...
+
+    def cookies(self) -> list[Cookie]:
+        """
+        Get the cookies from the request.
+        """
+        ...
+
+    def cookie(self, name: str) -> Optional[Cookie]:
+        """
+        Get a cookie from the request by name.
         """
         ...
 

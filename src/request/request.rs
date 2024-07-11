@@ -1,6 +1,8 @@
 
-use pyo3::{PyObject, pyclass, pymethods, types::{PyAnyMethods, PyDict}, Bound, IntoPy, PyResult, Python};
+use pyo3::{PyObject, pyclass, pymethods, types::{PyAnyMethods, PyDict}, IntoPy, PyResult, Python};
 use teo::prelude::Request as TeoRequest;
+
+use super::Cookie;
 
 
 #[pyclass]
@@ -38,5 +40,13 @@ impl Request {
             dict.set_item(key.as_str(), value.to_str().unwrap())?;
         }
         Ok(dict.into_py(py))
+    }
+
+    pub fn cookie(&self, name: &str) -> Option<Cookie> {
+        self.teo_request.cookie(name).map(|c| Cookie { actix_cookie: c.clone() })
+    }
+
+    pub fn cookies(&self) -> PyResult<Vec<Cookie>> {
+        Ok(self.teo_request.cookies_cloned()?.into_iter().map(|c| Cookie { actix_cookie: c.clone() }).collect())
     }
 }
