@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyList, PyModule}, Bound, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
+use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyList, PyModule}, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_asyncio_0_21::tokio::future_into_py;
 use teo::cli::runtime_version::RuntimeVersion;
 use ::teo::prelude::{App as TeoApp, Entrance, transaction};
@@ -37,11 +37,12 @@ impl App {
         })
     }
 
-    fn setup<'p>(&self, _py: Python<'p>, callback: Bound<PyAny>) -> PyResult<()> {
-        check_callable(&callback)?;
+    fn setup<'p>(&mut self, py: Python<'p>, callback: PyObject) -> PyResult<()> {
+        check_callable(&callback.bind(py))?;
+        let callback = &*Box::leak(Box::new(callback));
         self.teo_app.setup(|ctx: transaction::Ctx| async {
             let transformed = Python::with_gil(|py| {
-                let transformed_py = callback.call1((py_ctx_object_from_teo_transaction_ctx(py, ctx, "")?,))?.into_py(py);
+                let transformed_py = callback.call1(py, (py_ctx_object_from_teo_transaction_ctx(py, ctx, "")?,))?.into_py(py);
                 let is_coroutine = is_coroutine(transformed_py.extract::<&PyAny>(py)?)?;
                 Ok::<_, Error>((transformed_py, is_coroutine))
             })?;
@@ -57,19 +58,18 @@ impl App {
     }
 
     #[pyo3(signature = (name, desc, callback))]
-    fn program<'p>(&self, _py: Python<'p>, name: &str, desc: Option<&str>, callback: &PyAny) -> PyResult<()> {
-        check_callable(callback)?;
-        let callback_owned = Box::leak(Box::new(Py::from(callback)));
+    fn program<'p>(&mut self, py: Python<'p>, name: &str, desc: Option<&str>, callback: PyObject) -> PyResult<()> {
+        check_callable(&callback.bind(py))?;
+        let callback_owned = &*Box::leak(Box::new(callback));
         self.teo_app.program(name, desc, |ctx: transaction::Ctx| async {
             let transformed = Python::with_gil(|py| {
-                let callback = callback_owned.as_ref(py);
-                let transformed_py = callback.call1((py_ctx_object_from_teo_transaction_ctx(py, ctx, "")?,))?.into_py(py);
-                let is_coroutine = is_coroutine(transformed_py.as_ref(py))?;
+                let transformed_py = callback_owned.call1(py, (py_ctx_object_from_teo_transaction_ctx(py, ctx, "")?,))?.into_py(py);
+                let is_coroutine = is_coroutine(transformed_py.extract::<&PyAny>(py)?)?;
                 Ok::<_, Error>((transformed_py, is_coroutine))
             })?;
             if transformed.1 {
                 let fut = Python::with_gil(|py| {
-                    pyo3_asyncio_0_21::tokio::into_future(transformed.0.as_ref(py))
+                    pyo3_asyncio_0_21::tokio::into_future(transformed.0.bind(py).clone())
                 })?;
                 let _ = fut.await?;
             }
