@@ -25,6 +25,7 @@ use crate::model::property::property::Property;
 use crate::handler::group::HandlerGroup;
 use crate::request::HandlerMatch;
 use crate::request::ctx::RequestCtx;
+use crate::request::Cookie;
 use crate::object::value::ObjectId;
 use crate::object::value::OptionVariant;
 use crate::object::value::File;
@@ -80,6 +81,7 @@ def teo_wrap_async(callable):
     m.add_class::<EnumMember>()?;
     m.add_class::<Response>()?;
     m.add_class::<Request>()?;
+    m.add_class::<Cookie>()?;
     m.add_class::<ReadWriteHeaderMap>()?;
     m.add_class::<HandlerMatch>()?;
     m.add_class::<RequestCtx>()?;
