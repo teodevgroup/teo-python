@@ -1,7 +1,7 @@
 pub mod header_map;
 
 use std::path::PathBuf;
-use crate::object::value::{teo_value_to_py_any, py_any_to_teo_value};
+use crate::{object::value::{py_any_to_teo_value, teo_value_to_py_any}, request::Cookie};
 use self::header_map::ReadWriteHeaderMap;
 use pyo3::{pyclass, pymethods, PyObject, Python, PyResult, IntoPy};
 use teo::prelude::response::Response as TeoResponse;
@@ -125,5 +125,13 @@ impl Response {
             None => None,
             Some(path_buf) => Some(path_buf.to_str().unwrap().to_string()),
         }
+    }
+
+    pub fn add_cookie(&self, cookie: Cookie) {
+        self.teo_response.add_cookie(cookie.actix_cookie)
+    }
+
+    pub fn cookies(&self) -> Vec<Cookie> {
+        self.teo_response.cookies().into_iter().map(|c| Cookie { actix_cookie: c }).collect()
     }
 }
