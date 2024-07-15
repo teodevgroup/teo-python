@@ -96,6 +96,6 @@ impl App {
     }
 
     fn main_namespace(&self) -> Namespace {
-        Namespace { teo_namespace: self.teo_app.namespace_builder().clone() }
+        Namespace { teo_namespace: self.teo_app.main_namespace().clone() }
     }
 }

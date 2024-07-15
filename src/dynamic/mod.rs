@@ -195,7 +195,7 @@ unsafe fn generate_ctx_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
 }
 
 pub(crate) fn synthesize_dynamic_python_classes(py: Python<'_>, app: &App) -> PyResult<()> {
-    synthesize_dynamic_nodejs_classes_for_namespace(py, app.main_namespace())
+    synthesize_dynamic_nodejs_classes_for_namespace(py, app.compiled_main_namespace())
 }
 
 pub(crate) fn synthesize_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namespace: &'static Namespace) -> PyResult<()> {
