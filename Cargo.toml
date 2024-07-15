@@ -7,7 +7,7 @@ edition = "2021"
 [lib]
 name = "teo"
 crate-type = ["cdylib"]
-
+ 
 [dependencies]
 teo = { version = "0.3.0-alpha.0" }
 teo-result = { version = "0.3.0-alpha.0", features = ["pyo3"] }
