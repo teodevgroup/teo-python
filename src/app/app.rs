@@ -1,7 +1,6 @@
 use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyList, PyModule}, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_asyncio_0_21::tokio::future_into_py;
-use teo::cli::runtime_version::RuntimeVersion;
-use ::teo::prelude::{App as TeoApp, Entrance, transaction};
+use ::teo::prelude::{RuntimeVersion, App as TeoApp, Entrance, transaction};
 use teo_result::Error;
 use tokio::runtime::Builder;
 
