@@ -100,10 +100,11 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
         let model_property_name = model.path().last().unwrap().to_snake_case();
         let model_property = PyCFunction::new_closure_bound(py, Some(model_name), None, move |args, _kwargs| {
             let model_class_object = Python::with_gil(|py| {
+                let map = PYClassLookupMap::from_app_data(app_data);
                 let slf = args.get_item(0)?;
                 let transaction_ctx_wrapper: TransactionCtxWrapper = slf.getattr("__teo_transaction_ctx__")?.extract()?;
                 let model_ctx = transaction_ctx_wrapper.ctx.model_ctx_for_model_at_path(&model.path()).unwrap();
-                let model_class_class = map.class_or_create(&model_name, py)?;
+                let model_class_class = map.class(&model_name)?.unwrap();
                 let model_class_object = model_class_class.call_method1(py, "__new__", (model_class_class.as_ref(py),))?;
                 model_class_object.setattr(py, "__teo_model_ctx__", ModelCtxWrapper::new(model_ctx))?;
                 Ok::<PyObject, PyErr>(model_class_object)
@@ -390,9 +391,10 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
         let namespace_name = Box::leak(Box::new(namespace.path().join("."))).as_str();
         let namespace_property = PyCFunction::new_closure_bound(py, Some(namespace_name), None, move |args, _kwargs| {
             let next_ctx_object = Python::with_gil(|py| {
+                let map = PYClassLookupMap::from_app_data(app_data);
                 let slf = args.get_item(0)?;
                 let transaction_ctx_wrapper: TransactionCtxWrapper = slf.getattr("__teo_transaction_ctx__")?.extract()?;
-                let next_ctx_class = map.ctx_or_create(&namespace_name, py)?;
+                let next_ctx_class = map.ctx(&namespace_name)?.unwrap();
                 let next_ctx_object = next_ctx_class.call_method1(py, "__new__", (next_ctx_class.as_ref(py),))?;
                 next_ctx_object.setattr(py, "__teo_transaction_ctx__", transaction_ctx_wrapper.clone())?;
                 Ok::<PyObject, PyErr>(next_ctx_object)
