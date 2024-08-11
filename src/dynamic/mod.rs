@@ -11,7 +11,6 @@ use teo::prelude::app::data::AppData;
 use teo::prelude::traits::named::Named;
 use ::teo::prelude::App;
 use pyo3::{Bound, IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
-use pyo3::exceptions::PyRuntimeError;
 use pyo3::types::{PyAnyMethods, PyCFunction, PyDict, PyList, PyListMethods};
 use teo::prelude::{Namespace, Value, model, transaction};
 use crate::dynamic::model_object_wrapper::ModelObjectWrapper;
@@ -94,16 +93,16 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
         // class object methods
         let model_class_class = map.class_or_create(&model_name, py)?;
         // find unique
-        let find_unique = find_unique_function(py)?;
+        let find_unique = find_unique_function(py, app_data)?;
         teo_wrap_builtin.call1((model_class_class.bind(py), "find_unique", teo_wrap_async.call1((find_unique,))?))?;
         // find first
-        let find_first = find_first_function(py)?;
+        let find_first = find_first_function(py, app_data)?;
         teo_wrap_builtin.call1((model_class_class.bind(py), "find_first", teo_wrap_async.call1((find_first,))?))?;
         // find many
-        let find_many = find_many_function(py)?;
+        let find_many = find_many_function(py, app_data)?;
         teo_wrap_builtin.call1((model_class_class.bind(py), "find_many", teo_wrap_async.call1((find_many,))?))?;
         // create
-        let create = create_function(py)?;
+        let create = create_function(py, app_data)?;
         teo_wrap_builtin.call1((model_class_class.bind(py), "create", teo_wrap_async.call1((create,))?))?;
         // count objects
         let count_objects = count_objects_function(py)?;
@@ -392,7 +391,8 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
             let coroutine = pyo3_asyncio_0_21::tokio::future_into_py::<_, PyObject>(py, (move || async move {
                 let retval: pyo3::prelude::Py<PyAny> = transaction_ctx_wrapper.ctx.run_transaction(move |ctx: transaction::Ctx| async move {
                     let user_retval = Python::with_gil(move |py| {
-                        let ctx_python = py_ctx_object_from_teo_transaction_ctx(py, ctx, "")?;
+                        let map = PYClassLookupMap::from_app_data(app_data);
+                        let ctx_python = map.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?;
                         let coroutine_or_value = shared_argument.call1(py, (ctx_python,))?;
                         Ok::<PyObject, teo::prelude::Error>(coroutine_or_value)
                     })?;
@@ -412,7 +412,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
 }
 
 
-fn find_unique_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
+fn find_unique_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
     Ok(PyCFunction::new_closure_bound(py, Some("find_unique"), Some("Find a unique record."), move |args, _kwargs| {
         Python::with_gil(|py| {
             let slf = args.get_item(0)?.into_py(py);
@@ -429,7 +429,8 @@ fn find_unique_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
                 Python::with_gil(|py| {
                     match result {
                         Some(object) => {
-                            py_model_object_from_teo_model_object(py, object)
+                            let map = PYClassLookupMap::from_app_data(app_data);
+                            map.teo_model_object_to_py_model_object_object(py, object)
                         }
                         None => {
                             Ok(().into_py(py))
@@ -442,7 +443,7 @@ fn find_unique_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
     })?)
 }
 
-fn find_first_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
+fn find_first_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
     Ok(PyCFunction::new_closure_bound(py, Some("find_first"), Some("Find a record."), move |args, _kwargs| {
         Python::with_gil(|py| {
             let slf = args.get_item(0)?.into_py(py);
@@ -459,7 +460,8 @@ fn find_first_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
                 Python::with_gil(|py| {
                     match result {
                         Some(object) => {
-                            py_model_object_from_teo_model_object(py, object)
+                            let map = PYClassLookupMap::from_app_data(app_data);
+                            map.teo_model_object_to_py_model_object_object(py, object)
                         }
                         None => {
                             Ok(().into_py(py))
@@ -472,7 +474,7 @@ fn find_first_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
     })?)
 }
 
-fn find_many_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
+fn find_many_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
     Ok(PyCFunction::new_closure_bound(py, Some("find_many"), Some("Find many records."), move |args, _kwargs| {
         Python::with_gil(|py| {
             let slf = args.get_item(0)?.into_py(py);
@@ -488,8 +490,9 @@ fn find_many_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
                 let result: Vec<model::Object> = model_ctx_wrapper.ctx.find_many(&find_many_arg).await?;
                 Python::with_gil(|py| {
                     let py_result = PyList::empty_bound(py);
+                    let map = PYClassLookupMap::from_app_data(app_data);
                     for object in result {
-                        let instance = py_model_object_from_teo_model_object(py, object)?;
+                        let instance = map.teo_model_object_to_py_model_object_object(py, object)?;
                         py_result.append(instance)?;
                     }
                     Ok(py_result.into_py(py))
@@ -500,7 +503,7 @@ fn find_many_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
     })?)
 }
 
-fn create_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
+fn create_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
     Ok(PyCFunction::new_closure_bound(py, Some("create"), Some("Create a new record."), move |args, _kwargs| {
         Python::with_gil(|py| {
             let slf = args.get_item(0)?.into_py(py);
@@ -515,7 +518,8 @@ fn create_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
             let coroutine = pyo3_asyncio_0_21::tokio::future_into_py::<_, PyObject>(py, (|| async move {
                 let result: model::Object = model_ctx_wrapper.ctx.create_object(&create_arg).await?;
                 Python::with_gil(|py| {
-                    let instance = py_model_object_from_teo_model_object(py, result)?;
+                    let map = PYClassLookupMap::from_app_data(app_data);
+                    let instance = map.teo_model_object_to_py_model_object_object(py, result)?;
                     Ok(instance.into_py(py))
                 })
             })())?;
