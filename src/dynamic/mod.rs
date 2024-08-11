@@ -131,25 +131,7 @@ unsafe fn generate_model_object_class(py: Python<'_>, name: &str) -> PyResult<Py
 }
 
 unsafe fn generate_ctx_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
-    let builtins = py.import_bound("builtins")?;
-    let py_type = builtins.getattr("type")?;
-    let py_object = builtins.getattr("object")?;
-    let dict = PyDict::new_bound(py);
-    dict.set_item("__module__", "teo.models")?;
-    let init = PyCFunction::new_closure_bound(py, Some("__init__"), None, |args, _kwargs| {
-        let slf = args.get_item(0)?;
-        let initialized: bool = slf.getattr("__teo_initialized__")?.extract()?;
-        if initialized {
-            Ok(())
-        } else {
-            Err::<(), PyErr>(PyRuntimeError::new_err(INIT_ERROR_MESSAGE))
-        }
-    })?;
-    dict.set_item("__init__", init)?;
-    let result = py_type.call1((name, (py_object,), dict))?;
-    let result_object = result.clone().into_py(py);
-    ctxs_mut().insert(name.to_owned(), result_object);
-    Ok(result.into_py(py))
+    
 }
 
 pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut PYClassLookupMap, app: &'static App, namespace: &'static Namespace, env: Env) -> PyResult<()> {
