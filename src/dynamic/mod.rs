@@ -47,28 +47,6 @@ pub(crate) fn synthesize_dynamic_python_classes_for_namespace(map: &mut PYClassL
     Ok(())
 }
 
-pub(crate) fn py_model_object_from_teo_model_object(py: Python<'_>, teo_model_object: model::Object) -> PyResult<PyObject> {
-    let model_name = teo_model_object.model().path().join(".");
-    let model_object_class = get_model_object_class(py, &model_name)?;
-    let model_object = model_object_class.call_method1(py, "__new__", (model_object_class.extract::<&PyAny>(py)?,))?;
-    model_object.setattr(py, "__teo_object__", ModelObjectWrapper::new(teo_model_object))?;
-    Ok(model_object)
-}
-
-pub(crate) fn py_optional_model_object_from_teo_object(py: Python<'_>, teo_model_object: Option<model::Object>) -> PyResult<PyObject> {
-    Ok(match teo_model_object {
-        Some(teo_model_object) => py_model_object_from_teo_model_object(py, teo_model_object)?,
-        None => ().into_py(py),
-    })
-}
-
-pub(crate) fn py_ctx_object_from_teo_transaction_ctx(py: Python<'_>, transaction_ctx: transaction::Ctx, name: &str) -> PyResult<PyObject> {
-    let ctx_class = get_ctx_class(py, name)?;
-    let ctx_object = ctx_class.call_method1(py, "__new__", (ctx_class.extract::<&PyAny>(py)?,))?;
-    ctx_object.setattr(py, "__teo_transaction_ctx__", TransactionCtxWrapper::new(transaction_ctx))?;
-    Ok(ctx_object)
-}
-
 pub(crate) fn teo_model_ctx_from_py_model_class_object(py: Python<'_>, model_class_object: PyObject) -> PyResult<model::Ctx> {
     let wrapper: ModelCtxWrapper = model_class_object.getattr(py, "__teo_model_ctx__")?.extract(py)?;
     Ok(wrapper.ctx.clone())

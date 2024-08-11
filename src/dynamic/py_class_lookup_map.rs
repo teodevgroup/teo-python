@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
 
-use pyo3::{exceptions::PyRuntimeError, types::{PyAnyMethods, PyCFunction, PyDict}, IntoPy, PyErr, PyObject, PyResult, Python};
+use pyo3::{exceptions::PyRuntimeError, types::{PyAnyMethods, PyCFunction, PyDict}, IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
 use teo::prelude::{app::data::AppData, model, transaction};
+
+use super::{model_ctx_wrapper::ModelCtxWrapper, model_object_wrapper::ModelObjectWrapper, transaction_ctx_wrapper::TransactionCtxWrapper};
 
 static INIT_ERROR_MESSAGE: &str = "class is not initialized";
 
@@ -134,40 +136,33 @@ impl PYClassLookupMap {
 
     // Query methods
 
-    pub(crate) fn teo_model_ctx_to_py_model_class_object(&self, py: Python<'_>, model_ctx: model::Ctx, name: &str) -> PyResult<PyObject> {
-        let Some(class_prototype) = self.class_prototype(name, env)? else {
-            return Err(Error::from_reason("Class prototype not found"));
-        };
-        let mut js_object = env.create_object()?;
-        js_object.set_named_property("__proto__", class_prototype)?;
-        env.wrap(&mut js_object, model_ctx)?;
-        Ok(js_object)
+    pub(crate) fn teo_model_ctx_to_py_model_class_object(&self, py: Python<'_>, model_ctx: model::Ctx) -> PyResult<PyObject> {
+        let model_name = model_ctx.model().path().join(".");
+        let model_class_class = self.class(&model_name)?.unwrap();
+        let model_class_object = model_class_class.call_method1(py, "__new__", (model_class_class.as_ref(py),))?;
+        model_class_object.setattr(py, "__teo_model_ctx__", ModelCtxWrapper::new(model_ctx))?;
+        Ok(model_class_object)
     }
 
     pub(crate) fn teo_model_object_to_py_model_object_object(&self, py: Python<'_>, teo_model_object: model::Object) -> PyResult<PyObject> {
-        let Some(object_prototype) = self.object_prototype(&teo_model_object.model().path().join("."), env)? else {
-            return Err(Error::from_reason("Object prototype not found"));
-        };
-        let mut js_object = env.create_object()?;
-        js_object.set_named_property("__proto__", object_prototype)?;
-        env.wrap(&mut js_object, teo_model_object)?;
-        Ok(js_object)
+        let model_name = teo_model_object.model().path().join(".");
+        let model_object_class = self.object(&model_name)?.unwrap();
+        let model_object = model_object_class.call_method1(py, "__new__", (model_object_class.extract::<&PyAny>(py)?,))?;
+        model_object.setattr(py, "__teo_object__", ModelObjectWrapper::new(teo_model_object))?;
+        Ok(model_object)
     }
 
     pub(crate) fn teo_optional_model_object_to_py_optional_model_object_object(&self, py: Python<'_>, teo_model_object: Option<model::Object>) -> PyResult<PyObject> {
         Ok(match teo_model_object {
-            Some(teo_model_object) => self.teo_model_object_to_js_model_object_object(env, teo_model_object)?.into_unknown(),
-            None => env.get_undefined()?.into_unknown(),
+            Some(teo_model_object) => self.teo_model_object_to_py_model_object_object(py, teo_model_object)?,
+            None => ().into_py(py),
         })
     }
 
     pub(crate) fn teo_transaction_ctx_to_py_ctx_object(&self, py: Python<'_>, transaction_ctx: transaction::Ctx, name: &str) -> PyResult<PyObject> {
-        let Some(ctx_prototype) = self.ctx_prototype(name, env)? else {
-            return Err(Error::from_reason("Ctx prototype not found"));
-        };
-        let mut js_object = env.create_object()?;
-        js_object.set_named_property("__proto__", ctx_prototype)?;
-        env.wrap(&mut js_object, transaction_ctx)?;
-        Ok(js_object)
+        let ctx_class = self.ctx(name)?.unwrap();
+        let ctx_object = ctx_class.call_method1(py, "__new__", (ctx_class.extract::<&PyAny>(py)?,))?;
+        ctx_object.setattr(py, "__teo_transaction_ctx__", TransactionCtxWrapper::new(transaction_ctx))?;
+        Ok(ctx_object)
     }
 }
