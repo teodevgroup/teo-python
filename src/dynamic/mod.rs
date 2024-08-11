@@ -86,62 +86,15 @@ pub(crate) fn teo_transaction_ctx_from_py_ctx_object(py: Python<'_>, ctx_object:
 
 static INIT_ERROR_MESSAGE: &str = "class is not initialized";
 
-unsafe fn generate_model_class_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
-    let builtins = py.import("builtins")?;
-    let py_type = builtins.getattr("type")?;
-    let py_object = builtins.getattr("object")?;
-    let dict = PyDict::new(py);
-    dict.set_item("__module__", "teo.models")?;
-    let init = PyCFunction::new_closure_bound(py, Some("__init__"), Some(INIT_ERROR_MESSAGE), |args, _kwargs| {
-        let slf = args.get_item(0)?;
-        let initialized: bool = slf.getattr("__teo_initialized__")?.extract()?;
-        if initialized {
-            Ok(())
-        } else {
-            Err::<(), PyErr>(PyRuntimeError::new_err(INIT_ERROR_MESSAGE))
-        }
-    })?;
-    dict.set_item("__init__", init)?;
-    let result = py_type.call1((name, (py_object,), dict))?;
-    let result_object = result.into_py(py);
-    classes_mut().insert(name.to_owned(), result_object);
-    Ok(result.into_py(py))
-}
-
-unsafe fn generate_model_object_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
-    let builtins = py.import("builtins")?;
-    let py_type = builtins.getattr("type")?;
-    let py_object = builtins.getattr("object")?;
-    let dict = PyDict::new(py);
-    dict.set_item("__module__", "teo.models")?;
-    let init = PyCFunction::new_closure_bound(py, Some("__init__"), Some(INIT_ERROR_MESSAGE), |args, _kwargs| {
-        let slf = args.get_item(0)?;
-        let initialized: bool = slf.getattr("__teo_initialized__")?.extract()?;
-        if initialized {
-            Ok(())
-        } else {
-            Err::<(), PyErr>(PyRuntimeError::new_err(INIT_ERROR_MESSAGE))
-        }
-    })?;
-    dict.set_item("__init__", init)?;
-    let result = py_type.call1((name, (py_object,), dict))?;
-    let result_object = result.into_py(py);
-    objects_mut().insert(name.to_owned(), result_object);
-    Ok(result.into_py(py))
-}
-
-unsafe fn generate_ctx_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
-    
-}
-
-pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut PYClassLookupMap, app: &'static App, namespace: &'static Namespace, env: Env) -> PyResult<()> {
+pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut PYClassLookupMap, app: &'static App, namespace: &'static Namespace, py: Python<'_>) -> PyResult<()> {
     let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
+    let app_data = app.app_data();
     let main = py.import_bound("__main__")?;
     let teo_wrap_builtin = main.getattr("teo_wrap_builtin")?;
     let teo_wrap_async = main.getattr("teo_wrap_async")?;
     let builtins = py.import_bound("builtins")?;
     let property_wrapper = builtins.getattr("property")?;
-    let ctx_class = get_ctx_class(py, &namespace.path().join("."))?;
+    let ctx_class = map.ctx_or_create(&namespace.path().join("."), py)?;
     for model in namespace.models().values() {
         let model_name = Box::leak(Box::new(model.path().join("."))).as_str();
         let model_property_name = model.path().last().unwrap().to_snake_case();
@@ -150,7 +103,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                 let slf = args.get_item(0)?;
                 let transaction_ctx_wrapper: TransactionCtxWrapper = slf.getattr("__teo_transaction_ctx__")?.extract()?;
                 let model_ctx = transaction_ctx_wrapper.ctx.model_ctx_for_model_at_path(&model.path()).unwrap();
-                let model_class_class = get_model_class_class(py, &model_name)?;
+                let model_class_class = map.class_or_create(&model_name, py)?;
                 let model_class_object = model_class_class.call_method1(py, "__new__", (model_class_class.as_ref(py),))?;
                 model_class_object.setattr(py, "__teo_model_ctx__", ModelCtxWrapper::new(model_ctx))?;
                 Ok::<PyObject, PyErr>(model_class_object)
@@ -160,7 +113,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
         let model_property_wrapped = property_wrapper.call1((model_property,))?;
         ctx_class.setattr(py, model_property_name.as_str(), model_property_wrapped)?;
         // class object methods
-        let model_class_class = get_model_class_class(py, &model_name)?;
+        let model_class_class = map.class_or_create(&model_name, py)?;
         // find unique
         let find_unique = find_unique_function(py)?;
         teo_wrap_builtin.call1((model_class_class.bind(py), "find_unique", teo_wrap_async.call1((find_unique,))?))?;
@@ -191,7 +144,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
             teo_wrap_builtin.call1((model_class_class.bind(py), "sql", sql))?;    
         }
         // model object methods
-        let model_object_class = get_model_object_class(py, &model_name)?;
+        let model_object_class = map.object_or_create(&model_name, py)?;
         // is new
         let is_new = is_new_function(py)?;
         teo_wrap_builtin.call1((model_object_class.bind(py), "is_new", is_new))?;
@@ -439,7 +392,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
             let next_ctx_object = Python::with_gil(|py| {
                 let slf = args.get_item(0)?;
                 let transaction_ctx_wrapper: TransactionCtxWrapper = slf.getattr("__teo_transaction_ctx__")?.extract()?;
-                let next_ctx_class = get_ctx_class(py, &namespace_name)?;
+                let next_ctx_class = map.ctx_or_create(&namespace_name, py)?;
                 let next_ctx_object = next_ctx_class.call_method1(py, "__new__", (next_ctx_class.as_ref(py),))?;
                 next_ctx_object.setattr(py, "__teo_transaction_ctx__", transaction_ctx_wrapper.clone())?;
                 Ok::<PyObject, PyErr>(next_ctx_object)

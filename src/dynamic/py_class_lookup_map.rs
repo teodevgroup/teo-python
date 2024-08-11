@@ -3,8 +3,6 @@ use std::collections::BTreeMap;
 use pyo3::{exceptions::PyRuntimeError, types::{PyAnyMethods, PyCFunction, PyDict}, IntoPy, PyErr, PyObject, PyResult, Python};
 use teo::prelude::app::data::AppData;
 
-use super::{model_ctx_wrapper::ModelCtxWrapper, model_object_wrapper::ModelObjectWrapper, transaction_ctx_wrapper::TransactionCtxWrapper};
-
 static INIT_ERROR_MESSAGE: &str = "class is not initialized";
 
 pub(crate) struct PYClassLookupMap {
@@ -82,5 +80,55 @@ impl PYClassLookupMap {
         Ok(self.ctxs.get(name).cloned())
     }
 
-    
+    pub(crate) fn class_or_create(&mut self, name: &str, py: Python<'_>) -> PyResult<PyObject> {
+        let builtins = py.import("builtins")?;
+        let py_type = builtins.getattr("type")?;
+        let py_object = builtins.getattr("object")?;
+        let dict = PyDict::new(py);
+        dict.set_item("__module__", "teo.models")?;
+        let init = PyCFunction::new_closure_bound(py, Some("__init__"), Some(INIT_ERROR_MESSAGE), |args, _kwargs| {
+            let slf = args.get_item(0)?;
+            let initialized: bool = slf.getattr("__teo_initialized__")?.extract()?;
+            if initialized {
+                Ok(())
+            } else {
+                Err::<(), PyErr>(PyRuntimeError::new_err(INIT_ERROR_MESSAGE))
+            }
+        })?;
+        dict.set_item("__init__", init)?;
+        let result = py_type.call1((name, (py_object,), dict))?;
+        let result_object = result.into_py(py);
+        self.insert_class(name, result_object);
+        Ok(result.into_py(py))
+    }
+
+    pub(crate) fn class(&mut self, name: &str) -> PyResult<Option<PyObject>> {
+        Ok(self.classes.get(name).cloned())
+    }
+
+    pub(crate) fn object_or_create(&mut self, name: &str, py: Python<'_>) -> PyResult<PyObject> {
+        let builtins = py.import("builtins")?;
+        let py_type = builtins.getattr("type")?;
+        let py_object = builtins.getattr("object")?;
+        let dict = PyDict::new(py);
+        dict.set_item("__module__", "teo.models")?;
+        let init = PyCFunction::new_closure_bound(py, Some("__init__"), Some(INIT_ERROR_MESSAGE), |args, _kwargs| {
+            let slf = args.get_item(0)?;
+            let initialized: bool = slf.getattr("__teo_initialized__")?.extract()?;
+            if initialized {
+                Ok(())
+            } else {
+                Err::<(), PyErr>(PyRuntimeError::new_err(INIT_ERROR_MESSAGE))
+            }
+        })?;
+        dict.set_item("__init__", init)?;
+        let result = py_type.call1((name, (py_object,), dict))?;
+        let result_object = result.into_py(py);
+        self.insert_object(name, result_object);
+        Ok(result.into_py(py))
+    }
+
+    pub(crate) fn object(&mut self, name: &str) -> PyResult<Option<PyObject>> {
+        Ok(self.objects.get(name).cloned())
+    }
 }
