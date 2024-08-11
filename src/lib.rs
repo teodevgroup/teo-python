@@ -48,28 +48,12 @@ def teo_wrap_async(callable):
         return await callable(self, *args, **kwargs)
     return wrapped
     "#, None, None)?;
-    setup_dynamic_container()?;
-    #[pyfunction]
-    fn fetch_model_class_class(name: &str, py: Python) -> PyResult<PyObject> {
-        get_model_class_class(py, name)
-    }
-    #[pyfunction]
-    fn fetch_model_object_class(name: &str, py: Python) -> PyResult<PyObject> {
-        get_model_object_class(py, name)
-    }
-    #[pyfunction]
-    fn fetch_ctx_class(name: &str, py: Python) -> PyResult<PyObject> {
-        get_ctx_class(py, name)
-    }
     #[pyfunction]
     fn serve_static_files(base: &str, path: &str, py: Python<'_>) -> PyResult<Response> {
         let teo_response = teo_serve_static_files(base, path)?;
         Ok(Response { teo_response })
     }
     m.add_function(wrap_pyfunction!(serve_static_files, m)?)?;
-    m.add_function(wrap_pyfunction!(fetch_model_class_class, m)?)?;
-    m.add_function(wrap_pyfunction!(fetch_model_object_class, m)?)?;
-    m.add_function(wrap_pyfunction!(fetch_ctx_class, m)?)?;
     m.add_class::<App>()?;
     m.add_class::<Namespace>()?;
     m.add_class::<HandlerGroup>()?;

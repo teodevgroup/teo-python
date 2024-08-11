@@ -1,10 +1,13 @@
 pub mod model_object_wrapper;
 pub mod transaction_ctx_wrapper;
 pub mod model_ctx_wrapper;
+pub mod py_class_lookup_map;
 
-use std::collections::BTreeMap;
+use std::sync::Arc;
 use indexmap::IndexMap;
 use inflector::Inflector;
+use py_class_lookup_map::PYClassLookupMap;
+use teo::prelude::app::data::AppData;
 use teo::prelude::traits::named::Named;
 use ::teo::prelude::App;
 use pyo3::{Bound, IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
@@ -21,72 +24,27 @@ use crate::utils::check_py_dict::check_py_dict;
 use self::model_ctx_wrapper::ModelCtxWrapper;
 use self::transaction_ctx_wrapper::TransactionCtxWrapper;
 
-static mut CTXS: Option<&'static BTreeMap<String, PyObject>> = None;
-static mut CLASSES: Option<&'static BTreeMap<String, PyObject>> = None;
-static mut OBJECTS: Option<&'static BTreeMap<String, PyObject>> = None;
-
-pub fn setup_dynamic_container() -> PyResult<()> {
-    unsafe { CLASSES = Some(Box::leak(Box::new(BTreeMap::new()))) };
-    unsafe { OBJECTS = Some(Box::leak(Box::new(BTreeMap::new()))) };
-    unsafe { CTXS = Some(Box::leak(Box::new(BTreeMap::new()))) };
+pub(crate) fn synthesize_dynamic_python_classes(app: &App, py: Python<'_>) -> PyResult<()> {
+    let static_app = unsafe { &*(app as *const App) } as &'static App;
+    let mut map = PYClassLookupMap::new();
+    synthesize_dynamic_python_classes_for_namespace(&mut map, static_app, static_app.compiled_main_namespace(), py);
+    let raw_map_pointer = Box::into_raw(Box::new(map));
+    app.app_data().set_dynamic_classes_pointer(raw_map_pointer as * mut ());
+    app.app_data().set_dynamic_classes_clean_up(Arc::new(|app_data: AppData| {
+        unsafe {
+            let raw_pointer = app_data.dynamic_classes_pointer() as * mut PYClassLookupMap;
+            let _ = Box::from_raw(raw_pointer);
+        }
+    }));
     Ok(())
 }
 
-#[allow(invalid_reference_casting)]
-fn classes_mut() -> &'static mut BTreeMap<String, PyObject> {
-    unsafe {
-        let const_ptr = CLASSES.unwrap() as *const BTreeMap<String, PyObject>;
-        let mut_ptr = const_ptr as *mut BTreeMap<String, PyObject>;
-        &mut *mut_ptr
+pub(crate) fn synthesize_dynamic_python_classes_for_namespace(map: &mut PYClassLookupMap, app: &'static App, namespace: &'static Namespace, py: Python<'_>) -> PyResult<()> {
+    synthesize_direct_dynamic_python_classes_for_namespace(map, app, namespace, py)?;
+    for namespace in namespace.namespaces().values() {
+        synthesize_dynamic_python_classes_for_namespace(map, app, namespace, py)?;
     }
-}
-
-#[allow(invalid_reference_casting)]
-fn objects_mut() -> &'static mut BTreeMap<String, PyObject> {
-    unsafe {
-        let const_ptr = OBJECTS.unwrap() as *const BTreeMap<String, PyObject>;
-        let mut_ptr = const_ptr as *mut BTreeMap<String, PyObject>;
-        &mut *mut_ptr
-    }
-}
-
-#[allow(invalid_reference_casting)]
-fn ctxs_mut() -> &'static mut BTreeMap<String, PyObject> {
-    unsafe {
-        let const_ptr = CTXS.unwrap() as *const BTreeMap<String, PyObject>;
-        let mut_ptr = const_ptr as *mut BTreeMap<String, PyObject>;
-        &mut *mut_ptr
-    }
-}
-
-pub fn get_model_class_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
-    unsafe {
-        if let Some(object_ref) = CLASSES.unwrap().get(name) {
-            Ok(object_ref.clone_ref(py))
-        } else {
-            generate_model_class_class(py, name)
-        }
-    }
-}
-
-pub fn get_model_object_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
-    unsafe {
-        if let Some(object_ref) = OBJECTS.unwrap().get(name) {
-            Ok(object_ref.clone_ref(py))
-        } else {
-            generate_model_object_class(py, name)
-        }
-    }
-}
-
-pub fn get_ctx_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
-    unsafe {
-        if let Some(object_ref) = CTXS.unwrap().get(name) {
-            Ok(object_ref.clone_ref(py))
-        } else {
-            generate_ctx_class(py, name)
-        }
-    }
+    Ok(())
 }
 
 pub(crate) fn py_model_object_from_teo_model_object(py: Python<'_>, teo_model_object: model::Object) -> PyResult<PyObject> {
@@ -194,19 +152,7 @@ unsafe fn generate_ctx_class(py: Python<'_>, name: &str) -> PyResult<PyObject> {
     Ok(result.into_py(py))
 }
 
-pub(crate) fn synthesize_dynamic_python_classes(py: Python<'_>, app: &App) -> PyResult<()> {
-    synthesize_dynamic_nodejs_classes_for_namespace(py, app.compiled_main_namespace())
-}
-
-pub(crate) fn synthesize_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namespace: &'static Namespace) -> PyResult<()> {
-    synthesize_direct_dynamic_nodejs_classes_for_namespace(py, namespace)?;
-    for namespace in namespace.namespaces().values() {
-        synthesize_dynamic_nodejs_classes_for_namespace(py, namespace)?;
-    }
-    Ok(())
-}
-
-fn synthesize_direct_dynamic_nodejs_classes_for_namespace(py: Python<'_>, namespace: &'static Namespace) -> PyResult<()> {
+pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut PYClassLookupMap, app: &'static App, namespace: &'static Namespace, env: Env) -> PyResult<()> {
     let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
     let main = py.import_bound("__main__")?;
     let teo_wrap_builtin = main.getattr("teo_wrap_builtin")?;
