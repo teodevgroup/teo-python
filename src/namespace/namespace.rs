@@ -2,7 +2,7 @@ use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction}, Bound, IntoPy
 use teo::prelude::{r#enum, handler, namespace, pipeline::{self, item::validator::Validity}, request, Middleware, Next, Value};
 use teo_result::Error;
 
-use crate::{utils::{check_callable::check_callable, await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals}, object::{arguments::teo_args_to_py_args, model::teo_model_object_to_py_any, value::{py_any_to_teo_value, teo_value_to_py_any}}, model::{model::Model, field::field::Field, relation::relation::Relation, property::property::Property}, r#enum::{r#enum::Enum, member::member::EnumMember}, request::{Request, RequestCtx}, dynamic::py_ctx_object_from_teo_transaction_ctx, response::Response, handler::group::HandlerGroup};
+use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::teo_args_to_py_args, model::teo_model_object_to_py_any, value::{py_any_to_teo_value, teo_value_to_py_any}}, request::{Request, RequestCtx}, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable}};
 
 #[pyclass]
 pub struct Namespace {
@@ -43,9 +43,10 @@ impl Namespace {
     pub fn define_model_decorator(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
+        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_model_decorator(name, |arguments, model| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args(py, &arguments)?;
+                let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let model_wrapped = Model {
                     teo_model: model.clone()
                 };
@@ -60,9 +61,10 @@ impl Namespace {
     pub fn define_model_field_decorator(&self, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
+        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_model_field_decorator(name, |arguments, field| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args(py, &arguments)?;
+                let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let field_wrapped = Field {
                     teo_field: field.clone()
                 };
@@ -77,9 +79,10 @@ impl Namespace {
     pub fn define_model_relation_decorator(&self, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
+        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_model_relation_decorator(name, |arguments, relation| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args(py, &arguments)?;
+                let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let relation_wrapped = Relation {
                     teo_relation: relation.clone()
                 };
@@ -94,9 +97,10 @@ impl Namespace {
     pub fn define_model_property_decorator(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
+        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_model_property_decorator(name, |arguments, property| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args(py, &arguments)?;
+                let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let property_wrapped = Property {
                     teo_property: property.clone()
                 };
@@ -111,9 +115,10 @@ impl Namespace {
     pub fn define_enum_decorator(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
+        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_enum_decorator(name, |arguments, teo_enum: &r#enum::Builder| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args(py, &arguments)?;
+                let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let enum_wrapped = Enum {
                     teo_enum: teo_enum.clone()
                 };
@@ -128,9 +133,10 @@ impl Namespace {
     pub fn define_enum_member_decorator(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
+        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_enum_member_decorator(name, |arguments, member: &r#enum::member::Builder| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args(py, &arguments)?;
+                let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let enum_member_wrapped = EnumMember {
                     teo_enum_member: member.clone()
                 };
@@ -146,12 +152,13 @@ impl Namespace {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
+        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_pipeline_item(name, move |args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
-                let value = teo_value_to_py_any(py, ctx.value())?;
-                let args = teo_args_to_py_args(py, &args)?;
-                let object = teo_model_object_to_py_any(py, ctx.object())?;
-                let ctx = py_ctx_object_from_teo_transaction_ctx(py, ctx.transaction_ctx(), "")?;
+                let value = teo_value_to_py_any(py, ctx.value(), map)?;
+                let args = teo_args_to_py_args(py, &args, map)?;
+                let object = teo_model_object_to_py_any(py, ctx.object(), map)?;
+                let ctx = map.teo_transaction_ctx_to_py_ctx_object(py, ctx.transaction_ctx(), "")?;
                 let result = callback_owned.call1(py, (value, args, object, ctx))?;
                 Ok::<_, Error>(result)
             })?;
@@ -172,12 +179,13 @@ impl Namespace {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
+        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_validator_pipeline_item(name, move |_: Value, args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
-                let value = teo_value_to_py_any(py, ctx.value())?;
-                let args = teo_args_to_py_args(py, &args)?;
-                let object = teo_model_object_to_py_any(py, ctx.object())?;
-                let ctx = py_ctx_object_from_teo_transaction_ctx(py, ctx.transaction_ctx(), "")?;
+                let value = teo_value_to_py_any(py, ctx.value(), map)?;
+                let args = teo_args_to_py_args(py, &args, map)?;
+                let object = teo_model_object_to_py_any(py, ctx.object(), map)?;
+                let ctx = map.teo_transaction_ctx_to_py_ctx_object(py, ctx.transaction_ctx(), "")?;
                 let result = callback_owned.call1(py, (value, args, object, ctx))?;
                 Ok::<_, Error>(result)
             })?;
@@ -204,12 +212,13 @@ impl Namespace {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
+        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_callback_pipeline_item(name, move |args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
-                let value = teo_value_to_py_any(py, ctx.value())?;
-                let args = teo_args_to_py_args(py, &args)?;
-                let object = teo_model_object_to_py_any(py, ctx.object())?;
-                let ctx = py_ctx_object_from_teo_transaction_ctx(py, ctx.transaction_ctx(), "")?;
+                let value = teo_value_to_py_any(py, ctx.value(), map)?;
+                let args = teo_args_to_py_args(py, &args, map)?;
+                let object = teo_model_object_to_py_any(py, ctx.object(), map)?;
+                let ctx = map.teo_transaction_ctx_to_py_ctx_object(py, ctx.transaction_ctx(), "")?;
                 let result = callback_owned.call1(py, (value, args, object, ctx))?;
                 Ok::<_, Error>(result)
             })?;
@@ -223,13 +232,14 @@ impl Namespace {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
+        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_compare_pipeline_item(name, move |old: Value, new: Value, args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
-                let value_old = teo_value_to_py_any(py, &old)?;
-                let value_new = teo_value_to_py_any(py, &new)?;
-                let args = teo_args_to_py_args(py, &args)?;
-                let object = teo_model_object_to_py_any(py, ctx.object())?;
-                let ctx = py_ctx_object_from_teo_transaction_ctx(py, ctx.transaction_ctx(), "")?;
+                let value_old = teo_value_to_py_any(py, &old, map)?;
+                let value_new = teo_value_to_py_any(py, &new, map)?;
+                let args = teo_args_to_py_args(py, &args, map)?;
+                let object = teo_model_object_to_py_any(py, ctx.object(), map)?;
+                let ctx = map.teo_transaction_ctx_to_py_ctx_object(py, ctx.transaction_ctx(), "")?;
                 let result = callback_owned.call1(py, (value_old, value_new, args, object, ctx))?;
                 Ok::<_, Error>(result)
             })?;
@@ -296,9 +306,10 @@ impl Namespace {
         check_callable(&callback.bind(py))?;
         let shared_callback = &*Box::leak(Box::new(callback));
         let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
+        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_middleware(name, move |arguments| async move {
             Python::with_gil(|py| {
-                let py_args = teo_args_to_py_args(py, &arguments)?;
+                let py_args = teo_args_to_py_args(py, &arguments, map)?;
                 let result_function = shared_callback.call1(py, (py_args,))?;
                 let main = py.import_bound("__main__")?;
                 let teo_wrap_async = main.getattr("teo_wrap_async")?.into_py(py);
