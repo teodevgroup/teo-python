@@ -5,9 +5,9 @@ pub mod option_variant;
 pub mod decimal;
 
 use indexmap::IndexMap;
-use pyo3::{exceptions::PyValueError, types::{PyAnyMethods, PyDict, PyDictMethods, PyList, PyListMethods, PyString, PyTuple}, Bound, IntoPy, PyAny, PyObject, PyResult, PyTryInto, Python};
+use pyo3::{exceptions::PyValueError, types::{PyAnyMethods, PyDict, PyDictMethods, PyList, PyListMethods, PyString, PyTuple}, IntoPy, PyAny, PyObject, PyResult, Python};
 use regex::Regex;
-use teo::prelude::Value;
+use teo::prelude::{app::data::AppData, Value};
 pub use object_id::ObjectId;
 pub use file::File;
 pub use range::Range;
@@ -16,10 +16,12 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 use pyo3::types::{PyBool, PyDate, PyDateTime, PyFloat, PyInt};
 use chrono::prelude::{NaiveDate, Utc, DateTime};
+use crate::dynamic::py_class_lookup_map::PYClassLookupMap;
+
 use self::decimal::big_decimal_to_python_decimal;
 use super::{interface_enum_variant::teo_interface_enum_variant_to_py_any, model::teo_model_object_to_py_any, pipeline::teo_pipeline_to_py_any, r#struct::teo_struct_object_to_py_any};
 
-pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObject> {
+pub fn teo_value_to_py_any_without_model_objects<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObject> {
     Ok(match value {
         Value::Null => ().into_py(py),
         Value::ObjectId(oid) => ObjectId { value: oid.clone() }.into_py(py),
@@ -35,7 +37,7 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObje
         Value::Array(v) => {
             let list = PyList::empty_bound(py);
             for value in v {
-                list.append(teo_value_to_py_any(py, value)?)?;
+                list.append(teo_value_to_py_any_without_model_objects(py, value)?)?;
             }
             list.into_py(py)
         },
@@ -43,7 +45,7 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObje
         Value::Dictionary(m) => {
             let dict = PyDict::new_bound(py);
             for (k, v) in m {
-                dict.set_item(k, teo_value_to_py_any(py, v)?)?;
+                dict.set_item(k, teo_value_to_py_any_without_model_objects(py, v)?)?;
             }
             dict.into_py(py)
         },
@@ -52,7 +54,7 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObje
             instance.into_py(py)
         }
         Value::Tuple(tuple) => {
-            PyTuple::new_bound(py, tuple.iter().map(|v| teo_value_to_py_any(py, v)).collect::<PyResult<Vec<PyObject>>>()?).into_py(py)
+            PyTuple::new_bound(py, tuple.iter().map(|v| teo_value_to_py_any_without_model_objects(py, v)).collect::<PyResult<Vec<PyObject>>>()?).into_py(py)
         }
         Value::OptionVariant(option_variant) => {
             let instance = OptionVariant { value: option_variant.clone() };
@@ -68,11 +70,34 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObje
             let instance = File::from(file);
             instance.into_py(py)
         }
-        Value::ModelObject(model_object) => teo_model_object_to_py_any(py, model_object)?,
         Value::StructObject(struct_object) => teo_struct_object_to_py_any(struct_object)?,
         Value::Pipeline(pipeline) => teo_pipeline_to_py_any(py, pipeline)?,
         Value::InterfaceEnumVariant(interface_enum_variant) => teo_interface_enum_variant_to_py_any(py, interface_enum_variant)?,
         _ => Err(PyValueError::new_err("cannot convert Teo value to Python value"))?,
+    })
+}
+
+pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value, map: &PYClassLookupMap) -> PyResult<PyObject> {
+    Ok(match value {
+        Value::ModelObject(model_object) => teo_model_object_to_py_any(py, model_object, map)?,
+        Value::Array(v) => {
+            let list = PyList::empty_bound(py);
+            for value in v {
+                list.append(teo_value_to_py_any(py, value, map)?)?;
+            }
+            list.into_py(py)
+        },
+        Value::Dictionary(m) => {
+            let dict = PyDict::new_bound(py);
+            for (k, v) in m {
+                dict.set_item(k, teo_value_to_py_any(py, v, map)?)?;
+            }
+            dict.into_py(py)
+        },
+        Value::Tuple(tuple) => {
+            PyTuple::new_bound(py, tuple.iter().map(|v| teo_value_to_py_any(py, v, map)).collect::<PyResult<Vec<PyObject>>>()?).into_py(py)
+        },
+        _ => teo_value_to_py_any_without_model_objects(py, value)?,
     })
 }
 
