@@ -1,7 +1,7 @@
 pub mod header_map;
 
 use std::path::PathBuf;
-use crate::{object::value::{py_any_to_teo_value, teo_value_to_py_any}, request::Cookie};
+use crate::{object::value::{py_any_to_teo_value, teo_value_to_py_any_without_model_objects}, request::Cookie};
 use self::header_map::ReadWriteHeaderMap;
 use pyo3::{pyclass, pymethods, PyObject, Python, PyResult, IntoPy};
 use teo::prelude::response::Response as TeoResponse;
@@ -116,7 +116,7 @@ impl Response {
     pub fn get_teon(&self, py: Python<'_>) -> PyResult<PyObject> {
         Ok(match self.teo_response.body().as_teon() {
             None => ().into_py(py),
-            Some(value) => teo_value_to_py_any(py, value)?
+            Some(value) => teo_value_to_py_any_without_model_objects(py, value)?
         })
     }
 
