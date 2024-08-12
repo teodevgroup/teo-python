@@ -4,7 +4,7 @@ use ::teo::prelude::{RuntimeVersion, App as TeoApp, Entrance, transaction};
 use teo_result::Error;
 use tokio::runtime::Builder;
 
-use crate::{utils::{check_callable::check_callable, is_coroutine::is_coroutine}, namespace::namespace::Namespace, dynamic::{synthesize_dynamic_python_classes, py_ctx_object_from_teo_transaction_ctx}};
+use crate::{dynamic::{py_class_lookup_map::PYClassLookupMap, synthesize_dynamic_python_classes}, namespace::namespace::Namespace, utils::{check_callable::check_callable, is_coroutine::is_coroutine}};
 
 #[pyclass]
 pub struct App {
@@ -39,9 +39,10 @@ impl App {
     fn setup<'p>(&mut self, py: Python<'p>, callback: PyObject) -> PyResult<()> {
         check_callable(&callback.bind(py))?;
         let callback = &*Box::leak(Box::new(callback));
+        let map = PYClassLookupMap::from_app_data(self.teo_app.app_data()); 
         self.teo_app.setup(|ctx: transaction::Ctx| async {
             let transformed = Python::with_gil(|py| {
-                let transformed_py = callback.call1(py, (py_ctx_object_from_teo_transaction_ctx(py, ctx, "")?,))?.into_py(py);
+                let transformed_py = callback.call1(py, (map.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?,))?.into_py(py);
                 let is_coroutine = is_coroutine(transformed_py.extract::<&PyAny>(py)?)?;
                 Ok::<_, Error>((transformed_py, is_coroutine))
             })?;
@@ -60,9 +61,10 @@ impl App {
     fn program<'p>(&mut self, py: Python<'p>, name: &str, desc: Option<&str>, callback: PyObject) -> PyResult<()> {
         check_callable(&callback.bind(py))?;
         let callback_owned = &*Box::leak(Box::new(callback));
+        let map = PYClassLookupMap::from_app_data(self.teo_app.app_data()); 
         self.teo_app.program(name, desc, |ctx: transaction::Ctx| async {
             let transformed = Python::with_gil(|py| {
-                let transformed_py = callback_owned.call1(py, (py_ctx_object_from_teo_transaction_ctx(py, ctx, "")?,))?.into_py(py);
+                let transformed_py = callback_owned.call1(py, (map.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?,))?.into_py(py);
                 let is_coroutine = is_coroutine(transformed_py.extract::<&PyAny>(py)?)?;
                 Ok::<_, Error>((transformed_py, is_coroutine))
             })?;
@@ -85,7 +87,7 @@ impl App {
         let coroutine = future_into_py(py, (|| async move {
             static_self.teo_app.prepare_for_run().await?;
             Python::with_gil(|py| {
-                synthesize_dynamic_python_classes(py, &static_self.teo_app)?;
+                synthesize_dynamic_python_classes(&static_self.teo_app, py)?;
                 Ok::<(), PyErr>(())
             })?;
             static_self.teo_app.run_without_prepare().await?;

@@ -26,7 +26,7 @@ use self::transaction_ctx_wrapper::TransactionCtxWrapper;
 pub(crate) fn synthesize_dynamic_python_classes(app: &App, py: Python<'_>) -> PyResult<()> {
     let static_app = unsafe { &*(app as *const App) } as &'static App;
     let mut map = PYClassLookupMap::new();
-    synthesize_dynamic_python_classes_for_namespace(&mut map, static_app, static_app.compiled_main_namespace(), py);
+    synthesize_dynamic_python_classes_for_namespace(&mut map, static_app, static_app.compiled_main_namespace(), py)?;
     let raw_map_pointer = Box::into_raw(Box::new(map));
     app.app_data().set_dynamic_classes_pointer(raw_map_pointer as * mut ());
     app.app_data().set_dynamic_classes_clean_up(Arc::new(|app_data: AppData| {
