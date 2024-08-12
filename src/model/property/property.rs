@@ -1,7 +1,7 @@
 use pyo3::{pyclass, pymethods, types::PyAnyMethods, IntoPy, PyAny, PyObject, PyResult, Python};
 use teo::prelude::model;
 
-use crate::object::value::{teo_value_to_py_any, py_any_to_teo_value};
+use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, object::value::{py_any_to_teo_value, teo_value_to_py_any}};
 
 #[pyclass]
 pub struct Property {
@@ -18,7 +18,7 @@ impl Property {
 
     pub fn data(&mut self, py: Python<'_>, key: String) -> PyResult<PyObject> {
         Ok(match self.teo_property.data().get(key.as_str()) {
-            Some(object) => teo_value_to_py_any(py, object)?,
+            Some(object) => teo_value_to_py_any(py, object, PYClassLookupMap::from_app_data(self.teo_property.app_data()))?,
             None => ().into_py(py),
         })
     }
