@@ -1,9 +1,9 @@
-use pyo3::{pyclass, pymethods, Python, PyResult, PyObject, types::PyDict, IntoPy};
+use pyo3::{pyclass, pymethods, types::{PyDict, PyDictMethods}, IntoPy, PyObject, PyResult, Python};
 use teo::prelude::handler::r#match::HandlerMatch as TeoHandlerMatch;
 
 #[pyclass]
 pub struct HandlerMatch {
-    pub(crate) teo_inner: &'static TeoHandlerMatch,
+    pub(crate) teo_inner: TeoHandlerMatch,
 }
 
 /// Handler match.
@@ -20,7 +20,7 @@ impl HandlerMatch {
 
     pub fn captures(&self, py: Python<'_>) -> PyResult<PyObject> {
         let captures_map = self.teo_inner.captures();
-        let py_dict = PyDict::new(py);
+        let py_dict = PyDict::new_bound(py);
         for (k, value) in captures_map.iter() {
             py_dict.set_item(k, value)?;
         }

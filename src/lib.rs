@@ -10,7 +10,6 @@ pub mod request;
 pub mod response;
 
 use pyo3::prelude::*;
-use ::teo::prelude::serve_static_files as teo_serve_static_files;
 use request::{Expiration, Request};
 use response::{Response, header_map::ReadWriteHeaderMap};
 use crate::app::app::App;

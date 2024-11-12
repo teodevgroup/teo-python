@@ -1,6 +1,6 @@
 use pyo3::PyResult;
 use pyo3::{pyclass, pymethods};
-use teo::prelude::request::Cookie as ActixCookie;
+use teo::prelude::request::Cookie as TeoCookie;
 use teo::prelude::request::SameSite;
 use time::Duration;
 use super::Expiration;
