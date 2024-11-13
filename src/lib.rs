@@ -22,7 +22,6 @@ use crate::model::relation::relation::Relation;
 use crate::model::property::property::Property;
 use crate::handler::group::HandlerGroup;
 use crate::request::HandlerMatch;
-use crate::request::ctx::RequestCtx;
 use crate::request::Cookie;
 use crate::object::value::ObjectId;
 use crate::object::value::OptionVariant;
@@ -32,8 +31,8 @@ use crate::object::pipeline::Pipeline;
 use crate::object::interface_enum_variant::InterfaceEnumVariant;
 
 #[pymodule]
-fn teo(py: Python, m: &PyModule) -> PyResult<()> {
-    py.run(r#"
+fn teo(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
+    py.run_bound(r#"
 global teo_wrap_builtin
 def teo_wrap_builtin(cls, name, callable):
     def wrapped(self, *args, **kwargs):
@@ -46,12 +45,6 @@ def teo_wrap_async(callable):
         return await callable(self, *args, **kwargs)
     return wrapped
     "#, None, None)?;
-    #[pyfunction]
-    fn serve_static_files(base: &str, path: &str, py: Python<'_>) -> PyResult<Response> {
-        let teo_response = teo_serve_static_files(base, path)?;
-        Ok(Response { teo_response })
-    }
-    m.add_function(wrap_pyfunction!(serve_static_files, m)?)?;
     m.add_class::<App>()?;
     m.add_class::<Namespace>()?;
     m.add_class::<HandlerGroup>()?;
@@ -67,7 +60,6 @@ def teo_wrap_async(callable):
     m.add_class::<Expiration>()?;
     m.add_class::<ReadWriteHeaderMap>()?;
     m.add_class::<HandlerMatch>()?;
-    m.add_class::<RequestCtx>()?;
     m.add_class::<ObjectId>()?;
     m.add_class::<Range>()?;
     m.add_class::<OptionVariant>()?;

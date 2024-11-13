@@ -1,6 +1,6 @@
-use pyo3::{types::PyAnyMethods, Bound, PyAny, PyResult, Python};
+use pyo3::{Py, types::PyAnyMethods, PyAny, PyResult, Python};
 
-pub fn is_coroutine(object: &Bound<PyAny>) -> PyResult<bool> {
+pub fn is_coroutine(object: &Py<PyAny>) -> PyResult<bool> {
     Python::with_gil(|py| {
         let inspect = py.import_bound("inspect")?;
         let is_coroutine = inspect.getattr("iscoroutine")?;
