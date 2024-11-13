@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyList, PyModule}, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
+use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyList, PyListMethods, PyModule}, Bound, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::tokio::future_into_py;
 use ::teo::prelude::{RuntimeVersion, App as TeoApp, Entrance, transaction};
 use teo_result::Error;
@@ -28,7 +28,8 @@ impl App {
         let environment_version = RuntimeVersion::Python(version_str.to_owned());
         let entrance = if cli { Entrance::CLI } else { Entrance::APP };
         let sys = PyModule::import_bound(py, "sys")?;
-        let argv: &PyList = sys.getattr("argv")?.extract()?;
+        let argv_binding = sys.getattr("argv")?;
+        let argv: &Bound<PyList> = argv_binding.downcast()?;
         let mut rust_argv: Vec<String> = argv.iter().map(|s| s.to_string()).collect();
         rust_argv.insert(0, "python".to_string());
         Ok(App { 
@@ -43,7 +44,7 @@ impl App {
         self.teo_app.setup(|ctx: transaction::Ctx| async {
             let transformed = Python::with_gil(|py| {
                 let transformed_py = callback.call1(py, (map.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?,))?.into_py(py);
-                let is_coroutine = is_coroutine(transformed_py.extract::<&PyAny>(py)?)?;
+                let is_coroutine = is_coroutine(&transformed_py)?;
                 Ok::<_, Error>((transformed_py, is_coroutine))
             })?;
             if transformed.1 {
@@ -65,7 +66,7 @@ impl App {
         self.teo_app.program(name, desc, |ctx: transaction::Ctx| async {
             let transformed = Python::with_gil(|py| {
                 let transformed_py = callback_owned.call1(py, (map.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?,))?.into_py(py);
-                let is_coroutine = is_coroutine(transformed_py.extract::<&PyAny>(py)?)?;
+                let is_coroutine = is_coroutine(&transformed_py)?;
                 Ok::<_, Error>((transformed_py, is_coroutine))
             })?;
             if transformed.1 {
