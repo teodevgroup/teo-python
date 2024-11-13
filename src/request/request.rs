@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, PyObject, PyResult, Python};
+use pyo3::{pyclass, pymethods, Bound, PyAny, PyObject, PyResult, Python};
 use teo::prelude::Request as TeoRequest;
 use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, object::value::{py_any_to_teo_value, teo_value_to_py_any_without_model_objects}};
 
@@ -109,8 +109,8 @@ impl Request {
         teo_value_to_py_any_without_model_objects(py, self.teo_request.body_value()?)
     }
 
-    pub fn set_body_object(&self, value: PyObject, py: Python<'_>) -> PyResult<()> {
-        let value = py_any_to_teo_value(py, &value.into_any())?;
+    pub fn set_body_object(&self, value: &Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
+        let value = py_any_to_teo_value(py, value)?;
         self.teo_request.set_body_value(value);
         Ok(())
     }
