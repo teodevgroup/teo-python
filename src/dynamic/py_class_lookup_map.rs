@@ -81,7 +81,9 @@ impl PYClassLookupMap {
     }
 
     pub(crate) fn ctx(&self, name: &str) -> PyResult<Option<PyObject>> {
-        Ok(self.ctxs.get(name).cloned())
+        Python::with_gil(|py| {
+            Ok(self.ctxs.get(name).map(|o| o.into_py(py)))
+        })
     }
 
     pub(crate) fn class_or_create(&mut self, name: &str, py: Python<'_>) -> PyResult<PyObject> {
@@ -90,7 +92,7 @@ impl PYClassLookupMap {
         let py_object = builtins.getattr("object")?;
         let dict = PyDict::new_bound(py);
         dict.set_item("__module__", "teo.models")?;
-        let init = PyCFunction::new_closure_bound(py, Some(c"__init__"), Some(INIT_ERROR_MESSAGE), |args, _kwargs| {
+        let init = PyCFunction::new_closure_bound(py, Some(c"__init__"), Some(INIT_ERROR_MESSAGE_C), |args, _kwargs| {
             let slf = args.get_item(0)?;
             let initialized: bool = slf.getattr("__teo_initialized__")?.extract()?;
             if initialized {
@@ -101,13 +103,15 @@ impl PYClassLookupMap {
         })?;
         dict.set_item("__init__", init)?;
         let result = py_type.call1((name, (py_object,), dict))?;
-        let result_object = result.into_py(py);
+        let result_object = result.clone().into_py(py);
         self.insert_class(name, result_object);
         Ok(result.into_py(py))
     }
 
     pub(crate) fn class(&self, name: &str) -> PyResult<Option<PyObject>> {
-        Ok(self.classes.get(name).cloned())
+        Python::with_gil(|py| {
+            Ok(self.classes.get(name).map(|o| o.into_py(py)))
+        })
     }
 
     pub(crate) fn object_or_create(&mut self, name: &str, py: Python<'_>) -> PyResult<PyObject> {
@@ -127,13 +131,15 @@ impl PYClassLookupMap {
         })?;
         dict.set_item("__init__", init)?;
         let result = py_type.call1((name, (py_object,), dict))?;
-        let result_object = result.into_py(py);
+        let result_object = result.clone().into_py(py);
         self.insert_object(name, result_object);
         Ok(result.into_py(py))
     }
 
     pub(crate) fn object(&self, name: &str) -> PyResult<Option<PyObject>> {
-        Ok(self.objects.get(name).cloned())
+        Python::with_gil(|py| {
+            Ok(self.objects.get(name).map(|o| o.into_py(py)))
+        })
     }
 
     // Query methods
@@ -141,7 +147,7 @@ impl PYClassLookupMap {
     pub(crate) fn teo_model_ctx_to_py_model_class_object(&self, py: Python<'_>, model_ctx: model::Ctx) -> PyResult<PyObject> {
         let model_name = model_ctx.model().path().join(".");
         let model_class_class = self.class(&model_name)?.unwrap();
-        let model_class_object = model_class_class.call_method1(py, "__new__", (model_class_class.as_ref(py),))?;
+        let model_class_object = model_class_class.call_method1(py, "__new__", (model_class_class.as_any(),))?;
         model_class_object.setattr(py, "__teo_model_ctx__", ModelCtxWrapper::new(model_ctx))?;
         Ok(model_class_object)
     }
@@ -149,7 +155,7 @@ impl PYClassLookupMap {
     pub(crate) fn teo_model_object_to_py_model_object_object(&self, py: Python<'_>, teo_model_object: model::Object) -> PyResult<PyObject> {
         let model_name = teo_model_object.model().path().join(".");
         let model_object_class = self.object(&model_name)?.unwrap();
-        let model_object = model_object_class.call_method1(py, "__new__", (model_object_class.extract::<&PyAny>(py)?,))?;
+        let model_object = model_object_class.call_method1(py, "__new__", (model_object_class.as_any(),))?;
         model_object.setattr(py, "__teo_object__", ModelObjectWrapper::new(teo_model_object))?;
         Ok(model_object)
     }
@@ -163,7 +169,7 @@ impl PYClassLookupMap {
 
     pub(crate) fn teo_transaction_ctx_to_py_ctx_object(&self, py: Python<'_>, transaction_ctx: transaction::Ctx, name: &str) -> PyResult<PyObject> {
         let ctx_class = self.ctx(name)?.unwrap();
-        let ctx_object = ctx_class.call_method1(py, "__new__", (ctx_class.extract::<&PyAny>(py)?,))?;
+        let ctx_object = ctx_class.call_method1(py, "__new__", (ctx_class.as_any(),))?;
         ctx_object.setattr(py, "__teo_transaction_ctx__", TransactionCtxWrapper::new(transaction_ctx))?;
         Ok(ctx_object)
     }

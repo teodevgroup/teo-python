@@ -5,6 +5,7 @@ use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, object::value::{py_a
 use super::{Cookie, HandlerMatch};
 
 #[pyclass]
+#[derive(Clone)]
 pub struct Request {
     pub(crate) teo_request: TeoRequest,
 }
