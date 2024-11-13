@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, types::PyAnyMethods, Bound, IntoPy, PyAny, PyObject, PyResult, Python};
+use pyo3::{pyclass, pymethods, Bound, IntoPy, PyAny, PyObject, PyResult, Python};
 use teo::prelude::r#enum;
 
 use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, object::value::{py_any_to_teo_value, teo_value_to_py_any}};
@@ -12,7 +12,7 @@ pub struct Enum {
 impl Enum {
 
     pub fn set_data(&mut self, py: Python<'_>, key: String, value: &Bound<PyAny>) -> PyResult<()> {
-        self.teo_enum.data().insert(key, py_any_to_teo_value(py, value.extract::<&PyAny>()?)?);
+        self.teo_enum.data().insert(key, py_any_to_teo_value(py, value)?);
         Ok(())
     }
 
