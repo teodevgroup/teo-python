@@ -1,12 +1,12 @@
+use time::{self, OffsetDateTime};
 use chrono::{DateTime, Utc};
-use pyo3::{pyclass, pymethods};
-use time::OffsetDateTime;
-use teo::prelude::request::Expiration as ActixExpiration;
+use pyo3::prelude::*;
+use teo::prelude::request::Expiration as TeoExpiration;
 
 #[pyclass]
 #[derive(Clone)]
 pub struct Expiration {
-    pub(crate) inner: ActixExpiration,
+    pub(crate) inner: TeoExpiration
 }
 
 #[pymethods]
@@ -14,16 +14,14 @@ impl Expiration {
 
     #[staticmethod]
     pub fn create_session() -> Self {
-        Self {
-            inner: ActixExpiration::Session
-        }
+        Expiration { inner: TeoExpiration::Session }
     }
 
     #[staticmethod]
     pub fn create_datetime(datetime: DateTime<Utc>) -> Self {
         let timestamp = datetime.timestamp_millis();
         Self {
-            inner: ActixExpiration::DateTime(OffsetDateTime::from_unix_timestamp(timestamp).unwrap())
+            inner: TeoExpiration::DateTime(OffsetDateTime::from_unix_timestamp(timestamp).unwrap())
         }
     }
 
@@ -37,7 +35,7 @@ impl Expiration {
 
     pub fn datetime(&self) -> Option<DateTime<Utc>> {
         match &self.inner {
-            ActixExpiration::DateTime(offset) => {
+            TeoExpiration::DateTime(offset) => {
                 let timestamp = offset.unix_timestamp();
                 let datetime = DateTime::from_timestamp_millis(timestamp);
                 datetime

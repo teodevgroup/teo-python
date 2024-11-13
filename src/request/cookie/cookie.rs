@@ -8,7 +8,7 @@ use super::Expiration;
 #[pyclass]
 #[derive(Clone)]
 pub struct Cookie {
-    pub(crate) actix_cookie: ActixCookie<'static>,
+    pub(crate) actix_cookie: TeoCookie,
 }
 
 #[pymethods]
