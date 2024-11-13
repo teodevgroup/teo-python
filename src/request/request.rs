@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyDict}, IntoPy, PyAny, PyObject, PyResult, Python};
+use pyo3::{pyclass, pymethods, PyObject, PyResult, Python};
 use teo::prelude::Request as TeoRequest;
 use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, object::value::{py_any_to_teo_value, teo_value_to_py_any_without_model_objects}};
 
@@ -50,7 +50,7 @@ impl Request {
     }
 
     pub fn header_value(&self, name: &str) -> PyResult<Option<&str>> {
-        let header_value = self.teo_request.headers().get(name.as_str());
+        let header_value = self.teo_request.headers().get(name);
         match header_value {
             None => Ok(None),
             Some(header_value) => {
@@ -88,11 +88,11 @@ impl Request {
     }
 
     pub fn cookie(&self, name: String) -> PyResult<Option<Cookie>> {
-        Ok(self.teo_request.cookies()?.get(&name).map(|c| Cookie { inner: c.clone() }))
+        Ok(self.teo_request.cookies()?.get(&name).map(|c| Cookie { teo_cookie: c.clone() }))
     }
 
     pub fn cookies(&self) -> PyResult<Vec<Cookie>> {
-        Ok(self.teo_request.cookies()?.iter().map(|c| Cookie { inner: c.clone() }).collect())
+        Ok(self.teo_request.cookies()?.iter().map(|c| Cookie { teo_cookie: c.clone() }).collect())
     }
 
     pub fn handler_match(&self) -> PyResult<HandlerMatch> {
@@ -116,7 +116,7 @@ impl Request {
     }
 
     pub fn teo(&self, py: Python<'_>) -> PyResult<PyObject> {
-        let map = PYClassLookupMap::from_app_data(self.teo_request.namespace().app_data());
+        let map = PYClassLookupMap::from_app_data(self.teo_request.transaction_ctx().namespace().app_data());
         map.teo_transaction_ctx_to_py_ctx_object(py, self.teo_request.transaction_ctx(), "")
     }
 

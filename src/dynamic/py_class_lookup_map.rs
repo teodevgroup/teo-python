@@ -1,9 +1,11 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, ffi::CStr};
 
 use pyo3::{exceptions::PyRuntimeError, types::{PyAnyMethods, PyCFunction, PyDict}, IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
 use teo::prelude::{app::data::AppData, model, transaction};
 
 use super::{model_ctx_wrapper::ModelCtxWrapper, model_object_wrapper::ModelObjectWrapper, transaction_ctx_wrapper::TransactionCtxWrapper};
+
+static INIT_ERROR_MESSAGE_C: &CStr = c"class is not initialized";
 
 static INIT_ERROR_MESSAGE: &str = "class is not initialized";
 
@@ -62,7 +64,7 @@ impl PYClassLookupMap {
         let py_object = builtins.getattr("object")?;
         let dict = PyDict::new_bound(py);
         dict.set_item("__module__", "teo.models")?;
-        let init = PyCFunction::new_closure_bound(py, Some("__init__"), None, |args, _kwargs| {
+        let init = PyCFunction::new_closure_bound(py, Some(c"__init__"), None, |args, _kwargs| {
             let slf = args.get_item(0)?;
             let initialized: bool = slf.getattr("__teo_initialized__")?.extract()?;
             if initialized {
@@ -83,12 +85,12 @@ impl PYClassLookupMap {
     }
 
     pub(crate) fn class_or_create(&mut self, name: &str, py: Python<'_>) -> PyResult<PyObject> {
-        let builtins = py.import("builtins")?;
+        let builtins = py.import_bound("builtins")?;
         let py_type = builtins.getattr("type")?;
         let py_object = builtins.getattr("object")?;
-        let dict = PyDict::new(py);
+        let dict = PyDict::new_bound(py);
         dict.set_item("__module__", "teo.models")?;
-        let init = PyCFunction::new_closure_bound(py, Some("__init__"), Some(INIT_ERROR_MESSAGE), |args, _kwargs| {
+        let init = PyCFunction::new_closure_bound(py, Some(c"__init__"), Some(INIT_ERROR_MESSAGE), |args, _kwargs| {
             let slf = args.get_item(0)?;
             let initialized: bool = slf.getattr("__teo_initialized__")?.extract()?;
             if initialized {
@@ -109,12 +111,12 @@ impl PYClassLookupMap {
     }
 
     pub(crate) fn object_or_create(&mut self, name: &str, py: Python<'_>) -> PyResult<PyObject> {
-        let builtins = py.import("builtins")?;
+        let builtins = py.import_bound("builtins")?;
         let py_type = builtins.getattr("type")?;
         let py_object = builtins.getattr("object")?;
-        let dict = PyDict::new(py);
+        let dict = PyDict::new_bound(py);
         dict.set_item("__module__", "teo.models")?;
-        let init = PyCFunction::new_closure_bound(py, Some("__init__"), Some(INIT_ERROR_MESSAGE), |args, _kwargs| {
+        let init = PyCFunction::new_closure_bound(py, Some(c"__init__"), Some(INIT_ERROR_MESSAGE_C), |args, _kwargs| {
             let slf = args.get_item(0)?;
             let initialized: bool = slf.getattr("__teo_initialized__")?.extract()?;
             if initialized {

@@ -5,9 +5,9 @@ pub mod option_variant;
 pub mod decimal;
 
 use indexmap::IndexMap;
-use pyo3::{exceptions::PyValueError, types::{PyAnyMethods, PyDict, PyDictMethods, PyList, PyListMethods, PyString, PyTuple}, IntoPy, PyAny, PyObject, PyResult, Python};
+use pyo3::{Py, exceptions::PyValueError, types::{PyAnyMethods, PyDict, PyDictMethods, PyList, PyListMethods, PyString, PyTuple}, IntoPy, PyAny, PyObject, PyResult, Python};
 use regex::Regex;
-use teo::prelude::{app::data::AppData, Value};
+use teo::prelude::Value;
 pub use object_id::ObjectId;
 pub use file::File;
 pub use range::Range;
@@ -101,8 +101,8 @@ pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value, map: &PYClassLooku
     })
 }
 
-pub fn py_any_to_teo_value(py: Python<'_>, object: &PyAny) -> PyResult<Value> {
-    if object.is_none() {
+pub fn py_any_to_teo_value(py: Python<'_>, object: &Py<PyAny>) -> PyResult<Value> {
+    if object.is_none(py) {
         Ok(Value::Null)
     } else if object.is_instance_of::<ObjectId>() {
         let object_id: ObjectId = object.extract()?;

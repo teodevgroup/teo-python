@@ -151,7 +151,7 @@ impl Namespace {
     pub fn define_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_pipeline_item(name, move |args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
@@ -178,7 +178,7 @@ impl Namespace {
     pub fn define_validator_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_validator_pipeline_item(name, move |_: Value, args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
@@ -211,7 +211,7 @@ impl Namespace {
     pub fn define_callback_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_callback_pipeline_item(name, move |args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
@@ -231,7 +231,7 @@ impl Namespace {
     pub fn define_compare_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_compare_pipeline_item(name, move |old: Value, new: Value, args, ctx: pipeline::Ctx| async move {
             let result = Python::with_gil(|py| {
@@ -264,7 +264,7 @@ impl Namespace {
 
     pub fn define_handler(&self, py: Python<'_>, name: String, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         self.teo_namespace.define_handler(name.as_str(), move |ctx: request::Ctx| async move {
             let result = Python::with_gil(|py| {
@@ -305,7 +305,7 @@ impl Namespace {
         let name = Box::leak(Box::new(name)).as_str();
         check_callable(&callback.bind(py))?;
         let shared_callback = &*Box::leak(Box::new(callback));
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_middleware(name, move |arguments| async move {
             Python::with_gil(|py| {
@@ -324,7 +324,7 @@ impl Namespace {
                             Python::with_gil(|py| {
                                 let ctx: RequestCtx = args.get_item(0)?.extract()?;
                                 let teo_ctx = ctx.teo_inner.clone();
-                                let coroutine = pyo3_asyncio_0_21::tokio::future_into_py_with_locals::<_, PyObject>(py, main_thread_locals.clone(), (|| async {
+                                let coroutine = pyo3_async_runtimes::tokio::future_into_py_with_locals::<_, PyObject>(py, main_thread_locals.clone(), (|| async {
                                     let result: teo::prelude::Response = next.call(teo_ctx).await?;
                                     Python::with_gil(|py| {
                                         let response = Response {

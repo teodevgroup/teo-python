@@ -16,7 +16,7 @@ impl HandlerGroup {
 
     pub fn define_handler(&mut self, py: Python<'_>, name: String, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_asyncio_0_21::tokio::get_current_locals(py)?));
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         self.teo_handler_group.define_handler(name.as_str(), move |ctx: request::Ctx| async move {
             let result = Python::with_gil(|py| {
