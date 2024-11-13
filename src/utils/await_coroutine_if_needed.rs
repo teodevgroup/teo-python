@@ -1,4 +1,4 @@
-use pyo3::{Py, types::PyAnyMethods, Bound, IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
+use pyo3::{Py, Bound, IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::{into_future_with_locals, TaskLocals};
 use crate::utils::is_coroutine::is_coroutine;
 
@@ -19,7 +19,7 @@ pub async fn await_coroutine_if_needed_value_with_locals<'py>(value: &Bound<'py,
 }
 
 pub async fn await_coroutine_if_needed(value: &Bound<'_, PyAny>) -> PyResult<PyObject> {
-    if is_coroutine(value.extract::<&PyAny>()?)? {
+    if is_coroutine(value)? {
         let f = pyo3_async_runtimes::tokio::into_future(value.clone())?;
         f.await
     } else {
