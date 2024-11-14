@@ -152,7 +152,7 @@ class Namespace:
         """
         ...
 
-    def define_handler(self, name: str, callback: Callable[[RequestCtx], Response | Awaitable[Response]], /) -> None:
+    def define_handler(self, name: str, callback: Callable[[Request], Response | Awaitable[Response]], /) -> None:
         """
         Define a handler.
         """
@@ -170,7 +170,7 @@ class Namespace:
         """
         ...
 
-    def define_middleware(self, name: str, callback: Callable[[Any], Callable[[RequestCtx, Callable[[RequestCtx], Awaitable[Response]]], Awaitable[Response]]], /) -> None:
+    def define_middleware(self, name: str, callback: Callable[[Any], Callable[[Request, Callable[[Request], Awaitable[Response]]], Awaitable[Response]]], /) -> None:
         """
         Define a middleware.
         """
@@ -181,7 +181,7 @@ class HandlerGroup:
     A handler group contains handlers and it takes a namespace in the request URL.
     """
 
-    def define_handler(self, name: str, callback: Callable[[RequestCtx], Response | Awaitable[Response]], /) -> None:
+    def define_handler(self, name: str, callback: Callable[[Request], Response | Awaitable[Response]], /) -> None:
         """
         Define a handler.
         """
@@ -619,10 +619,16 @@ class Expiration:
         """
         ...
 
+
 class Request:
     """
     An HTTP request.
     """
+
+    def version(self) -> str:
+        """
+        Get the request's HTTP version.
+        """
 
     def method(self) -> str:
         """
@@ -630,35 +636,70 @@ class Request:
         """
         ...
 
+    def uri(self) -> str:
+        """
+        Get the request's URI.
+        """
+        ...
+
+    def scheme(self) -> Optional[str]:
+        """
+        Get the request URI's scheme.
+        """
+        ...
+
+    def host(self) -> Optional[str]:
+        """
+        Get the request URI's host.
+        """
+        ...
+
     def path(self) -> str:
         """
-        Get the request's path.
+        Get the request URI's path.
         """
         ...
 
-    def query_string(self) -> str:
+    def query(self) -> str:
         """
-        Get the request's query string.
+        Get the request URI's query string.
         """
         ...
 
-    def content_type(self) -> str:
+    def content_type(self) -> Optional[str]:
         """
         Get the request's content type.
         """
         ...
-    
-    def header(self, name: str) -> Optional[str]:
+
+    def contains_header(self, name: str) -> bool:
         """
-        Get a header value by name.
+        Whether the header of name exists.
         """
         ...
 
-    def headers(self) -> dict[str, str]:
+    def header_value(self, name: str) -> Optional[str]:
         """
-        Get the request's headers.
+        Return the first header value in the header entries.
         """
         ...
+
+    def header_values(self, name: str) -> list[str]:
+        """
+        Return all values of the header named `name`.
+        """
+        ...
+
+    def header_keys(self) -> list[str]:
+        """
+        Get all header keys.
+        """
+        ...
+
+    def headers_length(self) -> int:
+        """
+        Get the length of the headers.
+        """
 
     def cookies(self) -> list[Cookie]:
         """
@@ -671,6 +712,36 @@ class Request:
         Get a cookie from the request by name.
         """
         ...
+
+    def body_object(self) -> Any:
+        """
+        Get the HTTP request's body object.
+        """
+        ...
+
+    def set_body_object(self, new_value: Any) -> None:
+        """
+        Set the request's body object.
+        """
+        ...
+
+    def teo(self) -> Any:
+        """
+        Get the ORM context.
+        """
+        ...
+
+    def handler_match(self) -> HandlerMatch:
+        """
+        Get the handler match result.
+        """
+        ...
+
+    def captures(self) -> dict[str, str]:
+        """
+        Get the path captures.
+        """
+
 
 class HandlerMatch:
     """
@@ -694,40 +765,6 @@ class HandlerMatch:
         Get the URL path captures dict.
         """
         ...
-
-class RequestCtx:
-    """
-    The HTTP request context.
-    """
-
-    def request(self) -> Request:
-        """
-        Get the HTTP request object.
-        """
-        ...
-
-    def body(self) -> Any:
-        """
-        Get the HTTP request's body.
-        """
-        ...
-
-    def teo(self) -> Any:
-        """
-        Get the ORM context.
-        """
-        ...
-
-    def handler_match(self) -> HandlerMatch:
-        """
-        Get the handler match result.
-        """
-        ...
-
-    def path_arguments(self) -> Any:
-        """
-        Get the path arguments.
-        """
 
     
 class ObjectId:
