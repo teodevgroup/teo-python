@@ -26,13 +26,22 @@ impl TestServer {
         Ok(coroutine)
     }
 
-    pub fn reset(&self) -> PyResult<()> {
-        Ok(self.server.reset_app_for_unit_test().await?)
+    pub fn reset<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let static_self: &'static TestServer = unsafe { &*(self as * const TestServer) };
+        let coroutine = future_into_py(py, (move || async {
+            Ok(static_self.server.reset_app_for_unit_test().await?)
+        })())?;
+        Ok(coroutine)
     }
 
-    pub fn process(&self, request: &TestRequest) -> PyResult<TestResponse> {
-        let hyper_request = request.to_hyper_request();
-        let response = self.server.process_test_request_with_hyper_request(hyper_request).await?;
-        Ok(TestResponse::new(response))
+    pub fn process<'py>(&self, request: &TestRequest, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let static_self: &'static TestServer = unsafe { &*(self as * const TestServer) };
+        let static_request: &'static TestRequest = unsafe { &*(request as * const TestRequest) };
+        let coroutine = future_into_py(py, (move || async {
+            let hyper_request = static_request.to_hyper_request();
+            let response = static_self.server.process_test_request_with_hyper_request(hyper_request).await?;
+            Ok(TestResponse::new(response))
+        })())?;
+        Ok(coroutine)
     }
 }
