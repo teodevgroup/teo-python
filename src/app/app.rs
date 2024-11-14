@@ -8,7 +8,7 @@ use crate::{dynamic::{py_class_lookup_map::PYClassLookupMap, synthesize_dynamic_
 
 #[pyclass]
 pub struct App {
-    teo_app: TeoApp,
+    pub(crate) teo_app: TeoApp,
 }
 
 #[pymethods]
