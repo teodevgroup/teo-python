@@ -1,10 +1,9 @@
-use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyDict, PyDictMethods}, Bound, PyAny, PyResult};
+use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyBytes, PyDict, PyDictMethods, PyString}, Bound, PyAny, PyResult, Python};
 use teo_result::Error;
 use std::str::FromStr;
 use hyper::{header::{HeaderName, HeaderValue}, HeaderMap, Method};
 use http_body_util::Full;
 use bytes::Bytes;
-
 
 #[pyclass]
 pub struct TestRequest {
@@ -59,6 +58,16 @@ impl TestRequest {
         }
         let body = kwds.get_item("body")?;
         let body = if let Some(body) = body {
+            if body.is_instance_of::<PyBytes>() {
+                // bytes input
+                // TODO
+            } else if body.is_instance_of::<PyString>() {
+                // string input
+                // TODO
+            } else {
+                // treat as json
+                // TODO
+            }
             Bytes::new()
         } else {
             Bytes::new()
@@ -69,5 +78,72 @@ impl TestRequest {
             headers,
             body,
         })
+    }
+
+    pub fn method(&self) -> &str {
+        self.method.as_str()
+    }
+
+    pub fn set_method(&mut self, method: &str) -> PyResult<()> {
+        match Method::from_str(method) {
+            Ok(method) => {
+                self.method = method;
+                Ok(())
+            },
+            Err(_) => Err(teo_result::Error::internal_server_error_message("cannot parse HTTP method").into()),
+        }
+    }
+
+    pub fn uri(&self) -> &str {
+        self.uri.as_str()
+    }
+
+    pub fn set_uri(&mut self, uri: String) {
+        self.uri = uri;
+    }
+
+    pub fn insert_header(&mut self, key: String, value: String) -> PyResult<()> {
+        self.headers.insert(match HeaderName::try_from(key) {
+            Ok(value) => value,
+            Err(_) => return Err(teo_result::Error::internal_server_error_message("cannot parse header name").into()),
+        }, match HeaderValue::from_str(value.as_str()) {
+            Ok(value) => value,
+            Err(_) => return Err(teo_result::Error::internal_server_error_message("cannot parse header value").into()),
+        });
+        Ok(())
+    }
+
+    pub fn append_header(&mut self, key: String, value: String) -> PyResult<()> {
+        self.headers.append(match HeaderName::try_from(key) {
+            Ok(value) => value,
+            Err(_) => return Err(teo_result::Error::internal_server_error_message("cannot parse header name").into()),
+        }, match HeaderValue::from_str(value.as_str()) {
+            Ok(value) => value,
+            Err(_) => return Err(teo_result::Error::internal_server_error_message("cannot parse header value").into()),
+        });
+        Ok(())
+    }
+
+    pub fn body<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
+        let vec_u8_data = Vec::<u8>::from(self.body.clone());
+        PyBytes::new_bound(py, &vec_u8_data)
+    }
+
+    pub fn set_body(&mut self, body: Bound<PyBytes>) -> PyResult<()> {
+        let data: &[u8] = body.extract()?;
+        self.body = Bytes::copy_from_slice(&data);
+        Ok(())
+    }
+}
+
+impl TestRequest {
+    pub(crate) fn to_hyper_request(&self) -> hyper::Request<Full<Bytes>> {
+        let mut request = hyper::Request::builder()
+            .method(self.method.clone())
+            .uri(self.uri.clone());
+        for (key, value) in self.headers.iter() {
+            request = request.header(key.clone(), value.clone());
+        }
+        request.body(Full::new(self.body.clone())).unwrap()
     }
 }
