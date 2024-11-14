@@ -18,7 +18,7 @@ impl TestRequest {
 
     #[new]
     #[pyo3(signature = (**kwds))]
-    pub fn new(kwds: Option<&Bound<PyDict>>) -> PyResult<Self> {
+    pub fn new(kwds: Option<&Bound<PyDict>>, py: Python<'_>) -> PyResult<Self> {
         let Some(kwds) = kwds else {
             return Err(Error::new("requires argument"))?;
         };
@@ -59,16 +59,21 @@ impl TestRequest {
         let body = kwds.get_item("body")?;
         let body = if let Some(body) = body {
             if body.is_instance_of::<PyBytes>() {
-                // bytes input
-                // TODO
+                let py_bytes: Bound<PyBytes> = body.extract()?;
+                let data: &[u8] = py_bytes.extract()?;
+                Bytes::copy_from_slice(&data)
             } else if body.is_instance_of::<PyString>() {
-                // string input
-                // TODO
+                let py_string: Bound<PyString> = body.extract()?;
+                let rust_str: &str = py_string.extract()?;
+                let rust_u8_slice = rust_str.as_bytes();
+                Bytes::copy_from_slice(rust_u8_slice)
             } else {
-                // treat as json
-                // TODO
+                let json = py.import_bound("json")?;
+                let dumps = json.getattr("dumps")?;
+                let result = dumps.call1((body,))?;
+                let result_string: &str = result.extract()?;
+                Bytes::copy_from_slice(result_string.as_bytes())
             }
-            Bytes::new()
         } else {
             Bytes::new()
         };
