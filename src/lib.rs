@@ -8,6 +8,7 @@ pub mod model;
 pub mod handler;
 pub mod request;
 pub mod response;
+pub mod test;
 
 use pyo3::prelude::*;
 use request::{Expiration, Request};
@@ -29,6 +30,7 @@ use crate::object::value::File;
 use crate::object::value::Range;
 use crate::object::pipeline::Pipeline;
 use crate::object::interface_enum_variant::InterfaceEnumVariant;
+use crate::test::{TestRequest, TestResponse, TestServer};
 
 #[pymodule]
 fn teo(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -66,5 +68,8 @@ def teo_wrap_async(callable):
     m.add_class::<File>()?;
     m.add_class::<InterfaceEnumVariant>()?;
     m.add_class::<Pipeline>()?;
+    m.add_class::<TestRequest>()?;
+    m.add_class::<TestResponse>()?;
+    m.add_class::<TestServer>()?;
     Ok(())
 }

@@ -20,3 +20,6 @@ indexmap = { version = "2.6.0" }
 regex = "1.11.1"
 inflector-plus = "0.11.7"
 time = "0.3.36"
+hyper = { version = "1.5.0", features = ["full"] }
+bytes = "1.8.0"
+http-body-util = "0.1"
