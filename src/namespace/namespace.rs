@@ -327,6 +327,7 @@ impl Namespace {
                             Python::with_gil(|py| {
                                 let arg0 = args.get_item(0)?;
                                 let request: Request = arg0.extract()?;
+                                let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
                                 let coroutine = pyo3_async_runtimes::tokio::future_into_py_with_locals::<_, PyObject>(py, main_thread_locals, (|| async {
                                     let result: teo::prelude::Response = next.call(request.teo_request).await?;
                                     Python::with_gil(|py| {
