@@ -1,22 +1,13 @@
-from unittest import IsolatedAsyncioTestCase
-from asyncio import run
-from teo import TestServer, TestRequest
+from teo.test import TestRequest, TestCase
+from teo import App
 from tests.runtime.response.app import load_app
 
 
-class TestResponse(IsolatedAsyncioTestCase):
-
-    server: TestServer
+class TestResponse(TestCase):
 
     @classmethod
-    def setUpClass(cls):
-        async def init():
-            cls.server = TestServer(load_app())
-            await cls.server.setup()
-        run(init())
-
-    async def asyncSetUp(self):
-        await self.server.reset()
+    def load_app(cls) -> App:
+        return load_app()
 
     async def test_text_response(self):
         test_request = TestRequest(method="GET", uri='/textResponse')
