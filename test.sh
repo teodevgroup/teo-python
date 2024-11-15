@@ -1,1 +1,1 @@
-python -m unittest discover tests/runtime/response "test_*.py"
+python -m unittest discover tests "test_*.py"
