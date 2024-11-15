@@ -1,6 +1,6 @@
 from asyncio import run
 from unittest import IsolatedAsyncioTestCase
-from . import TestServer, TestRequest, TestResponse, App
+from .. import TestServer, TestRequest, TestResponse, App
 
 
 class TestCase(IsolatedAsyncioTestCase):
