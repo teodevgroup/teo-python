@@ -889,3 +889,24 @@ class TeoException(Exception):
     @staticmethod
     def unauthorized(message: str = "unauthorized") -> TeoException:
         pass
+
+
+class TestRequest:
+    """
+    Represents a test request.
+    """
+    ...
+
+
+class TestResponse:
+    """
+    Represents a test response.
+    """
+    ...
+
+
+class TestServer:
+    """
+    Represents a test server.
+    """
+    ...
