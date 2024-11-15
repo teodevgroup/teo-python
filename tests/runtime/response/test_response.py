@@ -1,6 +1,6 @@
 from teo.test import TestRequest, TestCase
 from teo import App
-from tests.runtime.response.app import load_app
+from .app import load_app
 
 
 class TestResponse(TestCase):

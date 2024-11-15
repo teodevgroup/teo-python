@@ -13,3 +13,6 @@ classifiers = [
 
 [project.scripts]
 teo = "teo.cli:main"
+
+[tool.poetry.group.dev.dependencies]
+urllib3 = "2.2.3"
