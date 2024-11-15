@@ -897,6 +897,64 @@ class TestRequest:
     """
     ...
 
+    def __init__(self, 
+                 method: Optional[str], 
+                 uri: str, 
+                 headers: Optional[dict[str, str]], 
+                 body: Optional[bytes | str | Any], /) -> None:
+        """
+        Create a new test request.
+        """
+        ...
+
+    def method(self) -> str:
+        """
+        Get the request's method.
+        """
+        ...
+
+    def set_method(self, method: str) -> None:
+        """
+        Set the request's method.
+        """
+        ...
+
+    def uri(self) -> str:
+        """
+        Get the request's URI.
+        """
+        ...
+
+    def set_uri(self, uri: str) -> None:
+        """
+        Set the request's URI.
+        """
+        ...
+
+    def insert_header(self, key: str, value: str) -> None:
+        """
+        Insert a header to the request.
+        """
+        ...
+
+    def append_header(self, key: str, value: str) -> None:
+        """
+        Append a header to the request.
+        """
+        ...
+
+    def body(self) -> Optional[bytes]:
+        """
+        Get the request's body.
+        """
+        ...
+
+    def set_body(self, body: bytes) -> None:
+        """
+        Set the request's body.
+        """
+        ...
+
 
 class TestResponse:
     """
