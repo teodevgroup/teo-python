@@ -43,21 +43,22 @@ class TeoException(Exception):
         retval = copy(self)
         retval.code = self.code
         retval.error_message = self.error_message if self.errors is not None else f'{prefix}: {self.error_message}'
-        retval.errors = None if self.errors is None else { k: f'{prefix}: {v}' for (k, v) in self.errors }
+
+        retval.errors = None if self.errors is None else { k: f'{prefix}: {v}' for k, v in self.errors.items() }
         return retval
 
     def path_prefixed(self, prefix: str) -> TeoException:
         retval = copy(self)
         retval.code = self.code
         retval.error_message = self.error_message
-        retval.errors = None if self.errors is None else { f'{prefix}.{k}': v for (k, v) in self.errors }
+        retval.errors = None if self.errors is None else { f'{prefix}.{k}': v for k, v in self.errors.items() }
         return retval
 
     def map_path(self, mapper: Callable[[str], str]) -> TeoException:
         retval = copy(self)
         retval.code = self.code
         retval.error_message = self.error_message
-        retval.errors = None if self.errors is None else { mapper(k): v for (k, v) in self.errors }
+        retval.errors = None if self.errors is None else { mapper(k): v for k, v in self.errors.items() }
         return retval
 
     @staticmethod

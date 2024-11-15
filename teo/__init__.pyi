@@ -1,5 +1,4 @@
 """This module contains classes and variables for Teo web framework."""
-from __future__ import annotations
 from typing import TypeVar, Union, Callable, Any, Awaitable, Optional, Literal
 from datetime import datetime
 
