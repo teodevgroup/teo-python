@@ -15,23 +15,31 @@ pub struct App {
 impl App {
 
     #[new]
-    fn new(py: Python<'_>) -> PyResult<Self> {
-        Self::with_cli(py, false)
+    #[pyo3(signature = (argv=None))]
+    fn new(py: Python<'_>, argv: Option<Vec<String>>) -> PyResult<Self> {
+        Self::with_cli(py, false, argv)
     }
 
     #[staticmethod]
-    fn with_cli(py: Python<'_>, cli: bool) -> PyResult<Self> {
+    #[pyo3(signature = (cli=true, argv=None))]
+    fn with_cli(py: Python<'_>, cli: bool, argv: Option<Vec<String>>) -> PyResult<Self> {
         let platform = PyModule::import_bound(py, "platform")?;
         let python_version: Py<PyAny> = platform.getattr("python_version")?.into();
         let version_any = python_version.call0(py)?;
         let version_str: &str = version_any.extract::<&str>(py)?;
         let environment_version = RuntimeVersion::Python(version_str.to_owned());
         let entrance = if cli { Entrance::CLI } else { Entrance::APP };
-        let sys = PyModule::import_bound(py, "sys")?;
-        let argv_binding = sys.getattr("argv")?;
-        let argv: &Bound<PyList> = argv_binding.downcast()?;
-        let mut rust_argv: Vec<String> = argv.iter().map(|s| s.to_string()).collect();
-        rust_argv.insert(0, "python".to_string());
+        let rust_argv = match argv {
+            Some(argv) => argv,
+            None => {
+                let sys = PyModule::import_bound(py, "sys")?;
+                let argv_binding = sys.getattr("argv")?;
+                let argv: &Bound<PyList> = argv_binding.downcast()?;
+                let mut rust_argv: Vec<String> = argv.iter().map(|s| s.to_string()).collect();
+                rust_argv.insert(0, "python".to_string());
+                rust_argv
+            }
+        };
         Ok(App { 
             teo_app: TeoApp::new_with_entrance_and_runtime_version(Some(entrance), Some(environment_version), Some(rust_argv)).unwrap() 
         })

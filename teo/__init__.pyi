@@ -8,7 +8,7 @@ Enumerable = Union[T, list[T]]
 
 class App:
 
-    def __init__(self) -> None:
+    def __init__(self, argv: Optional[list[str]]) -> None:
         """
         Create a new application. Only one can be presented in a program.
         """
@@ -409,6 +409,19 @@ class Response:
         """
         ...
 
+    def add_cookie(self, cookie: Cookie) -> None:
+        """
+        Add a cookie entry to the response.
+        """
+        ...
+
+    def cookies(self) -> list[Cookie]:
+        """
+        Get the cookies of the response.
+        """
+        ...
+
+
 class ReadWriteHeaderMap:
     """
     The readwrite headers of the response. 
@@ -447,6 +460,12 @@ class Cookie:
     """
     The cookie.
     """
+
+    def __init__(self, name: str, value: str) -> None:
+        """
+        Create a new cookie with `name` and `value`.
+        """
+        ...
 
     def name(self) -> str:
         """
