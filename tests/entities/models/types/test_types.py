@@ -1,4 +1,4 @@
-from teo.test import TestCase
+from teo.test import TestCase, TestRequest
 from teo.test.matchers import match_json_value, ignore
 from .app import load_app
 
@@ -10,13 +10,11 @@ class TestTypes(TestCase):
         return load_app()
 
     async def test_create_object(self):
-        response = await self.server.process({
-            "method": "POST",
-            "uri": "/Support/myCreateObject",
-            "body": {
-                "int32": 1,
-            },
-        })
+        request = TestRequest(
+            method='POST', 
+            uri='/Support/myCreateObject',
+            body={'int32': 1})
+        response = await self.server.process(request)
         match_json_value(response.body_as_json(), {
             "data": {
                 "id": ignore,
@@ -25,15 +23,15 @@ class TestTypes(TestCase):
         })
 
     async def test_find_many_objects(self):
-        response = await self.server.process({
-            "method": "POST",
-            "uri": "/Support/myFindManyObjects",
-            "body": {
+        request = TestRequest(
+            method='POST',
+            uri='/Support/myFindManyObjects',
+            body={
                 "orderBy": {
                     "id": "asc"
                 }
-            },
-        })
+            })
+        response = await self.server.process(request)
         match_json_value(response.body_as_json(), {
             "data": [],
         })
