@@ -962,9 +962,93 @@ class TestResponse:
     """
     ...
 
+    def status(self) -> int:
+        """
+        Get the response's status code.
+        """
+        ...
+
+    def version(self) -> str:
+        """
+        Get the response's HTTP version.
+        """
+        ...
+
+    def body(self) -> bytes:
+        """
+        Get the response's body.
+        """
+        ...
+
+    def body_as_string(self) -> str:
+        """
+        Get the response's body as string.
+        """
+        ...
+
+    def body_as_json(self) -> Any:
+        """
+        Get the response's body as JSON.
+        """
+        ...
+
+    def contains_header(self, key: str) -> bool:
+        """
+        Whether the response contains a header by key.
+        """
+        ...
+
+    def header_value(self, key: str) -> Optional[str]:
+        """
+        Get the response's header value by key.
+        """
+        ...
+
+    def header_values(self, key: str) -> list[str]:
+        """
+        Get the response's header values by key.
+        """
+        ...
+
+    def header_keys(self) -> list[str]:
+        """
+        Get the response's header keys.
+        """
+        ...
+
+    def headers_length(self) -> int:
+        """
+        Get the number of response's headers.
+        """
+        ...
+
 
 class TestServer:
     """
     Represents a test server.
     """
     ...
+
+    def __init__(self, app: App) -> None:
+        """
+        Create a new test server with `app`.
+        """
+        ...
+
+    async def setup(self):
+        """
+        Setup the test server for unit testing.
+        """
+        ...
+
+    async def reset(self):
+        """
+        Reset the test server. This includes reset the database entries.
+        """
+        ...
+
+    async def process(self, request: TestRequest) -> TestResponse:
+        """
+        Process a test request and return the response.
+        """
+        ...
