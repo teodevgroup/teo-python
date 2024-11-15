@@ -1,5 +1,6 @@
 use pyo3::{pyclass, pymethods, Bound, PyAny, PyResult, Python};
 use pyo3_async_runtimes::tokio::future_into_py;
+use tokio::runtime::Builder;
 use crate::app::app::App;
 use super::{TestRequest, TestResponse};
 
@@ -13,6 +14,9 @@ impl TestServer {
 
     #[new]
     pub fn new(app: &App) -> Self {
+        let mut builder = Builder::new_multi_thread();
+        builder.enable_all();
+        pyo3_async_runtimes::tokio::init(builder);
         Self { 
             server: teo::server::server::Server::new(app.teo_app.clone())
         }

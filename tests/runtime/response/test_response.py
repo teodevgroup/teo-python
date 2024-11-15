@@ -1,4 +1,5 @@
 from unittest import TestCase
+from asyncio import run
 from teo import TestServer
 from tests.runtime.response.app import load_app
 
@@ -7,10 +8,14 @@ class TestResponse(TestCase):
 
     def __init__(self, *args, **kwargs):
         super(TestResponse, self).__init__(*args, **kwargs)
-        self.server = TestServer(load_app())
+        async def init():
+            self.server = TestServer(load_app())
+        run(init())
+        
 
-    def test_sample(self):
+    async def test_sample(self):
         self.assertEqual(5, 5)
+        return None
 
 
 # import test from 'ava'
