@@ -917,10 +917,10 @@ class TestRequest:
     ...
 
     def __init__(self, 
-                 method: Optional[str], 
-                 uri: str, 
-                 headers: Optional[dict[str, str]], 
-                 body: Optional[bytes | str | Any]) -> None:
+                 uri: str,
+                 method: Optional[str] = None,
+                 headers: Optional[dict[str, str]] = None,
+                 body: Optional[bytes | str | Any] = None) -> None:
         """
         Create a new test request.
         """

@@ -120,8 +120,8 @@ def match_array(path: KeyPath, value: list[Any], matcher: list[Any]) -> None:
 def partial(matcher: dict[str, Any]) -> Matcher:
     return lambda path, value: match_object(path, value, matcher, True)
 
-def ignore() -> Matcher:
-    return lambda _path, _value: None
+def ignore(_path, _value) -> None:
+    pass
 
 def date_value(date_value: str | date) -> Matcher:
     def matcher(path: KeyPath, value: Any) -> None:
