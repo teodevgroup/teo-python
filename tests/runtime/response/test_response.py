@@ -1,36 +1,28 @@
-from unittest import TestCase
+from unittest import IsolatedAsyncioTestCase
 from asyncio import run
 from teo import TestServer
 from tests.runtime.response.app import load_app
 
 
-class TestResponse(TestCase):
+class TestResponse(IsolatedAsyncioTestCase):
 
-    def __init__(self, *args, **kwargs):
-        super(TestResponse, self).__init__(*args, **kwargs)
+    @classmethod
+    def setUpClass(cls):
         async def init():
-            self.server = TestServer(load_app())
+            cls.server = TestServer(load_app())
+            await cls.server.setup()
         run(init())
-        
+
+    async def asyncSetUp(self):
+        await self.server.reset()
 
     async def test_sample(self):
         self.assertEqual(5, 5)
         return None
 
-
-# import test from 'ava'
-# import { TestRequest, TestServer } from '../../..'
-# import loadApp from './app'
-
-# const server = new TestServer(loadApp())
-
-# test.before(async () => {
-#     await server.setup()
-# })
-
-# test.beforeEach(async () => {
-#     await server.reset()
-# })
+    async def test_sample2(self):
+        self.assertEqual(5, 5)
+        return None
 
 # test('text response', async (t) => {
 #     const test_request = new TestRequest({
