@@ -95,17 +95,17 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
         // class object methods
         let model_class_class = map.class_or_create(&model_name, py)?;
         // find unique
-        let find_unique = find_unique_function(py, app_data)?;
-        teo_wrap_builtin.call1((model_class_class.bind(py), "find_unique", teo_wrap_async.call1((find_unique,))?))?;
+        let find_unique_object = find_unique_object_function(py, app_data)?;
+        teo_wrap_builtin.call1((model_class_class.bind(py), "find_unique_object", teo_wrap_async.call1((find_unique_object,))?))?;
         // find first
-        let find_first = find_first_function(py, app_data)?;
-        teo_wrap_builtin.call1((model_class_class.bind(py), "find_first", teo_wrap_async.call1((find_first,))?))?;
+        let find_first_object = find_first_object_function(py, app_data)?;
+        teo_wrap_builtin.call1((model_class_class.bind(py), "find_first_object", teo_wrap_async.call1((find_first_object,))?))?;
         // find many
-        let find_many = find_many_function(py, app_data)?;
-        teo_wrap_builtin.call1((model_class_class.bind(py), "find_many", teo_wrap_async.call1((find_many,))?))?;
+        let find_many_objects = find_many_objects_function(py, app_data)?;
+        teo_wrap_builtin.call1((model_class_class.bind(py), "find_many_objects", teo_wrap_async.call1((find_many_objects,))?))?;
         // create
-        let create = create_function(py, app_data)?;
-        teo_wrap_builtin.call1((model_class_class.bind(py), "create", teo_wrap_async.call1((create,))?))?;
+        let create_object: Bound<'_, PyCFunction> = create_object_function(py, app_data)?;
+        teo_wrap_builtin.call1((model_class_class.bind(py), "create_object", teo_wrap_async.call1((create_object,))?))?;
         // count objects
         let count_objects = count_objects_function(py)?;
         teo_wrap_builtin.call1((model_class_class.bind(py), "count_objects", count_objects))?;
@@ -430,8 +430,8 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
 }
 
 
-fn find_unique_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"find_unique"), Some(c"Find a unique record."), move |args, _kwargs| {
+fn find_unique_object_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
+    Ok(PyCFunction::new_closure_bound(py, Some(c"find_unique_object"), Some(c"Find a unique object."), move |args, _kwargs| {
         Python::with_gil(|py| {
             let slf = args.get_item(0)?.into_py(py);
             let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
@@ -461,8 +461,8 @@ fn find_unique_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyR
     })?)
 }
 
-fn find_first_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"find_first"), Some(c"Find a record."), move |args, _kwargs| {
+fn find_first_object_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
+    Ok(PyCFunction::new_closure_bound(py, Some(c"find_first_object"), Some(c"Find an object."), move |args, _kwargs| {
         Python::with_gil(|py| {
             let slf = args.get_item(0)?.into_py(py);
             let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
@@ -492,8 +492,8 @@ fn find_first_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyRe
     })?)
 }
 
-fn find_many_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"find_many"), Some(c"Find many records."), move |args, _kwargs| {
+fn find_many_objects_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
+    Ok(PyCFunction::new_closure_bound(py, Some(c"find_many_objects"), Some(c"Find many objects."), move |args, _kwargs| {
         Python::with_gil(|py| {
             let slf = args.get_item(0)?.into_py(py);
             let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
@@ -521,8 +521,8 @@ fn find_many_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyRes
     })?)
 }
 
-fn create_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"create"), Some(c"Create a new record."), move |args, _kwargs| {
+fn create_object_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
+    Ok(PyCFunction::new_closure_bound(py, Some(c"create_object"), Some(c"Create a new object."), move |args, _kwargs| {
         Python::with_gil(|py| {
             let slf = args.get_item(0)?.into_py(py);
             let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
