@@ -1,3 +1,4 @@
+from os import path
 from teo import App, Cookie, Response, Request
 from tests.helpers.schema_path_args import schema_path_args
 
@@ -15,7 +16,7 @@ def load_app() -> App:
         return response
     app.main_namespace().define_handler('jsonResponse', json_response)
     def file_response(_request: Request) -> Response:
-        response = Response.file('response.txt')
+        response = Response.file(path.join(path.dirname(__file__), 'response.txt'))
         response.add_cookie(Cookie('foo', 'bar'))
         return response
     app.main_namespace().define_handler('fileResponse', file_response)

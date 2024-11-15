@@ -1,10 +1,12 @@
 from unittest import IsolatedAsyncioTestCase
 from asyncio import run
-from teo import TestServer
+from teo import TestServer, TestRequest
 from tests.runtime.response.app import load_app
 
 
 class TestResponse(IsolatedAsyncioTestCase):
+
+    server: TestServer
 
     @classmethod
     def setUpClass(cls):
@@ -16,64 +18,32 @@ class TestResponse(IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         await self.server.reset()
 
-    async def test_sample(self):
-        self.assertEqual(5, 5)
-        return None
+    async def test_text_response(self):
+        test_request = TestRequest(method="GET", uri='/textResponse')
+        response = await self.server.process(test_request)
+        self.assertEqual(response.body_as_string(), 'foo')
 
-    async def test_sample2(self):
-        self.assertEqual(5, 5)
-        return None
+    async def test_json_response(self):
+        test_request = TestRequest(method="GET", uri='/jsonResponse')
+        response = await self.server.process(test_request)
+        self.assertEqual(response.body_as_json(), {'foo': 'bar'})
 
-# test('text response', async (t) => {
-#     const test_request = new TestRequest({
-#         method: 'GET',
-#         uri: '/textResponse',
-#     })
-#     const response = await server.process(test_request)
-#     t.is(response.bodyAsString(), "foo")
-# })
+    async def test_file_response(self):
+        test_request = TestRequest(method="GET", uri='/fileResponse')
+        response = await self.server.process(test_request)
+        self.assertEqual(response.body(), b'foo')
 
-# test('json response', async (t) => {
-#     const test_request = new TestRequest({
-#         method: 'GET',
-#         uri: '/jsonResponse',
-#     })
-#     const response = await server.process(test_request)
-#     t.deepEqual(response.bodyAsJson(), { 'foo': 'bar' })
-# })
+    async def test_cookie_in_text_response(self):
+        test_request = TestRequest(method="GET", uri='/textResponse')
+        response = await self.server.process(test_request)
+        self.assertEqual(response.header_value('set-cookie'), 'foo=bar')
 
-# test('file response', async (t) => {
-#     const test_request = new TestRequest({
-#         method: 'GET',
-#         uri: '/fileResponse',
-#     })
-#     const response = await server.process(test_request)
-#     t.deepEqual(response.body(), Buffer.from('foo'))
-# })
+    async def test_cookie_in_json_response(self):
+        test_request = TestRequest(method="GET", uri='/jsonResponse')
+        response = await self.server.process(test_request)
+        self.assertEqual(response.header_value('set-cookie'), 'foo=bar')
 
-# test('cookie in text response', async (t) => {
-#     const test_request = new TestRequest({
-#         method: 'GET',
-#         uri: '/textResponse',
-#     })
-#     const response = await server.process(test_request)
-#     t.is(response.headerValue('set-cookie'), 'foo=bar')
-# })
-
-# test('cookie in json response', async (t) => {
-#     const test_request = new TestRequest({
-#         method: 'GET',
-#         uri: '/jsonResponse',
-#     })
-#     const response = await server.process(test_request)
-#     t.is(response.headerValue('set-cookie'), 'foo=bar')
-# })
-
-# test('cookie in file response', async (t) => {
-#     const test_request = new TestRequest({
-#         method: 'GET',
-#         uri: '/fileResponse',
-#     })
-#     const response = await server.process(test_request)
-#     t.is(response.headerValue('set-cookie'), 'foo=bar')
-# })
+    async def test_cookie_in_file_response(self):
+        test_request = TestRequest(method="GET", uri='/fileResponse')
+        response = await self.server.process(test_request)
+        self.assertEqual(response.header_value('set-cookie'), 'foo=bar')

@@ -920,7 +920,7 @@ class TestRequest:
                  method: Optional[str], 
                  uri: str, 
                  headers: Optional[dict[str, str]], 
-                 body: Optional[bytes | str | Any], /) -> None:
+                 body: Optional[bytes | str | Any]) -> None:
         """
         Create a new test request.
         """
