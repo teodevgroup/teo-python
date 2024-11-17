@@ -1,7 +1,7 @@
 use pyo3::{pyclass, pymethods, Bound, PyAny, PyResult, Python};
 use pyo3_async_runtimes::tokio::future_into_py;
 use tokio::runtime::Builder;
-use crate::app::app::App;
+use crate::{app::app::App, dynamic::synthesize_dynamic_python_classes};
 use super::{TestRequest, TestResponse};
 
 #[pyclass]
@@ -25,7 +25,11 @@ impl TestServer {
     pub fn setup<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let static_self: &'static TestServer = unsafe { &*(self as * const TestServer) };
         let coroutine = future_into_py(py, (move || async {
-            Ok(static_self.server.setup_app_for_unit_test().await?)
+            static_self.server.setup_app_for_unit_test().await?;
+            Python::with_gil(|py| {
+                synthesize_dynamic_python_classes(&static_self.server.app, py)
+            })?;
+            Ok(())
         })())?;
         Ok(coroutine)
     }
