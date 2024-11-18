@@ -21,4 +21,3 @@ def load_app():
             return Response.data(values)
         group.define_handler("myFindManyObjects", my_find_many_objects)
     app.main_namespace().define_model_handler_group("Support", support_handler_group)
-    return app
