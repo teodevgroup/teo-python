@@ -1,6 +1,7 @@
 use std::ffi::CString;
 
 use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction}, Bound, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
+use pyo3_async_runtimes::TaskLocals;
 use teo::prelude::{r#enum, handler, namespace, pipeline::{self, item::validator::Validity}, request, Middleware, MiddlewareImpl, Next, Value};
 use teo_result::Error;
 
@@ -264,19 +265,20 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_handler(&self, py: Python<'_>, name: String, callback: Bound<PyAny>) -> PyResult<()> {
+    pub fn define_handler(&self, name: String, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
-        let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
+        let callback_object = Py::from(callback);
+        let callback_object_never_ends = &*Box::leak(Box::new(callback_object));
         self.teo_namespace.define_handler(name.as_str(), move |request: request::Request| async move {
             let result = Python::with_gil(|py| {
                 let request = Request {
                     teo_request: request
                 };
-                let result = callback_owned.call1(py, (request,))?;
-                Ok::<PyObject, PyErr>(result)
+                let result = callback_object_never_ends.call1(py, (request,))?;
+                let thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
+                Ok::<(PyObject, TaskLocals), PyErr>((result, thread_locals))
             })?;
-            let awaited_result = await_coroutine_if_needed_value_with_locals(&result, main_thread_locals).await?;
+            let awaited_result = await_coroutine_if_needed_value_with_locals(&result.0, &result.1).await?;
             Python::with_gil(|py| {
                 let response: Response = awaited_result.extract(py)?;
                 Ok(response.teo_response.clone())

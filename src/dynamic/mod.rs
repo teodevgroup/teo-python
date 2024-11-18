@@ -8,6 +8,7 @@ use std::sync::Arc;
 use indexmap::IndexMap;
 use inflector::Inflector;
 use py_class_lookup_map::PYClassLookupMap;
+use pyo3_async_runtimes::TaskLocals;
 use teo::prelude::app::data::AppData;
 use teo::prelude::traits::named::Named;
 use ::teo::prelude::App;
@@ -65,7 +66,6 @@ pub(crate) fn teo_transaction_ctx_from_py_ctx_object(py: Python<'_>, ctx_object:
 static INIT_ERROR_MESSAGE: &str = "class is not initialized";
 
 pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut PYClassLookupMap, app: &'static App, namespace: &'static Namespace, py: Python<'_>) -> PyResult<()> {
-    let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
     let app_data = app.app_data();
     let main = py.import_bound("__main__")?;
     let teo_wrap_builtin = main.getattr("teo_wrap_builtin")?;
@@ -412,9 +412,10 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                         let map = PYClassLookupMap::from_app_data(app_data);
                         let ctx_python = map.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?;
                         let coroutine_or_value = shared_argument.call1(py, (ctx_python,))?;
-                        Ok::<PyObject, teo::prelude::Error>(coroutine_or_value)
+                        let thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
+                        Ok::<(PyObject, TaskLocals), teo::prelude::Error>((coroutine_or_value, thread_locals))
                     })?;
-                    Ok(await_coroutine_if_needed_value_with_locals(&user_retval, main_thread_locals).await?)
+                    Ok(await_coroutine_if_needed_value_with_locals(&user_retval.0, &user_retval.1).await?)
                 }).await?;
                 Python::with_gil(|py| {
                     Ok::<PyObject, PyErr>(retval.into_py(py))    
