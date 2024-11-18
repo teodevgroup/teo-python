@@ -132,7 +132,7 @@ def date_value(date_value: str | date) -> Matcher:
         if '$date' not in value:
             raise JSONMatchError(path, value, "date object should have 1 `$date` key")
         if isinstance(date_value, str):
-            if value['$date'] != str(date):
+            if value['$date'] != date_value:
                 raise JSONMatchError(path, value, "value not equal")
         if isinstance(date_value, date):
             if value['$date'] != date_value.isoformat():
@@ -148,7 +148,7 @@ def datetime_value(datetime_value: str | datetime | int) -> Matcher:
         if '$datetime' not in value:
             raise JSONMatchError(path, value, "date time object should have 1 `$datetime` key")
         if isinstance(datetime_value, str):
-            if value['$datetime'] != str(datetime):
+            if value['$datetime'] != datetime_value:
                 raise JSONMatchError(path, value, "value not equal")
         if isinstance(datetime_value, datetime):
             if value['$datetime'] != datetime_value.astimezone(timezone.utc).isoformat()[:23] + 'Z':

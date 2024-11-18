@@ -1,5 +1,5 @@
 from teo.test import TestCase, TestRequest
-from teo.test.matchers import match_json_value, ignore
+from teo.test.matchers import match_json_value, ignore, date_value
 from .app import load_app
 
 
@@ -23,6 +23,11 @@ class TestTypes(TestCase):
         })
 
     async def test_find_many_objects(self):
+        create_request = TestRequest(
+            method='POST', 
+            uri='/Support/myCreateObject',
+            body={'date': '2005-12-25'})
+        await self.server.process(create_request)
         request = TestRequest(
             method='POST',
             uri='/Support/myFindManyObjects',
@@ -33,5 +38,8 @@ class TestTypes(TestCase):
             })
         response = await self.server.process(request)
         match_json_value(response.body_as_json(), {
-            "data": [],
+            "data": [{
+                "id": ignore,
+                "date": date_value("2005-12-25"),
+            }],
         })
