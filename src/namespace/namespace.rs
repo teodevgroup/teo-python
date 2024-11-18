@@ -310,7 +310,6 @@ impl Namespace {
         let name_c = Box::leak(Box::new(CString::new(name)?)).as_c_str();
         check_callable(&callback.bind(py))?;
         let shared_callback = &*Box::leak(Box::new(callback));
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_request_middleware(name, move |arguments| async move {
             Python::with_gil(|py| {
@@ -345,7 +344,11 @@ impl Namespace {
                         let coroutine = shared_result_function.call1(py, (py_ctx, py_next))?;
                         Ok::<PyObject, teo::prelude::Error>(coroutine.into_py(py))
                     })?;
-                    let result = await_coroutine_if_needed_value_with_locals(&coroutine, main_thread_locals).await?;
+                    let main_thread_locals = Python::with_gil(|py| {
+                        let locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
+                        Ok::<_, PyErr>(locals)
+                    })?;
+                    let result = await_coroutine_if_needed_value_with_locals(&coroutine, &main_thread_locals).await?;
                     Python::with_gil(|py| {
                         let response: Response = result.extract(py)?;
                         Ok(response.teo_response)    
