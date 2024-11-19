@@ -169,9 +169,15 @@ class Namespace:
         """
         ...
 
-    def define_middleware(self, name: str, callback: Callable[[Any], Callable[[Request, Callable[[Request], Awaitable[Response]]], Awaitable[Response]]], /) -> None:
+    def define_request_middleware(self, name: str, callback: Callable[[Any], Callable[[Request, Callable[[Request], Awaitable[Response]]], Awaitable[Response]]], /) -> None:
         """
-        Define a middleware.
+        Define a request middleware.
+        """
+        ...
+
+    def define_handler_middleware(self, name: str, callback: Callable[[Any], Callable[[Request, Callable[[Request], Awaitable[Response]]], Awaitable[Response]]], /) -> None:
+        """
+        Define a handler middleware.
         """
         ...
 
