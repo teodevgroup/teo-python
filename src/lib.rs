@@ -24,6 +24,8 @@ use crate::model::property::property::Property;
 use crate::handler::group::HandlerGroup;
 use crate::request::HandlerMatch;
 use crate::request::Cookie;
+use crate::request::local::objects::LocalObjects;
+use crate::request::local::values::LocalValues;
 use crate::object::value::ObjectId;
 use crate::object::value::OptionVariant;
 use crate::object::value::File;
@@ -62,6 +64,8 @@ def teo_wrap_async(callable):
     m.add_class::<Expiration>()?;
     m.add_class::<ReadWriteHeaderMap>()?;
     m.add_class::<HandlerMatch>()?;
+    m.add_class::<LocalObjects>()?;
+    m.add_class::<LocalValues>()?;
     m.add_class::<ObjectId>()?;
     m.add_class::<Range>()?;
     m.add_class::<OptionVariant>()?;
