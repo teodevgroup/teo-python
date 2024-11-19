@@ -759,8 +759,93 @@ class Request:
         """
         Get the path captures.
         """
+        ...
+
+    def local_values(self) -> LocalValues:
+        """
+        Get the request local values map.
+        """
+        ...
+
+    def local_objects(self) -> LocalObjects:
+        """
+        Get the request local objects map.
+        """
+        ...
 
 
+class LocalValues:
+    """
+    Represents request's local values.
+    """
+
+    def insert(self, key: str, value: Any) -> None:
+        """
+        Insert a request local value.
+        """
+        ...
+
+    def get(self, key: str) -> Optional[Any]:
+        """
+        Fetch a request local value by key.
+        """
+        ...
+
+    def contains(self, key: str) -> bool:
+        """
+        Whether a request local value exists by key.
+        """
+        ...
+
+    def remove(self, key: str) -> None:
+        """
+        Remove a request local value by key.
+        """
+        ...
+
+    def clear(self) -> None:
+        """
+        Clear request local values.
+        """
+        ...
+
+
+class LocalObjects:
+    """
+    Represents request's local objects.
+    """
+
+    def insert(self, key: str, value: Any) -> None:
+        """
+        Insert a request local object.
+        """
+        ...
+
+    def get(self, key: str) -> Optional[Any]:
+        """
+        Fetch a request local object by key.
+        """
+        ...
+
+    def contains(self, key: str) -> bool:
+        """
+        Whether a request local object exists by key.
+        """
+        ...
+
+    def remove(self, key: str) -> None:
+        """
+        Remove a request local object by key.
+        """
+        ...
+
+    def clear(self) -> None:
+        """
+        Clear request local objects.
+        """
+        ...
+
+ 
 class HandlerMatch:
     """
     The request handler match result.

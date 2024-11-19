@@ -2,8 +2,9 @@ from __future__ import annotations
 from .teo import (
     App, Namespace, HandlerGroup, Model, Field, Relation, Property, Enum, 
     EnumMember, Response, Request, ReadWriteHeaderMap, Cookie, Expiration,
-    HandlerMatch, ObjectId, Range, OptionVariant, File, Pipeline, 
-    InterfaceEnumVariant, Pipeline, TestRequest, TestResponse, TestServer
+    HandlerMatch, ObjectId, Range, OptionVariant, File, Pipeline, LocalObjects,
+    LocalValues, InterfaceEnumVariant, Pipeline, TestRequest, TestResponse, 
+    TestServer
 )
 from typing import TypeVar, Union, Optional, Callable
 from signal import signal, SIGINT
