@@ -271,9 +271,7 @@ impl Namespace {
         let callback_object_never_ends = &*Box::leak(Box::new(callback_object));
         self.teo_namespace.define_handler(name.as_str(), move |request: request::Request| async move {
             let result = Python::with_gil(|py| {
-                let request = Request {
-                    teo_request: request
-                };
+                let request = Request::new(request);
                 let result = callback_object_never_ends.call1(py, (request,))?;
                 let thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
                 Ok::<(PyObject, TaskLocals), PyErr>((result, thread_locals))
@@ -321,9 +319,7 @@ impl Namespace {
                 let shared_result_function = &*Box::leak(Box::new(wrapped_result_function));
                 let wrapped_result = move |request: request::Request, next: &'static dyn Next| async move {
                     let coroutine = Python::with_gil(|py| {
-                        let py_ctx = Request {
-                            teo_request: request
-                        };
+                        let py_ctx = Request::new(request);
                         let py_next = PyCFunction::new_closure_bound(py, Some(name_c), None, move |args, _kwargs| {
                             Python::with_gil(|py| {
                                 let arg0 = args.get_item(0)?;
@@ -376,9 +372,7 @@ impl Namespace {
                 let shared_result_function = &*Box::leak(Box::new(wrapped_result_function));
                 let wrapped_result = move |request: request::Request, next: &'static dyn Next| async move {
                     let coroutine = Python::with_gil(|py| {
-                        let py_ctx = Request {
-                            teo_request: request
-                        };
+                        let py_ctx = Request::new(request);
                         let py_next = PyCFunction::new_closure_bound(py, Some(name_c), None, move |args, _kwargs| {
                             Python::with_gil(|py| {
                                 let arg0 = args.get_item(0)?;

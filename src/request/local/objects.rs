@@ -2,8 +2,17 @@ use pyo3::{pyclass, pymethods, Bound, IntoPy, PyAny, PyObject, PyResult, Python}
 use teo::prelude::request::local_objects::LocalObjects as TeoLocalObjects;
 
 #[pyclass]
+#[derive(Clone)]
 pub struct LocalObjects {
     pub(crate) teo_local_objects: TeoLocalObjects,
+}
+
+impl LocalObjects {
+    pub(crate) fn new(teo_local_objects: TeoLocalObjects) -> Self {
+        Self {
+            teo_local_objects
+        }
+    }
 }
 
 #[pymethods]

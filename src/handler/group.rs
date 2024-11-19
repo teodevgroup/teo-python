@@ -1,4 +1,3 @@
-use pyo3::types::PyCapsule;
 use pyo3::{pyclass, pymethods, Bound, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::TaskLocals;
 use teo::prelude::handler;
@@ -23,9 +22,7 @@ impl HandlerGroup {
         self.teo_handler_group.define_handler(name.as_str(), move |request: TeoRequest| {
             async move {
                 let result = Python::with_gil(|py| {
-                    let request = Request {
-                        teo_request: request
-                    };
+                    let request = Request::new(request);
                     let result = callback_object_never_ends.call1(py, (request,))?;
                     let thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
                     Ok::<(PyObject, TaskLocals), PyErr>((result, thread_locals))

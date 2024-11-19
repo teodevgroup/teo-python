@@ -4,8 +4,17 @@ use teo::prelude::{request::local_values::LocalValues as TeoLocalValues, Value};
 use crate::object::value::{py_any_to_teo_value, teo_value_to_py_any_without_model_objects};
 
 #[pyclass]
+#[derive(Clone)]
 pub struct LocalValues {
     pub(crate) teo_local_values: TeoLocalValues,
+}
+
+impl LocalValues {
+    pub(crate) fn new(teo_local_values: TeoLocalValues) -> Self {
+        Self {
+            teo_local_values
+        }
+    }
 }
 
 #[pymethods]
