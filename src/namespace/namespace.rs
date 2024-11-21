@@ -359,6 +359,7 @@ impl Namespace {
         check_callable(&callback.bind(py))?;
         let shared_callback = &*Box::leak(Box::new(callback));
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
         self.teo_namespace.define_request_middleware(name, move |arguments| async move {
             Python::with_gil(|py| {
                 let py_args = teo_args_to_py_args(py, &arguments, map)?;
@@ -374,8 +375,13 @@ impl Namespace {
                             Python::with_gil(|py| {
                                 let arg0 = args.get_item(0)?;
                                 let request: Request = arg0.extract()?;
-                                let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-                                let coroutine = pyo3_async_runtimes::tokio::future_into_py_with_locals::<_, PyObject>(py, main_thread_locals, (|| async {
+                                let current_thread_locals_result = pyo3_async_runtimes::tokio::get_current_locals(py);
+                                // let locals = if let Ok(current_thread_locals) = current_thread_locals_result {
+                                //     &current_thread_locals
+                                // } else {
+                                //     main_thread_locals
+                                // };
+                                let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async {
                                     let result: teo::prelude::Response = next.call(request.teo_request).await?;
                                     Python::with_gil(|py| {
                                         let response = Response {
@@ -390,11 +396,16 @@ impl Namespace {
                         let coroutine = shared_result_function.call1(py, (py_ctx, py_next))?;
                         Ok::<PyObject, teo::prelude::Error>(coroutine.into_py(py))
                     })?;
-                    let main_thread_locals = Python::with_gil(|py| {
+                    let current_thread_locals_result = Python::with_gil(|py| {
                         let locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
                         Ok::<_, PyErr>(locals)
-                    })?;
-                    let result = await_coroutine_if_needed_value_with_locals(&coroutine, &main_thread_locals).await?;
+                    });
+                    let locals = if let Ok(current_thread_locals) = current_thread_locals_result {
+                        unsafe { &*(&current_thread_locals as * const TaskLocals) }
+                    } else {
+                        main_thread_locals
+                    };
+                    let result = await_coroutine_if_needed_value_with_locals(&coroutine, locals).await?;
                     Python::with_gil(|py| {
                         let response: Response = result.extract(py)?;
                         Ok(response.teo_response)    
@@ -412,6 +423,7 @@ impl Namespace {
         check_callable(&callback.bind(py))?;
         let shared_callback = &*Box::leak(Box::new(callback));
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
+        let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
         self.teo_namespace.define_handler_middleware(name, move |arguments| async move {
             Python::with_gil(|py| {
                 let py_args = teo_args_to_py_args(py, &arguments, map)?;
@@ -427,8 +439,13 @@ impl Namespace {
                             Python::with_gil(|py| {
                                 let arg0 = args.get_item(0)?;
                                 let request: Request = arg0.extract()?;
-                                let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-                                let coroutine = pyo3_async_runtimes::tokio::future_into_py_with_locals::<_, PyObject>(py, main_thread_locals, (|| async {
+                                let current_thread_locals_result = pyo3_async_runtimes::tokio::get_current_locals(py);
+                                // let locals = if let Ok(current_thread_locals) = current_thread_locals_result {
+                                //     &current_thread_locals
+                                // } else {
+                                //     main_thread_locals
+                                // };
+                                let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async {
                                     let result: teo::prelude::Response = next.call(request.teo_request).await?;
                                     Python::with_gil(|py| {
                                         let response = Response {
@@ -443,11 +460,16 @@ impl Namespace {
                         let coroutine = shared_result_function.call1(py, (py_ctx, py_next))?;
                         Ok::<PyObject, teo::prelude::Error>(coroutine.into_py(py))
                     })?;
-                    let main_thread_locals = Python::with_gil(|py| {
+                    let current_thread_locals_result = Python::with_gil(|py| {
                         let locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
                         Ok::<_, PyErr>(locals)
-                    })?;
-                    let result = await_coroutine_if_needed_value_with_locals(&coroutine, &main_thread_locals).await?;
+                    });
+                    let locals = if let Ok(current_thread_locals) = current_thread_locals_result {
+                        unsafe { &*(&current_thread_locals as * const TaskLocals) }
+                    } else {
+                        main_thread_locals
+                    };
+                    let result = await_coroutine_if_needed_value_with_locals(&coroutine, locals).await?;
                     Python::with_gil(|py| {
                         let response: Response = result.extract(py)?;
                         Ok(response.teo_response)    

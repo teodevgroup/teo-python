@@ -2,7 +2,7 @@ use pyo3::{Py, IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::{into_future_with_locals, TaskLocals};
 use crate::utils::is_coroutine::is_coroutine;
 
-pub async fn await_coroutine_if_needed_value_with_locals<'py>(value: &Py<PyAny>, main_thread_locals: &TaskLocals) -> PyResult<Py<PyAny>> {
+pub async fn await_coroutine_if_needed_value_with_locals<'py>(value: &'py Py<PyAny>, main_thread_locals: &'py TaskLocals) -> PyResult<Py<PyAny>> {
     let value_is_coroutine = is_coroutine(value)?;
     if value_is_coroutine {
         let f = Python::with_gil(|py| {
