@@ -99,6 +99,9 @@ impl App {
                 synthesize_dynamic_python_classes(&static_self.teo_app, py)?;
                 Ok::<(), PyErr>(())
             })?;
+            let mut builder = Builder::new_multi_thread();
+            builder.enable_all();
+            pyo3_async_runtimes::tokio::init(builder);
             static_self.teo_app.run_without_prepare().await?;
             Ok(())
         })())?;
