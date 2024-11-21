@@ -349,6 +349,13 @@ class Response:
         ...
 
     @staticmethod
+    def send_file(base: str, path: str, /) -> Response:
+        """
+        Serve file at `path` from `base` directory.
+        """
+        ...
+
+    @staticmethod
     def redirect(path: str, /) -> Response:
         """
         Create a redirect response.
