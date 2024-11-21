@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, ffi::CStr};
 
-use pyo3::{exceptions::PyRuntimeError, types::{PyAnyMethods, PyCFunction, PyDict}, IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
+use pyo3::{exceptions::PyRuntimeError, types::{PyAnyMethods, PyCFunction, PyDict}, IntoPy, PyErr, PyObject, PyResult, Python};
 use teo::prelude::{app::data::AppData, model, transaction};
 
 use super::{model_ctx_wrapper::ModelCtxWrapper, model_object_wrapper::ModelObjectWrapper, transaction_ctx_wrapper::TransactionCtxWrapper};
