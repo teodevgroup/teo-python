@@ -71,6 +71,13 @@ impl Response {
     }
 
     #[staticmethod]
+    pub fn send_file(base: &str, path: &str) -> PyResult<Self> {
+        Ok(Self {
+            teo_response: TeoResponse::send_file(base, path)?
+        })
+    }
+
+    #[staticmethod]
     pub fn redirect(path: String) -> Self {
         Self {
             teo_response: TeoResponse::redirect(path)
