@@ -49,7 +49,7 @@ Teo is **schema-driven** web server framework. The server side API is native to 
 The fastest way to get started with Teo is by following the [Quickstart guide](https://docs.teodev.io/getting-started/quickstart).
 
 ### Installation
-
+ 
 Install Node.js edition.
 
 ```sh
