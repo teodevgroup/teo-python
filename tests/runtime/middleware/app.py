@@ -21,7 +21,7 @@ def load_app() -> App:
     def request_outer(_args: Any):
         async def middleware(request: Request, next):
             request.local_values().insert("number", 42)
-            return await next(request)
+            return await next(request) 
         return middleware
     app.main_namespace().define_request_middleware("requestOuter", request_outer)
     def request_middle(_args: Any):
