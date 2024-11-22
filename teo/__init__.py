@@ -5,7 +5,7 @@ from sys import exit
 from copy import copy
 from json import dumps
 from asyncio.coroutines import iscoroutine
-from inspect import signature, Parameter
+from inspect import signature, Parameter, isclass
 from .teo import (
     App, Namespace, HandlerGroup, Model, Field, Relation, Property, Enum, 
     EnumMember, Response, Request, ReadWriteHeaderMap, Cookie, Expiration,
@@ -25,7 +25,7 @@ async def _main(self):
 
 App.run = _main
 
-def define_handler(self, callable: Callable[..., Response | Awaitable[Response]], /) -> None:
+def define_handler(self, name: str, callable: Callable[..., Response | Awaitable[Response]], /) -> None:
     parameters = signature(callable).parameters
     def extract(request: Request) -> list[Any]:
         arguments: list[Any] = []
@@ -33,12 +33,6 @@ def define_handler(self, callable: Callable[..., Response | Awaitable[Response]]
             if parameter.kind == Parameter.POSITIONAL_ONLY or parameter.kind == Parameter.POSITIONAL_OR_KEYWORD:
                 if parameter.annotation == Request:
                     arguments.append(request)
-                elif TeoAnnotationMark in parameter.annotation.__bases__:
-                    arguments.append(request.teo())
-                elif CapturesAnnotationMark in parameter.annotation.__bases__:
-                    arguments.append(request.captures())
-                elif RequestBodyObjectAnnotationMark in parameter.annotation.__bases__:
-                    arguments.append(request.body_object())
                 elif type(parameter.annotation) == GenericAlias:
                     if parameter.annotation.__origin__ == list:
                         arguments.append(request.cookies())
@@ -46,6 +40,15 @@ def define_handler(self, callable: Callable[..., Response | Awaitable[Response]]
                         arguments.append(request.body_object())
                     else:
                         raise TeoException(f"unsupported parameter extraction: {parameter}")
+                elif hasattr(parameter.annotation, '__bases__'):
+                    if TeoAnnotationMark in parameter.annotation.__bases__:
+                        arguments.append(request.teo())
+                    elif CapturesAnnotationMark in parameter.annotation.__orig_bases__:
+                        arguments.append(request.captures())
+                    elif RequestBodyObjectAnnotationMark in parameter.annotation.__orig_bases__:
+                        arguments.append(request.body_object())
+                    else:
+                        arguments.append(request.body_object())
                 else:
                     arguments.append(request.body_object())
             else:
@@ -57,7 +60,7 @@ def define_handler(self, callable: Callable[..., Response | Awaitable[Response]]
             return await coroutine_or_response
         else:
             return coroutine_or_response
-    self._define_handler(base_handler)
+    self._define_handler(name, base_handler)
 
 Namespace.define_handler = define_handler
 HandlerGroup.define_handler = define_handler

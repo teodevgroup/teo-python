@@ -1,8 +1,11 @@
-class CapturesAnnotationMark:
+from typing import TypedDict
+
+
+class CapturesAnnotationMark(TypedDict):
     pass
 
 
-class RequestBodyObjectAnnotationMark:
+class RequestBodyObjectAnnotationMark(TypedDict):
     pass
 
 
