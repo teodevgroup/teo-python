@@ -16,7 +16,7 @@ pub struct HandlerGroup {
 #[pymethods]
 impl HandlerGroup {
 
-    pub fn define_handler(&mut self, name: String, callback: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
+    pub fn _define_handler(&mut self, name: String, callback: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
         check_callable(&callback)?;
         let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
         let callback_object = Py::from(callback);

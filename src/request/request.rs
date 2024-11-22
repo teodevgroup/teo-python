@@ -8,16 +8,12 @@ use super::{local::{objects::LocalObjects, values::LocalValues}, Cookie, Handler
 #[derive(Clone)]
 pub struct Request {
     pub(crate) teo_request: TeoRequest,
-    pub(crate) local_values: LocalValues,
-    pub(crate) local_objects: LocalObjects,
 }
 
 impl Request {
     pub(crate) fn new(teo_request: TeoRequest) -> Self {
         Self {
             teo_request: teo_request.clone(),
-            local_objects: LocalObjects::new(teo_request.local_objects().clone()),
-            local_values: LocalValues::new(teo_request.local_values().clone()),
         }
     }
 }
