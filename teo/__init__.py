@@ -20,10 +20,19 @@ T = TypeVar('T')
 
 Enumerable = Union[T, list[T]]
 
+signal(SIGINT, lambda _, __: exit(0))
+
+
 async def _main(self):
     await self._run()
-
 App.run = _main
+
+
+@property
+def main(self) -> Namespace:
+    return self.main_namespace()
+App.main = main
+
 
 def define_handler(self, name: str, callable: Callable[..., Response | Awaitable[Response]], /) -> None:
     parameters = signature(callable).parameters
@@ -61,12 +70,18 @@ def define_handler(self, name: str, callable: Callable[..., Response | Awaitable
         else:
             return coroutine_or_response
     self._define_handler(name, base_handler)
-
 Namespace.define_handler = define_handler
 HandlerGroup.define_handler = define_handler
 
 
-signal(SIGINT, lambda _, __: exit(0))
+def handler(self, name: str) -> Callable[[Callable[..., Response | Awaitable[Response]]], None]:
+    def decorator(callable: Callable[..., Response | Awaitable[Response]]) -> None:
+        self.define_handler(name, callable)
+        return callable
+    return decorator
+Namespace.handler = handler
+HandlerGroup.handler = handler
+
 
 class TeoException(Exception):
 

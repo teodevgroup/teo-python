@@ -12,30 +12,38 @@ class App:
         """
         Create a new application. Only one can be presented in a program.
         """
-        pass
+        ...
 
     def setup(self, callback: Callable[[Any], None | Awaitable[None]], /) -> None:
         """
         Set a callback to run when server starts right after database is connected.
         """
-        pass
+        ...
 
     def program(self, name: str, desc: Optional[str], callback: Callable[[Any], None | Awaitable[None]], /) -> None:
         """
         Define a custom program with `name`. The programs can be triggered with `teo run` command.
         """
-        pass
+        ...
 
     async def run(self) -> Awaitable[None]:
         """
         Run the application.
         """
+        ...
 
     def main_namespace(self) -> Namespace:
         """
         Get the attached main namespace of the app.
         """
-        pass
+        ...
+
+    @property
+    def main(self) -> Namespace:
+        """
+        Get the attached main namespace of the app.
+        """
+        ...
 
 
 class Namespace:
@@ -157,6 +165,12 @@ class Namespace:
         """
         ...
 
+    def handler(self, name: str) -> Callable[[Callable[..., Response | Awaitable[Response]]], None]:
+        """
+        Define a handler with decorator.
+        """
+        ...
+
     def define_handler_group(self, name: str, callback: Callable[[HandlerGroup], None], /) -> None:
         """
         Define a handler group with callback.
@@ -191,6 +205,13 @@ class HandlerGroup:
         Define a handler.
         """
         ...
+
+    def handler(self, name: str) -> Callable[[Callable[..., Response | Awaitable[Response]]], None]:
+        """
+        Define a handler with decorator.
+        """
+        ...
+
 
 class Model:
     """
