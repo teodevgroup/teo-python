@@ -69,25 +69,31 @@ class Namespace:
         """
         ...
 
-    def namespace(self, name: str, /) -> Optional[Namespace]:
-        """
-        Get a child namespace by name.
-        """
-        ...
-
-    def namespace_or_create(self, name: str, /) -> Namespace:
+    def namespace(self, name: str, /) -> Namespace:
         """
         Get a child namespace by name or create a new one with name.
         """
         ...
 
-    def namespace_at_path(self, path: list[str], /) -> Optional[Namespace]:
+    def child_namespace(self, name: str, /) -> Optional[Namespace]:
+        """
+        Get a child namespace by name.
+        """
+        ...
+
+    def child_namespace_or_create(self, name: str, /) -> Namespace:
+        """
+        Get a child namespace by name or create a new one with name.
+        """
+        ...
+
+    def descendant_namespace_at_path(self, path: list[str], /) -> Optional[Namespace]:
         """
         Get a child namespace by path.
         """
         ...
 
-    def namespace_or_create_at_path(self, path: list[str], /) -> Namespace:
+    def descendant_namespace_or_create_at_path(self, path: list[str], /) -> Namespace:
         """
         Get a child namespace by path or create a new one with path.        
         """

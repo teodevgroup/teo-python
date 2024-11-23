@@ -18,42 +18,42 @@ def load_app() -> App:
             "numberFromObjects": number_from_objects
         })
     app.main_namespace().define_handler("inspect", inspect)
-    def request_outer(_args: Any):
+    def request_outer():
         async def middleware(request: Request, next):
             request.local_values().insert("number", 42)
             return await next(request) 
         return middleware
     app.main_namespace().define_request_middleware("requestOuter", request_outer)
-    def request_middle(_args: Any):
+    def request_middle(**_kwargs):
         async def middleware(request: Request, next):
             request.local_values().insert("number", cast(int, request.local_values().get("number")) * 2)
             return await next(request)
         return middleware
     app.main_namespace().define_request_middleware("requestMiddle", request_middle)
-    def request_inner(_args: Any):
+    @app.main.request_middleware("requestInner")
+    def request_inner():
         async def middleware(request: Request, next):
             request.local_values().insert("number", cast(int, request.local_values().get("number")) + 16)
             return await next(request)
         return middleware
-    app.main_namespace().define_request_middleware("requestInner", request_inner)
-    def handler_outer(_args: Any):
+    def handler_outer():
         async def middleware(request: Request, next):
             request.local_objects().insert("number", NumberWrapper(24))
             return await next(request)
         return middleware
     app.main_namespace().define_handler_middleware("handlerOuter", handler_outer)
-    def handler_middle(_args: Any):
+    def handler_middle(**_kwargs):
         async def middleware(request: Request, next):
             wrapper = cast(NumberWrapper, request.local_objects().get("number"))
             wrapper.number *= 4
             return await next(request)
         return middleware
     app.main_namespace().define_handler_middleware("handlerMiddle", handler_middle)
-    def handler_inner(_args: Any):
+    @app.main.handler_middleware("handlerInner")
+    def handler_inner():
         async def middleware(request: Request, next):
             wrapper = cast(NumberWrapper, request.local_objects().get("number"))
             wrapper.number += 4
             return await next(request)
         return middleware
-    app.main_namespace().define_handler_middleware("handlerInner", handler_inner)
     return app

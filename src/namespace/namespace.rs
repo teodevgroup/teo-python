@@ -27,20 +27,24 @@ impl Namespace {
         self.teo_namespace.path().clone()
     }
 
-    pub fn namespace(&self, name: String) -> Option<Namespace> {
-        self.teo_namespace.namespace(name.as_str()).map(|n| Namespace { teo_namespace: n })
+    pub fn namespace(&self, name: &str) -> Namespace {
+        self.child_namespace_or_create(name)
     }
 
-    pub fn namespace_or_create(&self, name: String) -> Namespace {
-        Namespace { teo_namespace: self.teo_namespace.namespace_or_create(name.as_str()) }
+    pub fn child_namespace(&self, name: &str) -> Option<Namespace> {
+        self.teo_namespace.child_namespace(name).map(|n| Namespace { teo_namespace: n })
     }
 
-    pub fn namespace_at_path(&self, path: Vec<String>) -> Option<Namespace> {
-        self.teo_namespace.namespace_at_path(&path).map(|n| Namespace { teo_namespace: n })
+    pub fn child_namespace_or_create(&self, name: &str) -> Namespace {
+        Namespace { teo_namespace: self.teo_namespace.child_namespace_or_create(name) }
     }
 
-    pub fn namespace_or_create_at_path(&self, path: Vec<String>) -> Namespace {
-        Namespace { teo_namespace: self.teo_namespace.namespace_or_create_at_path(&path) }
+    pub fn descendant_namespace_at_path(&self, path: Vec<String>) -> Option<Namespace> {
+        self.teo_namespace.descendant_namespace_at_path(&path).map(|n| Namespace { teo_namespace: n })
+    }
+
+    pub fn descendant_namespace_or_create_at_path(&self, path: Vec<String>) -> Namespace {
+        Namespace { teo_namespace: self.teo_namespace.descendant_namespace_or_create_at_path(&path) }
     }
 
     pub fn define_model_decorator(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
@@ -369,7 +373,7 @@ impl Namespace {
         HandlerGroup { teo_handler_group: self.teo_namespace.model_handler_group_or_create(name) }
     }
 
-    pub fn define_request_middleware(&self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
+    pub fn _define_request_middleware(&self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
         let name = Box::leak(Box::new(name)).as_str();
         let name_c = Box::leak(Box::new(CString::new(name)?)).as_c_str();
         check_callable(&callback.bind(py))?;
@@ -391,12 +395,6 @@ impl Namespace {
                             Python::with_gil(|py| {
                                 let arg0 = args.get_item(0)?;
                                 let request: Request = arg0.extract()?;
-                                let current_thread_locals_result = pyo3_async_runtimes::tokio::get_current_locals(py);
-                                // let locals = if let Ok(current_thread_locals) = current_thread_locals_result {
-                                //     &current_thread_locals
-                                // } else {
-                                //     main_thread_locals
-                                // };
                                 let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async {
                                     let result: teo::prelude::Response = next.call(request.teo_request).await?;
                                     Python::with_gil(|py| {
@@ -433,7 +431,7 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_handler_middleware(&self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
+    pub fn _define_handler_middleware(&self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
         let name = Box::leak(Box::new(name)).as_str();
         let name_c = Box::leak(Box::new(CString::new(name)?)).as_c_str();
         check_callable(&callback.bind(py))?;
@@ -455,12 +453,6 @@ impl Namespace {
                             Python::with_gil(|py| {
                                 let arg0 = args.get_item(0)?;
                                 let request: Request = arg0.extract()?;
-                                let current_thread_locals_result = pyo3_async_runtimes::tokio::get_current_locals(py);
-                                // let locals = if let Ok(current_thread_locals) = current_thread_locals_result {
-                                //     &current_thread_locals
-                                // } else {
-                                //     main_thread_locals
-                                // };
                                 let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async {
                                     let result: teo::prelude::Response = next.call(request.teo_request).await?;
                                     Python::with_gil(|py| {
