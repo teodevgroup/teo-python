@@ -1,8 +1,8 @@
 use std::ffi::CString;
 
-use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction, PyNone}, Bound, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
+use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction}, Bound, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::TaskLocals;
-use teo::prelude::{r#enum, handler, namespace, pipeline::{self, item::validator::Validity}, request, Middleware, MiddlewareImpl, Next, Value};
+use teo::prelude::{r#enum, handler, namespace, pipeline::{self, item::validator::Validity}, request, MiddlewareImpl, Next, Value};
 use teo_result::Error;
 
 use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::teo_args_to_py_args, model::teo_model_object_to_py_any, value::{py_any_to_teo_value, teo_value_to_py_any}}, request::Request, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable}};
@@ -344,6 +344,14 @@ impl Namespace {
         Ok(())
     }
 
+    pub fn handler_group(&self, name: &str) -> Option<HandlerGroup> {
+        self.teo_namespace.handler_group(name).map(|hg| HandlerGroup { teo_handler_group: hg.clone() })
+    }
+
+    pub fn group(&self, name: &str) -> HandlerGroup {
+        HandlerGroup { teo_handler_group: self.teo_namespace.handler_group_or_create(name) }
+    }
+
     pub fn define_model_handler_group(&self, name: String, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         self.teo_namespace.define_model_handler_group(name.as_str(), |teo_handler_group: &handler::group::Builder| {
@@ -351,6 +359,14 @@ impl Namespace {
             callback.call1((handler_group,)).unwrap();
         });
         Ok(())
+    }
+
+    pub fn model_handler_group(&self, name: &str) -> Option<HandlerGroup> {
+        self.teo_namespace.model_handler_group(name).map(|hg| HandlerGroup { teo_handler_group: hg.clone() })
+    }
+
+    pub fn model(&self, name: &str) -> HandlerGroup {
+        HandlerGroup { teo_handler_group: self.teo_namespace.model_handler_group_or_create(name) }
     }
 
     pub fn define_request_middleware(&self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {

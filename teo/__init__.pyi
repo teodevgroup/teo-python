@@ -177,9 +177,33 @@ class Namespace:
         """
         ...
 
+    def handler_group(self, name: str) -> Optional[HandlerGroup]:
+        """
+        Get a defined handler group by name.
+        """
+        ...
+
+    def group(self, name: str) -> HandlerGroup:
+        """
+        Get or create a handler group by name.
+        """
+        ...
+
     def define_model_handler_group(self, name: str, callback: Callable[[HandlerGroup], None], /) -> None:
         """
         Define a model handler group with callback.
+        """
+        ...
+
+    def model_handler_group(self, name: str) -> Optional[HandlerGroup]:
+        """
+        Get a defined model handler group by name.
+        """
+        ...
+
+    def model(self, name: str) -> HandlerGroup:
+        """
+        Get or create a model handler group by name.
         """
         ...
 
