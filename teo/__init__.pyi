@@ -3,6 +3,7 @@ from typing import TypeVar, Union, Callable, Any, Awaitable, Optional, Literal
 from datetime import datetime
 
 T = TypeVar('T')
+Next = Callable[[Request], Awaitable[Response]]
 
 Enumerable = Union[T, list[T]]
 
@@ -213,15 +214,27 @@ class Namespace:
         """
         ...
 
-    def define_request_middleware(self, name: str, callback: Callable[[Any], Callable[[Request, Callable[[Request], Awaitable[Response]]], Awaitable[Response]]], /) -> None:
+    def define_request_middleware(self, name: str, callback: Callable[..., Callable[..., Awaitable[Response]]], /) -> None:
         """
         Define a request middleware.
         """
         ...
 
-    def define_handler_middleware(self, name: str, callback: Callable[[Any], Callable[[Request, Callable[[Request], Awaitable[Response]]], Awaitable[Response]]], /) -> None:
+    def define_handler_middleware(self, name: str, callback: Callable[..., Callable[..., Awaitable[Response]]], /) -> None:
         """
         Define a handler middleware.
+        """
+        ...
+    
+    def request_middleware(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Response]]]], None]:
+        """
+        Define a request middleware with decorator.
+        """
+        ...
+
+    def handler_middleware(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Response]]]], None]:
+        """
+        Define a handler middleware with decorator.
         """
         ...
 
