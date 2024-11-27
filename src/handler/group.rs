@@ -1,4 +1,3 @@
-use pyo3::types::{PyAnyMethods, PyNone};
 use pyo3::{pyclass, pymethods, Bound, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::TaskLocals;
 use teo::prelude::handler;

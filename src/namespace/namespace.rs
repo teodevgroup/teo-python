@@ -1,9 +1,8 @@
 use std::ffi::CString;
 
-use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction}, Bound, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
+use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction}, Bound, IntoPyObject, IntoPyObjectExt, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::TaskLocals;
-use teo::prelude::{r#enum, handler, namespace, pipeline::{self, item::{item_impl::ItemImpl, templates::validator::{ValidatorResult, Validity}}}, request, MiddlewareImpl, Next, Value};
-use teo_result::Error;
+use teo::prelude::{r#enum, handler, namespace, request, MiddlewareImpl, Next};
 
 use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::teo_args_to_py_args, model::teo_model_object_to_py_any, value::{py_any_to_teo_value, teo_value_to_py_any}}, pipeline::ctx::PipelineCtx, request::Request, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable}};
 
@@ -387,46 +386,50 @@ impl Namespace {
             Python::with_gil(|py| {
                 let py_args = teo_args_to_py_args(py, &arguments, map)?;
                 let result_function = shared_callback.call1(py, (py_args,))?;
-                let main = py.import_bound("__main__")?;
-                let teo_wrap_async = main.getattr("teo_wrap_async")?.into_py(py);
-                let wrapped_result_function = teo_wrap_async.call1(py, (result_function,))?;
-                let shared_result_function = &*Box::leak(Box::new(wrapped_result_function));
-                let wrapped_result = move |request: request::Request, next: &'static dyn Next| async move {
-                    let coroutine = Python::with_gil(|py| {
-                        let py_ctx = Request::new(request);
-                        let py_next = PyCFunction::new_closure_bound(py, Some(name_c), None, move |args, _kwargs| {
-                            Python::with_gil(|py| {
-                                let arg0 = args.get_item(0)?;
-                                let request: Request = arg0.extract()?;
-                                let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async {
-                                    let result: teo::prelude::Response = next.call(request.teo_request).await?;
-                                    Python::with_gil(|py| {
-                                        let response = Response {
-                                            teo_response: result
-                                        };
-                                        Ok::<PyObject, PyErr>(response.into_py(py))    
-                                    })
-                                })())?;
-                                Ok::<PyObject, PyErr>(coroutine.into_py(py))
-                            })
-                        }).unwrap();
-                        let coroutine = shared_result_function.call1(py, (py_ctx, py_next))?;
-                        Ok::<PyObject, teo::prelude::Error>(coroutine.into_py(py))
-                    })?;
-                    let current_thread_locals_result = Python::with_gil(|py| {
-                        let locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-                        Ok::<_, PyErr>(locals)
+                let main = py.import("__main__")?;
+                let teo_wrap_async = main.getattr("teo_wrap_async")?;
+                let wrapped_result_function = teo_wrap_async.call1((result_function,))?.unbind();
+                let wrapped_result = move |request: request::Request, next: &'static dyn Next| {
+                    let wrapped_result_function = Python::with_gil(|py| {
+                        wrapped_result_function.clone_ref(py)
                     });
-                    let locals = if let Ok(current_thread_locals) = current_thread_locals_result {
-                        unsafe { &*(&current_thread_locals as * const TaskLocals) }
-                    } else {
-                        main_thread_locals
-                    };
-                    let result = await_coroutine_if_needed_value_with_locals(&coroutine, locals).await?;
-                    Python::with_gil(|py| {
-                        let response: Response = result.extract(py)?;
-                        Ok(response.teo_response)    
-                    })
+                    async move {
+                        let coroutine = Python::with_gil(|py| {
+                            let py_ctx = Request::new(request);
+                            let py_next = PyCFunction::new_closure(py, Some(name_c), None, move |args, _kwargs| {
+                                Python::with_gil(|py| {
+                                    let arg0 = args.get_item(0)?;
+                                    let request: Request = arg0.extract()?;
+                                    let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async {
+                                        let result: teo::prelude::Response = next.call(request.teo_request).await?;
+                                        Python::with_gil(|py| {
+                                            let response = Response {
+                                                teo_response: result
+                                            };
+                                            Ok::<PyObject, PyErr>(response.into_py_any(py)?)    
+                                        })
+                                    })())?;
+                                    Ok::<PyObject, PyErr>(coroutine.unbind())
+                                })
+                            }).unwrap();
+                            let coroutine = wrapped_result_function.call1(py, (py_ctx, py_next))?;
+                            Ok::<PyObject, teo::prelude::Error>(coroutine)
+                        })?;
+                        let current_thread_locals_result = Python::with_gil(|py| {
+                            let locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
+                            Ok::<_, PyErr>(locals)
+                        });
+                        let locals = if let Ok(current_thread_locals) = current_thread_locals_result {
+                            unsafe { &*(&current_thread_locals as * const TaskLocals) }
+                        } else {
+                            main_thread_locals
+                        };
+                        let result = await_coroutine_if_needed_value_with_locals(&coroutine, locals).await?;
+                        Python::with_gil(|py| {
+                            let response: Response = result.extract(py)?;
+                            Ok(response.teo_response)    
+                        })
+                    }
                 };                
                 return Ok(MiddlewareImpl::new(wrapped_result));    
             })
@@ -445,46 +448,50 @@ impl Namespace {
             Python::with_gil(|py| {
                 let py_args = teo_args_to_py_args(py, &arguments, map)?;
                 let result_function = shared_callback.call1(py, (py_args,))?;
-                let main = py.import_bound("__main__")?;
-                let teo_wrap_async = main.getattr("teo_wrap_async")?.into_py(py);
-                let wrapped_result_function = teo_wrap_async.call1(py, (result_function,))?;
-                let shared_result_function = &*Box::leak(Box::new(wrapped_result_function));
-                let wrapped_result = move |request: request::Request, next: &'static dyn Next| async move {
-                    let coroutine = Python::with_gil(|py| {
-                        let py_ctx = Request::new(request);
-                        let py_next = PyCFunction::new_closure_bound(py, Some(name_c), None, move |args, _kwargs| {
-                            Python::with_gil(|py| {
-                                let arg0 = args.get_item(0)?;
-                                let request: Request = arg0.extract()?;
-                                let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async {
-                                    let result: teo::prelude::Response = next.call(request.teo_request).await?;
-                                    Python::with_gil(|py| {
-                                        let response = Response {
-                                            teo_response: result
-                                        };
-                                        Ok::<PyObject, PyErr>(response.into_py(py))    
-                                    })
-                                })())?;
-                                Ok::<PyObject, PyErr>(coroutine.into_py(py))
-                            })
-                        }).unwrap();
-                        let coroutine = shared_result_function.call1(py, (py_ctx, py_next))?;
-                        Ok::<PyObject, teo::prelude::Error>(coroutine.into_py(py))
-                    })?;
-                    let current_thread_locals_result = Python::with_gil(|py| {
-                        let locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-                        Ok::<_, PyErr>(locals)
+                let main = py.import("__main__")?;
+                let teo_wrap_async = main.getattr("teo_wrap_async")?;
+                let wrapped_result_function = teo_wrap_async.call1((result_function,))?.unbind();
+                let wrapped_result = move |request: request::Request, next: &'static dyn Next| {
+                    let wrapped_result_function = Python::with_gil(|py| {
+                        wrapped_result_function.clone_ref(py)
                     });
-                    let locals = if let Ok(current_thread_locals) = current_thread_locals_result {
-                        unsafe { &*(&current_thread_locals as * const TaskLocals) }
-                    } else {
-                        main_thread_locals
-                    };
-                    let result = await_coroutine_if_needed_value_with_locals(&coroutine, locals).await?;
-                    Python::with_gil(|py| {
-                        let response: Response = result.extract(py)?;
-                        Ok(response.teo_response)    
-                    })
+                    async move {
+                        let coroutine = Python::with_gil(|py| {
+                            let py_ctx = Request::new(request);
+                            let py_next = PyCFunction::new_closure(py, Some(name_c), None, move |args, _kwargs| {
+                                Python::with_gil(|py| {
+                                    let arg0 = args.get_item(0)?;
+                                    let request: Request = arg0.extract()?;
+                                    let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async {
+                                        let result: teo::prelude::Response = next.call(request.teo_request).await?;
+                                        Python::with_gil(|py| {
+                                            let response = Response {
+                                                teo_response: result
+                                            };
+                                            Ok::<PyObject, PyErr>(response.into_py_any(py)?)    
+                                        })
+                                    })())?;
+                                    Ok::<PyObject, PyErr>(coroutine.unbind())
+                                })
+                            }).unwrap();
+                            let coroutine = wrapped_result_function.call1(py, (py_ctx, py_next))?;
+                            Ok::<PyObject, teo::prelude::Error>(coroutine)
+                        })?;
+                        let current_thread_locals_result = Python::with_gil(|py| {
+                            let locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
+                            Ok::<_, PyErr>(locals)
+                        });
+                        let locals = if let Ok(current_thread_locals) = current_thread_locals_result {
+                            unsafe { &*(&current_thread_locals as * const TaskLocals) }
+                        } else {
+                            main_thread_locals
+                        };
+                        let result = await_coroutine_if_needed_value_with_locals(&coroutine, locals).await?;
+                        Python::with_gil(|py| {
+                            let response: Response = result.extract(py)?;
+                            Ok(response.teo_response)    
+                        })
+                    }
                 };                
                 return Ok(MiddlewareImpl::new(wrapped_result));    
             })

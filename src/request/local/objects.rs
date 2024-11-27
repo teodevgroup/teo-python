@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, Bound, IntoPy, PyAny, PyObject, PyResult, Python};
+use pyo3::{pyclass, pymethods, Bound, PyAny, PyObject, PyResult, Python};
 use teo::prelude::request::local_objects::LocalObjects as TeoLocalObjects;
 
 #[pyclass]
@@ -18,8 +18,8 @@ impl LocalObjects {
 #[pymethods]
 impl LocalObjects {
 
-    pub fn insert(&self, key: String, value: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
-        let value = value.into_py(py);
+    pub fn insert(&self, key: String, value: Bound<PyAny>) -> PyResult<()> {
+        let value = value.unbind();
         self.teo_local_objects.insert(key, value);
         Ok(())
     }

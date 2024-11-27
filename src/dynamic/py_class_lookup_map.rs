@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, ffi::CStr};
 
-use pyo3::{exceptions::PyRuntimeError, types::{PyAnyMethods, PyCFunction, PyDict}, IntoPy, PyErr, PyObject, PyResult, Python};
+use pyo3::{exceptions::PyRuntimeError, types::{PyAnyMethods, PyCFunction, PyDict, PyNone}, PyErr, PyObject, PyResult, Python};
 use teo::prelude::{app::data::AppData, model, transaction};
 
 use super::{model_ctx_wrapper::ModelCtxWrapper, model_object_wrapper::ModelObjectWrapper, transaction_ctx_wrapper::TransactionCtxWrapper};
@@ -59,12 +59,12 @@ impl PYClassLookupMap {
     }
 
     pub(crate) fn ctx_or_create(&mut self, name: &str, py: Python<'_>) -> PyResult<PyObject> {
-        let builtins = py.import_bound("builtins")?;
+        let builtins = py.import("builtins")?;
         let py_type = builtins.getattr("type")?;
         let py_object = builtins.getattr("object")?;
-        let dict = PyDict::new_bound(py);
+        let dict = PyDict::new(py);
         dict.set_item("__module__", "teo.models")?;
-        let init = PyCFunction::new_closure_bound(py, Some(c"__init__"), None, |args, _kwargs| {
+        let init = PyCFunction::new_closure(py, Some(c"__init__"), None, |args, _kwargs| {
             let slf = args.get_item(0)?;
             let initialized: bool = slf.getattr("__teo_initialized__")?.extract()?;
             if initialized {
@@ -74,25 +74,24 @@ impl PYClassLookupMap {
             }
         })?;
         dict.set_item("__init__", init)?;
-        let result = py_type.call1((name, (py_object,), dict))?;
-        let result_object = result.clone().into_py(py);
-        self.insert_ctx(name, result_object);
-        Ok(result.into_py(py))
+        let result = py_type.call1((name, (py_object,), dict))?.unbind();
+        self.insert_ctx(name, result.clone_ref(py));
+        Ok(result)
     }
 
     pub(crate) fn ctx(&self, name: &str) -> PyResult<Option<PyObject>> {
         Python::with_gil(|py| {
-            Ok(self.ctxs.get(name).map(|o| o.into_py(py)))
+            Ok(self.ctxs.get(name).map(|o| o.clone_ref(py)))
         })
     }
 
     pub(crate) fn class_or_create(&mut self, name: &str, py: Python<'_>) -> PyResult<PyObject> {
-        let builtins = py.import_bound("builtins")?;
+        let builtins = py.import("builtins")?;
         let py_type = builtins.getattr("type")?;
         let py_object = builtins.getattr("object")?;
-        let dict = PyDict::new_bound(py);
+        let dict = PyDict::new(py);
         dict.set_item("__module__", "teo.models")?;
-        let init = PyCFunction::new_closure_bound(py, Some(c"__init__"), Some(INIT_ERROR_MESSAGE_C), |args, _kwargs| {
+        let init = PyCFunction::new_closure(py, Some(c"__init__"), Some(INIT_ERROR_MESSAGE_C), |args, _kwargs| {
             let slf = args.get_item(0)?;
             let initialized: bool = slf.getattr("__teo_initialized__")?.extract()?;
             if initialized {
@@ -102,25 +101,24 @@ impl PYClassLookupMap {
             }
         })?;
         dict.set_item("__init__", init)?;
-        let result = py_type.call1((name, (py_object,), dict))?;
-        let result_object = result.clone().into_py(py);
-        self.insert_class(name, result_object);
-        Ok(result.into_py(py))
+        let result = py_type.call1((name, (py_object,), dict))?.unbind();
+        self.insert_class(name, result.clone_ref(py));
+        Ok(result)
     }
 
     pub(crate) fn class(&self, name: &str) -> PyResult<Option<PyObject>> {
         Python::with_gil(|py| {
-            Ok(self.classes.get(name).map(|o| o.into_py(py)))
+            Ok(self.classes.get(name).map(|o| o.clone_ref(py)))
         })
     }
 
     pub(crate) fn object_or_create(&mut self, name: &str, py: Python<'_>) -> PyResult<PyObject> {
-        let builtins = py.import_bound("builtins")?;
+        let builtins = py.import("builtins")?;
         let py_type = builtins.getattr("type")?;
         let py_object = builtins.getattr("object")?;
-        let dict = PyDict::new_bound(py);
+        let dict = PyDict::new(py);
         dict.set_item("__module__", "teo.models")?;
-        let init = PyCFunction::new_closure_bound(py, Some(c"__init__"), Some(INIT_ERROR_MESSAGE_C), |args, _kwargs| {
+        let init = PyCFunction::new_closure(py, Some(c"__init__"), Some(INIT_ERROR_MESSAGE_C), |args, _kwargs| {
             let slf = args.get_item(0)?;
             let initialized: bool = slf.getattr("__teo_initialized__")?.extract()?;
             if initialized {
@@ -130,15 +128,14 @@ impl PYClassLookupMap {
             }
         })?;
         dict.set_item("__init__", init)?;
-        let result = py_type.call1((name, (py_object,), dict))?;
-        let result_object = result.clone().into_py(py);
-        self.insert_object(name, result_object);
-        Ok(result.into_py(py))
+        let result = py_type.call1((name, (py_object,), dict))?.unbind();
+        self.insert_object(name, result.clone_ref(py));
+        Ok(result)
     }
 
     pub(crate) fn object(&self, name: &str) -> PyResult<Option<PyObject>> {
         Python::with_gil(|py| {
-            Ok(self.objects.get(name).map(|o| o.into_py(py)))
+            Ok(self.objects.get(name).map(|o| o.clone_ref(py)))
         })
     }
 
@@ -163,7 +160,7 @@ impl PYClassLookupMap {
     pub(crate) fn teo_optional_model_object_to_py_optional_model_object_object(&self, py: Python<'_>, teo_model_object: Option<model::Object>) -> PyResult<PyObject> {
         Ok(match teo_model_object {
             Some(teo_model_object) => self.teo_model_object_to_py_model_object_object(py, teo_model_object)?,
-            None => ().into_py(py),
+            None => PyNone::get(py).as_unbound().as_any().clone_ref(py),
         })
     }
 

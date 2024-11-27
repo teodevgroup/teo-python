@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyDict, PyDictMethods}, IntoPy, PyResult, Python};
+use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyDict, PyDictMethods}, IntoPyObject, PyResult, Python};
 use teo::prelude::File as TeoFile;
 
 /// File
@@ -22,11 +22,11 @@ impl File {
     pub fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
         let prefix = "File(";
         let suffix = ")";
-        let result = PyDict::new_bound(py);
+        let result = PyDict::new(py);
         result.set_item("filepath", self.filepath.as_str())?;
-        result.set_item("content_type", self.content_type.as_ref().into_py(py))?;
+        result.set_item("content_type", self.content_type.as_ref().into_pyobject(py)?)?;
         result.set_item("filename", self.filename.as_str())?;
-        result.set_item("filename_ext", self.content_type.as_ref().into_py(py))?;
+        result.set_item("filename_ext", self.content_type.as_ref().into_pyobject(py)?)?;
         let dict_repr = result.call_method("__repr__", (), None)?;
         let dict_repr_str: &str = dict_repr.extract()?;
         Ok(format!("{}{}{}", prefix, dict_repr_str, suffix))

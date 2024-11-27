@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyList, PyListMethods, PyModule}, Bound, IntoPy, Py, PyAny, PyErr, PyObject, PyResult, Python};
+use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyList, PyListMethods, PyModule}, Bound, IntoPyObject, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::tokio::future_into_py;
 use ::teo::prelude::{RuntimeVersion, App as TeoApp, Entrance, transaction};
 use teo_result::Error;
@@ -23,7 +23,7 @@ impl App {
     #[staticmethod]
     #[pyo3(signature = (cli=true, argv=None))]
     fn with_cli(py: Python<'_>, cli: bool, argv: Option<Vec<String>>) -> PyResult<Self> {
-        let platform = PyModule::import_bound(py, "platform")?;
+        let platform = PyModule::import(py, "platform")?;
         let python_version: Py<PyAny> = platform.getattr("python_version")?.into();
         let version_any = python_version.call0(py)?;
         let version_str: &str = version_any.extract::<&str>(py)?;
@@ -32,7 +32,7 @@ impl App {
         let rust_argv = match argv {
             Some(argv) => argv,
             None => {
-                let sys = PyModule::import_bound(py, "sys")?;
+                let sys = PyModule::import(py, "sys")?;
                 let argv_binding = sys.getattr("argv")?;
                 let argv: &Bound<PyList> = argv_binding.downcast()?;
                 let mut rust_argv: Vec<String> = argv.iter().map(|s| s.to_string()).collect();
@@ -51,7 +51,7 @@ impl App {
         let map = PYClassLookupMap::from_app_data(self.teo_app.app_data()); 
         self.teo_app.setup(|ctx: transaction::Ctx| async {
             let transformed = Python::with_gil(|py| {
-                let transformed_py = callback.call1(py, (map.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?,))?.into_py(py);
+                let transformed_py = callback.call1(py, (map.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?,))?;
                 let is_coroutine = is_coroutine(&transformed_py)?;
                 Ok::<_, Error>((transformed_py, is_coroutine))
             })?;
@@ -73,7 +73,7 @@ impl App {
         let map = PYClassLookupMap::from_app_data(self.teo_app.app_data()); 
         self.teo_app.program(name, desc, |ctx: transaction::Ctx| async {
             let transformed = Python::with_gil(|py| {
-                let transformed_py = callback_owned.call1(py, (map.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?,))?.into_py(py);
+                let transformed_py = callback_owned.call1(py, (map.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?,))?;
                 let is_coroutine = is_coroutine(&transformed_py)?;
                 Ok::<_, Error>((transformed_py, is_coroutine))
             })?;
@@ -88,7 +88,7 @@ impl App {
         Ok(())
     }
 
-    fn _run(&self, py: Python<'_>) -> PyResult<PyObject> {
+    fn _run<'a>(&self, py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
         let mut builder = Builder::new_multi_thread();
         builder.enable_all();
         pyo3_async_runtimes::tokio::init(builder);
@@ -105,7 +105,7 @@ impl App {
             static_self.teo_app.run_without_prepare().await?;
             Ok(())
         })())?;
-        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+        Ok::<Bound<PyAny>, PyErr>(coroutine.into_pyobject(py)?)
     }
 
     fn main_namespace(&self) -> Namespace {

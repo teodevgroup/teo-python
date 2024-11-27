@@ -68,7 +68,7 @@ impl TestRequest {
                 let rust_u8_slice = rust_str.as_bytes();
                 Bytes::copy_from_slice(rust_u8_slice)
             } else {
-                let json = py.import_bound("json")?;
+                let json = py.import("json")?;
                 let dumps = json.getattr("dumps")?;
                 let result = dumps.call1((body,))?;
                 let result_string: &str = result.extract()?;
@@ -131,7 +131,7 @@ impl TestRequest {
 
     pub fn body<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
         let vec_u8_data = Vec::<u8>::from(self.body.clone());
-        PyBytes::new_bound(py, &vec_u8_data)
+        PyBytes::new(py, &vec_u8_data)
     }
 
     pub fn set_body(&mut self, body: Bound<PyBytes>) -> PyResult<()> {

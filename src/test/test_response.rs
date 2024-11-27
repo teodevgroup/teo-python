@@ -18,7 +18,7 @@ impl TestResponse {
 
     pub fn body<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
         let data = Vec::<u8>::from(self.teo_test_response.body().clone());
-        PyBytes::new_bound(py, &data)
+        PyBytes::new(py, &data)
     }
 
     pub fn body_as_string(&self) -> String {
@@ -27,7 +27,7 @@ impl TestResponse {
 
     pub fn body_as_json<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let string = self.teo_test_response.body_as_string();
-        let json = py.import_bound("json")?;
+        let json = py.import("json")?;
         let loads = json.getattr("loads")?;
         let result = loads.call1((string,))?;
         Ok(result)

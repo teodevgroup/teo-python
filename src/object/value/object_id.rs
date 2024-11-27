@@ -1,5 +1,5 @@
 use bson::oid::ObjectId as BsonObjectId;
-use pyo3::{pyclass, pymethods, PyResult, exceptions::PyValueError, types::PyType};
+use pyo3::{pyclass, pymethods, PyResult, exceptions::PyValueError};
 
 #[pyclass]
 #[derive(Clone)]

@@ -1,5 +1,5 @@
 use key_path::Item;
-use pyo3::{pyclass, pymethods, types::{PyList, PyListMethods}, IntoPy, PyObject, PyResult, Python};
+use pyo3::{pyclass, pymethods, types::{PyList, PyListMethods}, PyObject, PyResult, Python};
 use teo::prelude::pipeline;
 
 use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, object::{model::teo_model_object_to_py_any, value::teo_value_to_py_any}};
@@ -35,14 +35,14 @@ impl PipelineCtx {
 
     fn path(&self, py: Python<'_>) -> PyResult<PyObject> {
         let keypath = self.ctx.path();
-        let list = PyList::empty_bound(py);
+        let list = PyList::empty(py);
         for item in keypath {
             match item {
                 Item::Index(n) => list.append(n)?,
                 Item::Key(k) => list.append(k)?,
             }
         }
-        Ok(list.into_py(py))
+        Ok(list.into_any().unbind())
     }
 
     fn teo(&self, py: Python<'_>) -> PyResult<PyObject> {

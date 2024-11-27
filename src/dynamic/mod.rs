@@ -12,8 +12,8 @@ use pyo3_async_runtimes::TaskLocals;
 use teo::prelude::app::data::AppData;
 use teo::prelude::traits::named::Named;
 use ::teo::prelude::App;
-use pyo3::{Bound, IntoPy, PyAny, PyErr, PyObject, PyResult, Python};
-use pyo3::types::{PyAnyMethods, PyCFunction, PyDict, PyList, PyListMethods};
+use pyo3::{Bound, IntoPyObjectExt, PyAny, PyErr, PyObject, PyResult, Python};
+use pyo3::types::{PyAnyMethods, PyCFunction, PyDict, PyList, PyListMethods, PyNone};
 use teo::prelude::{Namespace, Value, model, transaction};
 use crate::dynamic::model_object_wrapper::ModelObjectWrapper;
 
@@ -67,17 +67,17 @@ static INIT_ERROR_MESSAGE: &str = "class is not initialized";
 
 pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut PYClassLookupMap, app: &'static App, namespace: &'static Namespace, py: Python<'_>) -> PyResult<()> {
     let app_data = app.app_data();
-    let main = py.import_bound("__main__")?;
+    let main = py.import("__main__")?;
     let teo_wrap_builtin = main.getattr("teo_wrap_builtin")?;
     let teo_wrap_async = main.getattr("teo_wrap_async")?;
-    let builtins = py.import_bound("builtins")?;
+    let builtins = py.import("builtins")?;
     let property_wrapper = builtins.getattr("property")?;
     let ctx_class = map.ctx_or_create(&namespace.path().join("."), py)?;
     for model in namespace.models().values() {
         let model_name = Box::leak(Box::new(model.path().join("."))).as_str();
         let model_name_c = Box::leak(Box::new(CString::new(model_name)?)).as_c_str();
         let model_property_name = model.path().last().unwrap().to_snake_case();
-        let model_property = PyCFunction::new_closure_bound(py, Some(model_name_c), None, move |args, _kwargs| {
+        let model_property = PyCFunction::new_closure(py, Some(model_name_c), None, move |args, _kwargs| {
             let model_class_object = Python::with_gil(|py| {
                 let map = PYClassLookupMap::from_app_data(app_data);
                 let slf = args.get_item(0)?;
@@ -154,17 +154,17 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
             let snake_case_field_name = Box::leak(Box::new(field.name().to_snake_case())).as_str();
             let snake_case_field_name_c = Box::leak(Box::new(CString::new(snake_case_field_name)?)).as_c_str();
             let field_name = Box::leak(Box::new(field.name().to_string())).as_str();
-            let field_property_getter = PyCFunction::new_closure_bound(py, Some(snake_case_field_name_c), None, move |args, _kwargs| {
+            let field_property_getter = PyCFunction::new_closure(py, Some(snake_case_field_name_c), None, move |args, _kwargs| {
                 Python::with_gil(|py| {
                     let map = PYClassLookupMap::from_app_data(app_data);
-                    let slf = args.get_item(0)?.into_py(py);
-                    let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                    let slf = args.get_item(0)?;
+                    let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
                     let value: Value = model_object_wrapper.object.get_value(field_name).unwrap();
                     Ok::<PyObject, PyErr>(teo_value_to_py_any(py, &value, map)?)    
                 })
             })?;
             let field_property_wrapped = property_wrapper.call1((field_property_getter,))?;
-            let field_property_setter = PyCFunction::new_closure_bound(py, Some(snake_case_field_name_c), None, move |args, _kwargs| {
+            let field_property_setter = PyCFunction::new_closure(py, Some(snake_case_field_name_c), None, move |args, _kwargs| {
                 Python::with_gil(|py| {
                     let slf = args.get_item(0)?;
                     let value = args.get_item(1)?;
@@ -184,10 +184,10 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
             if relation.is_vec() {
                 // to many
                 // get
-                let get = PyCFunction::new_closure_bound(py, Some(base_relation_name_c), None, move |args, _kwargs| {
+                let get = PyCFunction::new_closure(py, Some(base_relation_name_c), None, move |args, _kwargs| {
                     Python::with_gil(|py| {
-                        let slf = args.get_item(0)?.into_py(py);
-                        let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                        let slf = args.get_item(0)?;
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
                         let find_many_arg = if args.len()? > 1 {
                             let py_dict = args.get_item(1)?;
                             check_py_dict(&py_dict)?;
@@ -199,120 +199,120 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                             let value: Vec<model::Object> = model_object_wrapper.object.force_get_relation_objects(relation.name(), &find_many_arg).await?;
                             Python::with_gil(|py| {
                                 let map = PYClassLookupMap::from_app_data(app_data);
-                                let list = PyList::empty_bound(py);
+                                let list = PyList::empty(py);
                                 for v in value {
                                     list.append(teo_model_object_to_py_any(py, &v, map)?)?;
                                 }
-                                Ok::<PyObject, PyErr>(list.into_py(py))    
+                                Ok::<PyObject, PyErr>(list.into_any().unbind())    
                             })
                         })())?;
-                        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                        Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
                 teo_wrap_builtin.call1((model_object_class.bind(py), base_relation_name, get))?;
                 // set
                 let set_name = Box::leak(Box::new("set_".to_owned() + base_relation_name)).as_str();
                 let set_name_c = Box::leak(Box::new(CString::new(set_name)?)).as_c_str();
-                let set = PyCFunction::new_closure_bound(py, Some(set_name_c), None, move |args, _kwargs| {
+                let set = PyCFunction::new_closure(py, Some(set_name_c), None, move |args, _kwargs| {
                     Python::with_gil(|py| {
-                        let slf = args.get_item(0)?.into_py(py);
-                        let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                        let slf = args.get_item(0)?;
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
                         let mut objects = vec![];
                         if args.len()? > 1 {
                             let binding = args.get_item(1)?;
                             let py_list: &Bound<PyList> = binding.downcast()?;
                             for item in py_list {
-                                objects.push(teo_model_object_from_py_model_object(py, item.into_py(py))?);
+                                objects.push(teo_model_object_from_py_model_object(py, item.unbind())?);
                             }
                         }
                         let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
                             model_object_wrapper.object.force_set_relation_objects(relation.name(), objects).await;
                             Python::with_gil(|py| {
-                                Ok::<PyObject, PyErr>(().into_py(py))    
+                                Ok::<PyObject, PyErr>(PyNone::get(py).as_unbound().clone_ref(py).into_any())    
                             })
                         })())?;
-                        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                        Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
                 teo_wrap_builtin.call1((model_object_class.bind(py), set_name, set))?;
                 // add
                 let add_to_name = Box::leak(Box::new("add_to_".to_owned() + base_relation_name)).as_str();
                 let add_to_name_c = Box::leak(Box::new(CString::new(add_to_name)?)).as_c_str();
-                let add_to = PyCFunction::new_closure_bound(py, Some(add_to_name_c), None, move |args, _kwargs| {
+                let add_to = PyCFunction::new_closure(py, Some(add_to_name_c), None, move |args, _kwargs| {
                     Python::with_gil(|py| {
-                        let slf = args.get_item(0)?.into_py(py);
-                        let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                        let slf = args.get_item(0)?;
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
                         let mut objects = vec![];
                         if args.len()? > 1 {
                             let binding = args.get_item(1)?;
                             let py_list: &Bound<PyList> = binding.downcast()?;
                             for item in py_list {
-                                objects.push(teo_model_object_from_py_model_object(py, item.into_py(py))?);
+                                objects.push(teo_model_object_from_py_model_object(py, item.unbind())?);
                             }
                         }
                         let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
                             model_object_wrapper.object.force_add_relation_objects(relation.name(), objects).await;
                             Python::with_gil(|py| {
-                                Ok::<PyObject, PyErr>(().into_py(py))    
+                                Ok::<PyObject, PyErr>(PyNone::get(py).as_unbound().clone_ref(py).into_any())    
                             })
                         })())?;
-                        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                        Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
                 teo_wrap_builtin.call1((model_object_class.bind(py), add_to_name, add_to))?;
                 // remove
                 let remove_from_name = Box::leak(Box::new("remove_from_".to_owned() + base_relation_name)).as_str();
                 let remove_from_name_c = Box::leak(Box::new(CString::new(remove_from_name)?)).as_c_str();
-                let remove_from = PyCFunction::new_closure_bound(py, Some(remove_from_name_c), None, move |args, _kwargs| {
+                let remove_from = PyCFunction::new_closure(py, Some(remove_from_name_c), None, move |args, _kwargs| {
                     Python::with_gil(|py| {
-                        let slf = args.get_item(0)?.into_py(py);
-                        let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                        let slf = args.get_item(0)?;
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
                         let mut objects = vec![];
                         if args.len()? > 1 {
                             let binding = args.get_item(1)?;
                             let py_list: &Bound<PyList> = binding.downcast()?;
                             for item in py_list {
-                                objects.push(teo_model_object_from_py_model_object(py, item.into_py(py))?);
+                                objects.push(teo_model_object_from_py_model_object(py, item.unbind())?);
                             }
                         }
                         let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
                             model_object_wrapper.object.force_remove_relation_objects(relation.name(), objects).await;
                             Python::with_gil(|py| {
-                                Ok::<PyObject, PyErr>(().into_py(py))    
+                                Ok::<PyObject, PyErr>(PyNone::get(py).as_unbound().clone_ref(py).into_any())    
                             })
                         })())?;
-                        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                        Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
                 teo_wrap_builtin.call1((model_object_class.bind(py), remove_from_name, remove_from))?;
             } else {
                 // to single
                 // get
-                let get = PyCFunction::new_closure_bound(py, Some(base_relation_name_c), None, move |args, _kwargs| {
+                let get = PyCFunction::new_closure(py, Some(base_relation_name_c), None, move |args, _kwargs| {
                     Python::with_gil(|py| {
                         let map = PYClassLookupMap::from_app_data(app_data);
-                        let slf = args.get_item(0)?.into_py(py);
-                        let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                        let slf = args.get_item(0)?;
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
                         let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
                             let value: Option<model::Object> = model_object_wrapper.object.force_get_relation_object(relation.name()).await?;
                             Python::with_gil(|py| {
                                 match value {
-                                    Some(value) => Ok::<PyObject, PyErr>(teo_model_object_to_py_any(py, &value, map)?.into_py(py)),
-                                    None => Ok::<PyObject, PyErr>(().into_py(py))  
+                                    Some(value) => Ok::<PyObject, PyErr>(teo_model_object_to_py_any(py, &value, map)?),
+                                    None => Ok::<PyObject, PyErr>(PyNone::get(py).as_unbound().clone_ref(py).into_any())  
                                 }
                             })
                         })())?;
-                        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                        Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
                 teo_wrap_builtin.call1((model_object_class.bind(py), base_relation_name, get))?;
                 // set
                 let set_name = Box::leak(Box::new("set_".to_owned() + base_relation_name)).as_str();
                 let set_name_c = Box::leak(Box::new(CString::new(set_name)?)).as_c_str();
-                let set = PyCFunction::new_closure_bound(py, Some(set_name_c), None, move |args, _kwargs| {
+                let set = PyCFunction::new_closure(py, Some(set_name_c), None, move |args, _kwargs| {
                     Python::with_gil(|py| {
-                        let slf = args.get_item(0)?.into_py(py);
-                        let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                        let slf = args.get_item(0)?;
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
                         let next_argument = if args.len()? > 1 {
                             let arg1 = args.get_item(1)?;
                             let teo_object = py_any_to_teo_value(py, &arg1)?;
@@ -327,10 +327,10 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                         let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
                             model_object_wrapper.object.force_set_relation_object(relation.name(), next_argument).await;
                             Python::with_gil(|py| {
-                                Ok::<PyObject, PyErr>(().into_py(py))    
+                                Ok::<PyObject, PyErr>(PyNone::get(py).as_unbound().clone_ref(py).into_any())    
                             })
                         })())?;
-                        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                        Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
                 teo_wrap_builtin.call1((model_object_class.bind(py), set_name, set))?;
@@ -342,19 +342,19 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
             if model_property.setter().is_some() {
                 let name: &str = Box::leak(Box::new("set_".to_owned() + &field_name.to_snake_case())).as_str();
                 let name_c = Box::leak(Box::new(CString::new(name)?)).as_c_str();
-                let setter = PyCFunction::new_closure_bound(py, Some(name_c), None, move |args, _kwargs| {
+                let setter = PyCFunction::new_closure(py, Some(name_c), None, move |args, _kwargs| {
                     Python::with_gil(|py| {
                         let slf = args.get_item(0)?;
                         let value = args.get_item(1)?;
                         let value = py_any_to_teo_value(py, &value)?;
                         let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
                         let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
-                            let result = model_object_wrapper.object.set_property(field_name, value).await?;
+                            let _: () = model_object_wrapper.object.set_property(field_name, value).await?;
                             Python::with_gil(|py| {
-                                Ok(result.into_py(py))
+                                Ok(PyNone::get(py).as_unbound().clone_ref(py).into_any())
                             })
                         })())?;
-                        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                        Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
                 teo_wrap_builtin.call1((model_object_class.bind(py), name, setter))?;
@@ -362,19 +362,19 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
             if model_property.getter().is_some() {
                 let name: &str = Box::leak(Box::new(field_name.to_snake_case())).as_str();
                 let name_c = Box::leak(Box::new(CString::new(name)?)).as_c_str();
-                let getter = PyCFunction::new_closure_bound(py, Some(name_c), None, move |args, _kwargs| {
+                let getter = PyCFunction::new_closure(py, Some(name_c), None, move |args, _kwargs| {
                     Python::with_gil(|py| {
                         let map = PYClassLookupMap::from_app_data(app_data);
-                        let slf = args.get_item(0)?.into_py(py);
-                        let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+                        let slf = args.get_item(0)?;
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
                         let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
                             let result = model_object_wrapper.object.get_property_value(field_name).await?;
                             Python::with_gil(|py| {
                                 let any = teo_value_to_py_any(py, &result, map)?;
-                                Ok(any.into_py(py))
+                                Ok(any)
                             })
                         })())?;
-                        Ok::<PyObject, PyErr>(coroutine.into_py(py))
+                        Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
                 teo_wrap_builtin.call1((model_object_class.bind(py), name, getter))?;
@@ -384,7 +384,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
     for namespace in namespace.namespaces().values() {
         let namespace_name = Box::leak(Box::new(namespace.path().join("."))).as_str();
         let namespace_name_c = Box::leak(Box::new(CString::new(namespace_name)?)).as_c_str();
-        let namespace_property = PyCFunction::new_closure_bound(py, Some(namespace_name_c), None, move |args, _kwargs| {
+        let namespace_property = PyCFunction::new_closure(py, Some(namespace_name_c), None, move |args, _kwargs| {
             let next_ctx_object = Python::with_gil(|py| {
                 let map = PYClassLookupMap::from_app_data(app_data);
                 let slf = args.get_item(0)?;
@@ -400,28 +400,35 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
         ctx_class.setattr(py, namespace.path().last().unwrap().to_snake_case().as_str(), namespace_property_wrapped)?;
     }
     // transaction
-    let transaction = PyCFunction::new_closure_bound(py, Some(c"transaction"), Some(c"Run transaction."), move |args, _kwargs| {
+    let transaction = PyCFunction::new_closure(py, Some(c"transaction"), Some(c"Run transaction."), move |args, _kwargs| {
         Python::with_gil(|py| {
             let slf = args.get_item(0)?;
             let transaction_ctx_wrapper: TransactionCtxWrapper = slf.getattr("__teo_transaction_ctx__")?.extract()?;
-            let argument = args.get_item(1)?.into_py(py);
-            let shared_argument = &*Box::leak(Box::new(argument));
-            let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (move || async move {
-                let retval: pyo3::prelude::Py<PyAny> = transaction_ctx_wrapper.ctx.run_transaction(move |ctx: transaction::Ctx| async move {
-                    let user_retval = Python::with_gil(move |py| {
-                        let map = PYClassLookupMap::from_app_data(app_data);
-                        let ctx_python = map.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?;
-                        let coroutine_or_value = shared_argument.call1(py, (ctx_python,))?;
-                        let thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-                        Ok::<(PyObject, TaskLocals), teo::prelude::Error>((coroutine_or_value, thread_locals))
-                    })?;
-                    Ok(await_coroutine_if_needed_value_with_locals(&user_retval.0, &user_retval.1).await?)
-                }).await?;
-                Python::with_gil(|py| {
-                    Ok::<PyObject, PyErr>(retval.into_py(py))    
-                })
+            let argument = args.get_item(1)?.unbind();
+            let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (move || {
+                let argument = Python::with_gil(|py| {
+                    argument.clone_ref(py)
+                });
+                async move {
+                    let retval: PyObject = transaction_ctx_wrapper.ctx.run_transaction(move |ctx: transaction::Ctx| {
+                        let argument = Python::with_gil(|py| {
+                            argument.clone_ref(py)
+                        });
+                        async move {
+                            let user_retval = Python::with_gil(move |py| {
+                                let map = PYClassLookupMap::from_app_data(app_data);
+                                let ctx_python = map.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?;
+                                let coroutine_or_value = argument.call1(py, (ctx_python,))?;
+                                let thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
+                                Ok::<(PyObject, TaskLocals), teo::prelude::Error>((coroutine_or_value, thread_locals))
+                            })?;
+                            Ok(await_coroutine_if_needed_value_with_locals(&user_retval.0, &user_retval.1).await?)    
+                        }
+                    }).await?;
+                    Ok(retval)    
+                }
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?;
     teo_wrap_builtin.call1((&ctx_class, "transaction", transaction))?;
@@ -432,10 +439,10 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
 
 
 fn find_unique_object_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"find_unique_object"), Some(c"Find a unique object."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"find_unique_object"), Some(c"Find a unique object."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let slf = args.get_item(0)?;
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr("__teo_model_ctx__")?.extract()?;
             let find_many_arg = if args.len()? > 1 {
                 let py_dict = args.get_item(1)?;
                 check_py_dict(&py_dict)?;
@@ -452,21 +459,21 @@ fn find_unique_object_function<'py>(py: Python<'py>, app_data: &'static AppData)
                             map.teo_model_object_to_py_model_object_object(py, object)
                         }
                         None => {
-                            Ok(().into_py(py))
+                            Ok(PyNone::get(py).as_unbound().clone_ref(py).into_any())
                         }
                     }
                 })
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?)
 }
 
 fn find_first_object_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"find_first_object"), Some(c"Find an object."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"find_first_object"), Some(c"Find an object."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let slf = args.get_item(0)?;
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr("__teo_model_ctx__")?.extract()?;
             let find_many_arg = if args.len()? > 1 {
                 let py_dict = args.get_item(1)?;
                 check_py_dict(&py_dict)?;
@@ -483,21 +490,21 @@ fn find_first_object_function<'py>(py: Python<'py>, app_data: &'static AppData) 
                             map.teo_model_object_to_py_model_object_object(py, object)
                         }
                         None => {
-                            Ok(().into_py(py))
+                            Ok(PyNone::get(py).as_unbound().clone_ref(py).into_any())
                         }
                     }
                 })
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?)
 }
 
 fn find_many_objects_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"find_many_objects"), Some(c"Find many objects."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"find_many_objects"), Some(c"Find many objects."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let slf = args.get_item(0)?;
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr("__teo_model_ctx__")?.extract()?;
             let find_many_arg = if args.len()? > 1 {
                 let py_dict = args.get_item(1)?;
                 check_py_dict(&py_dict)?;
@@ -508,25 +515,25 @@ fn find_many_objects_function<'py>(py: Python<'py>, app_data: &'static AppData) 
             let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
                 let result: Vec<model::Object> = model_ctx_wrapper.ctx.find_many(&find_many_arg).await?;
                 Python::with_gil(|py| {
-                    let py_result = PyList::empty_bound(py);
+                    let py_result = PyList::empty(py);
                     let map = PYClassLookupMap::from_app_data(app_data);
                     for object in result {
                         let instance = map.teo_model_object_to_py_model_object_object(py, object)?;
                         py_result.append(instance)?;
                     }
-                    Ok(py_result.into_py(py))
+                    Ok(py_result.into_any().unbind())
                 })
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?)
 }
 
 fn create_object_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"create_object"), Some(c"Create a new object."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"create_object"), Some(c"Create a new object."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let slf = args.get_item(0)?;
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr("__teo_model_ctx__")?.extract()?;
             let create_arg = if args.len()? > 1 {
                 let py_dict = args.get_item(1)?;
                 check_py_dict(&py_dict)?;
@@ -539,19 +546,19 @@ fn create_object_function<'py>(py: Python<'py>, app_data: &'static AppData) -> P
                 Python::with_gil(|py| {
                     let map = PYClassLookupMap::from_app_data(app_data);
                     let instance = map.teo_model_object_to_py_model_object_object(py, result)?;
-                    Ok(instance.into_py(py))
+                    Ok(instance)
                 })
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?)
 }
 
 fn count_objects_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"count_objects"), Some(c"Count records."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"count_objects"), Some(c"Count records."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let slf = args.get_item(0)?;
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr("__teo_model_ctx__")?.extract()?;
             let count_arg = if args.len()? > 1 {
                 let py_dict = args.get_item(1)?;
                 check_py_dict(&py_dict)?;
@@ -562,19 +569,19 @@ fn count_objects_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> 
             let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
                 let result: usize = model_ctx_wrapper.ctx.count_objects(&count_arg).await?;
                 Python::with_gil(|py| {
-                    Ok(result.into_py(py))
+                    Ok(result.into_py_any(py)?)
                 })
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?)
 }
 
 fn count_fields_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"count_fields"), Some(c"Count records."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"count_fields"), Some(c"Count records."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let slf = args.get_item(0)?;
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr("__teo_model_ctx__")?.extract()?;
             let count_arg = if args.len()? > 1 {
                 let py_dict = args.get_item(1)?;
                 check_py_dict(&py_dict)?;
@@ -589,16 +596,16 @@ fn count_fields_function<'py>(py: Python<'py>, app_data: &'static AppData) -> Py
                     teo_value_to_py_any(py, &result, map)
                 })
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?)
 }
 
 fn aggregate_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"aggregate"), Some(c"Aggregate on records."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"aggregate"), Some(c"Aggregate on records."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let slf = args.get_item(0)?;
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr("__teo_model_ctx__")?.extract()?;
             let aggregate_arg = if args.len()? > 1 {
                 let py_dict = args.get_item(1)?;
                 check_py_dict(&py_dict)?;
@@ -613,16 +620,16 @@ fn aggregate_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyRes
                     teo_value_to_py_any(py, &result, map)
                 })
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?)
 }
 
 fn group_by_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"group_by"), Some(c"Group by on records."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"group_by"), Some(c"Group by on records."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let slf = args.get_item(0)?;
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr("__teo_model_ctx__")?.extract()?;
             let group_by_arg = if args.len()? > 1 {
                 let py_dict = args.get_item(1)?;
                 check_py_dict(&py_dict)?;
@@ -634,68 +641,68 @@ fn group_by_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResu
                 let result: Vec<Value> = model_ctx_wrapper.ctx.group_by(&group_by_arg).await?;
                 Python::with_gil(|py| {
                     let map = PYClassLookupMap::from_app_data(app_data);
-                    let py_result = PyList::empty_bound(py);
+                    let py_result = PyList::empty(py);
                     for value in result {
                         let instance = teo_value_to_py_any(py, &value, map)?;
                         py_result.append(instance)?;
                     }
-                    Ok(py_result.into_py(py))
+                    Ok(py_result.into_py_any(py)?)
                 })
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?)
 }
 
 fn sql_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"sql"), Some(c"Run custom SQL clause."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"sql"), Some(c"Run custom SQL clause."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr(py, "__teo_model_ctx__")?.extract(py)?;
+            let slf = args.get_item(0)?;
+            let model_ctx_wrapper: ModelCtxWrapper = slf.getattr("__teo_model_ctx__")?.extract()?;
             let sql_string_any: Bound<PyAny> = args.get_item(1)?;
             let sql_string: String = sql_string_any.extract()?;
             let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
                 let result: Vec<Value> = model_ctx_wrapper.ctx.sql(&sql_string).await?;
                 Python::with_gil(|py| {
-                    let py_result = PyList::empty_bound(py);
+                    let py_result = PyList::empty(py);
                     let map = PYClassLookupMap::from_app_data(app_data);
                     for value in result {
                         let instance = teo_value_to_py_any(py, &value, map)?;
                         py_result.append(instance)?;
                     }
-                    Ok(py_result.into_py(py))
+                    Ok(py_result.into_py_any(py)?)
                 })
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?)
 }
 
 fn is_new_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"is_new"), Some(c"Whether this model object is new."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"is_new"), Some(c"Whether this model object is new."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
-            Ok::<PyObject, PyErr>(model_object_wrapper.object.is_new().into_py(py))
+            let slf = args.get_item(0)?;
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
+            Ok::<PyObject, PyErr>(model_object_wrapper.object.is_new().into_py_any(py)?)
         })
     })?)
 }
 
 fn is_modified_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"is_modified"), Some(c"Whether this model object is modified."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"is_modified"), Some(c"Whether this model object is modified."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
-            Ok::<PyObject, PyErr>(model_object_wrapper.object.is_modified().into_py(py))
+            let slf = args.get_item(0)?;
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
+            Ok::<PyObject, PyErr>(model_object_wrapper.object.is_modified().into_py_any(py)?)
         })
     })?)
 }
 
 fn set_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"set"), Some(c"Set values to this object."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"set"), Some(c"Set values to this object."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+            let slf = args.get_item(0)?;
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
             let set_arg = if args.len()? > 1 {
                 let py_dict = args.get_item(1)?;
                 check_py_dict(&py_dict)?;
@@ -704,21 +711,21 @@ fn set_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
                 Value::Dictionary(IndexMap::new())
             };
             let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
-                let result: () = model_object_wrapper.object.set_teon(&set_arg).await?;
+                model_object_wrapper.object.set_teon(&set_arg).await?;
                 Python::with_gil(|py| {
-                    Ok(result.into_py(py))
+                    Ok(PyNone::get(py).as_unbound().clone_ref(py).into_any())
                 })
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?)
 }
 
 fn update_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"update"), Some(c"Update values on this object."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"update"), Some(c"Update values on this object."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+            let slf = args.get_item(0)?;
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
             let set_arg = if args.len()? > 1 {
                 let py_dict = args.get_item(1)?;
                 check_py_dict(&py_dict)?;
@@ -727,53 +734,53 @@ fn update_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
                 Value::Dictionary(IndexMap::new())
             };
             let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
-                let result: () = model_object_wrapper.object.update_teon(&set_arg).await?;
+                model_object_wrapper.object.update_teon(&set_arg).await?;
                 Python::with_gil(|py| {
-                    Ok(result.into_py(py))
+                    Ok(PyNone::get(py).as_unbound().clone_ref(py).into_any())
                 })
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?)
 }
 
 fn save_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"save"), Some(c"Save this object."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"save"), Some(c"Save this object."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+            let slf = args.get_item(0)?;
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
             let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
-                let result: () = model_object_wrapper.object.save().await?;
+                model_object_wrapper.object.save().await?;
                 Python::with_gil(|py| {
-                    Ok(result.into_py(py))
+                    Ok(PyNone::get(py).as_unbound().clone_ref(py).into_any())
                 })
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?)
 }
 
 fn delete_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"delete"), Some(c"Delete this object."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"delete"), Some(c"Delete this object."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+            let slf = args.get_item(0)?;
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
             let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
-                let result: () = model_object_wrapper.object.delete().await?;
+                model_object_wrapper.object.delete().await?;
                 Python::with_gil(|py| {
-                    Ok(result.into_py(py))
+                    Ok(PyNone::get(py).as_unbound().clone_ref(py).into_any())
                 })
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?)
 }
 
 fn to_teon_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"to_teon"), Some(c"Convert this object to a Teon object."), move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"to_teon"), Some(c"Convert this object to a Teon object."), move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
+            let slf = args.get_item(0)?;
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
             let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
                 let result: Value = model_object_wrapper.object.to_teon().await?;
                 let map = PYClassLookupMap::from_app_data(app_data);
@@ -781,17 +788,17 @@ fn to_teon_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResul
                     teo_value_to_py_any(py, &result, map)
                 })
             })())?;
-            Ok::<PyObject, PyErr>(coroutine.into_py(py))
+            Ok::<PyObject, PyErr>(coroutine.unbind())
         })
     })?)
 }
 
 fn repr_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<Bound<'py, PyCFunction>> {
-    Ok(PyCFunction::new_closure_bound(py, Some(c"__repr__"), None, move |args, _kwargs| {
+    Ok(PyCFunction::new_closure(py, Some(c"__repr__"), None, move |args, _kwargs| {
         Python::with_gil(|py| {
-            let slf = args.get_item(0)?.into_py(py);
-            let model_object_wrapper: ModelObjectWrapper = slf.getattr(py, "__teo_object__")?.extract(py)?;
-            let result = PyDict::new_bound(py);
+            let slf = args.get_item(0)?;
+            let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
+            let result = PyDict::new(py);
             let value_map = model_object_wrapper.object.inner.value_map.lock().unwrap();
             let map = PYClassLookupMap::from_app_data(app_data);
             for (k, v) in value_map.iter() {
@@ -801,7 +808,7 @@ fn repr_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResult<B
             let dict_repr_str: &str = dict_repr.extract()?;
             let prefix = format!("{}(", model_object_wrapper.object.model().path().join("."));
             let suffix = ")";
-            Ok::<PyObject, PyErr>(format!("{}{}{}", prefix, dict_repr_str, suffix).into_py(py))
+            Ok::<PyObject, PyErr>(format!("{}{}{}", prefix, dict_repr_str, suffix).into_py_any(py)?)
         })
     })?)
 }
