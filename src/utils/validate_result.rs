@@ -1,7 +1,7 @@
 use ::teo::prelude::Value;
 use ::teo::prelude::Error;
 use ::teo::prelude::Result;
-use teo::prelude::pipeline::item::validator::Validity;
+use teo::prelude::pipeline::item::templates::validator::Validity;
 
 pub fn validate_result(value: Value) -> Result<Validity> {
     Ok(match value {
