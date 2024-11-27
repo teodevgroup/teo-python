@@ -1778,9 +1778,9 @@ dependencies = [
 
 [[package]]
 name = "key-path"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2dbfd6a812b085b8b82692e3188265528e4e659f92473709602af2b810af51d4"
+checksum = "801b67dcbf2ebc638e6e02a2ddbb7b4e43e2a1f12e9a7ace37c4516005b97f80"
 
 [[package]]
 name = "lazy_static"
@@ -3934,6 +3934,7 @@ dependencies = [
  "hyper",
  "indexmap 2.6.0",
  "inflector-plus",
+ "key-path",
  "pyo3",
  "pyo3-async-runtimes",
  "regex",

@@ -5,6 +5,7 @@ pub mod dynamic;
 pub mod object;
 pub mod r#enum;
 pub mod model;
+pub mod pipeline;
 pub mod handler;
 pub mod request;
 pub mod response;

@@ -23,3 +23,4 @@ time = "0.3.36"
 hyper = { version = "1.5.0", features = ["full"] }
 bytes = "1.8.0"
 http-body-util = "0.1"
+key-path = "0.2.3"
