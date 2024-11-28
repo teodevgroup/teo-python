@@ -77,7 +77,7 @@ pub fn teo_value_to_py_any_without_model_objects<'p>(py: Python<'p>, value: &Val
     })
 }
 
-pub fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value, map: &PYClassLookupMap) -> PyResult<PyObject> {
+pub(crate) fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value, map: &PYClassLookupMap) -> PyResult<PyObject> {
     Ok(match value {
         Value::ModelObject(model_object) => teo_model_object_to_py_any(py, model_object, map)?,
         Value::Array(v) => {
