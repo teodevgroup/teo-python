@@ -404,9 +404,9 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
         }
     }
     for namespace in namespace.namespaces().values() {
-        let namespace_name = Box::leak(Box::new(namespace.path().join("."))).as_str();
-        let namespace_name_c = Box::leak(Box::new(CString::new(namespace_name)?)).as_c_str();
-        let namespace_property = PyCFunction::new_closure(py, Some(namespace_name_c), None, move |args, _kwargs| {
+        let namespace_name = namespace.path().join(".");
+        let namespace_name_cstr = static_cstr(&namespace_name)?;
+        let namespace_property = PyCFunction::new_closure(py, Some(namespace_name_cstr), None, move |args, _kwargs| {
             let next_ctx_object = Python::with_gil(|py| {
                 let map = PYClassLookupMap::from_app_data(app_data);
                 let slf = args.get_item(0)?;
