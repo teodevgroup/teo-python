@@ -11,6 +11,8 @@ pub mod request;
 pub mod response;
 pub mod test;
 
+use std::ffi::CString;
+use pipeline::ctx::PipelineCtx;
 use pyo3::prelude::*;
 use request::{Expiration, Request};
 use response::{Response, header_map::ReadWriteHeaderMap};
@@ -37,7 +39,7 @@ use crate::test::{TestRequest, TestResponse, TestServer};
 
 #[pymodule]
 fn teo(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    py.run_bound(r#"
+    py.run(&CString::new(r#"
 global teo_wrap_builtin
 def teo_wrap_builtin(cls, name, callable):
     def wrapped(self, *args, **kwargs):
@@ -49,7 +51,7 @@ def teo_wrap_async(callable):
     async def wrapped(self, *args, **kwargs):
         return await callable(self, *args, **kwargs)
     return wrapped
-    "#, None, None)?;
+    "#)?, None, None)?;
     m.add_class::<App>()?;
     m.add_class::<Namespace>()?;
     m.add_class::<HandlerGroup>()?;
@@ -73,6 +75,7 @@ def teo_wrap_async(callable):
     m.add_class::<File>()?;
     m.add_class::<InterfaceEnumVariant>()?;
     m.add_class::<Pipeline>()?;
+    m.add_class::<PipelineCtx>()?;
     m.add_class::<TestRequest>()?;
     m.add_class::<TestResponse>()?;
     m.add_class::<TestServer>()?;
