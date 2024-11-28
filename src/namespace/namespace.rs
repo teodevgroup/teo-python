@@ -1,7 +1,7 @@
 use teo_result::Error;
 use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction}, Bound, IntoPyObjectExt, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::TaskLocals;
-use teo::prelude::{r#enum, handler, namespace, pipeline::{self, item::templates::validator::Validity}, request, MiddlewareImpl, Next, Value};
+use teo::prelude::{r#enum, handler, namespace, pipeline::{self, item::templates::validator::Validity}, request, Middleware, MiddlewareImp, Next, NextImp, Value};
 use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::teo_args_to_py_args, value::{py_any_to_teo_value, teo_value_to_py_any}}, pipeline::ctx::PipelineCtx, request::Request, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable, cstr::static_cstr}};
 use teo::prelude::request::Request as TeoRequest;
 
@@ -392,7 +392,7 @@ impl Namespace {
         HandlerGroup { teo_handler_group: self.teo_namespace.model_handler_group_or_create(name) }
     }
 
-    pub fn _define_request_middleware(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
+    pub fn _define_request_middleware(&self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
         let name_cstr = static_cstr(name)?;
         check_callable(&callback.bind(py))?;
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
@@ -408,7 +408,7 @@ impl Namespace {
                     let main = py.import("__main__")?;
                     let teo_wrap_async = main.getattr("teo_wrap_async")?;
                     let wrapped_result_function = teo_wrap_async.call1((result_function,))?.unbind();
-                    let wrapped_result = move |request: request::Request, next: &'static dyn Next| {
+                    let wrapped_result = move |request: request::Request, next: Next| {
                         let (wrapped_result_function, main_thread_locals) = Python::with_gil(|py| {
                             (wrapped_result_function.clone_ref(py), main_thread_locals.clone_ref(py))
                         });
@@ -416,17 +416,21 @@ impl Namespace {
                             let coroutine = Python::with_gil(|py| {
                                 let py_ctx = Request::new(request);
                                 let py_next = PyCFunction::new_closure(py, Some(name_cstr), None, move |args, _kwargs| {
+                                    let next = next.clone();
                                     Python::with_gil(|py| {
                                         let arg0 = args.get_item(0)?;
                                         let request: Request = arg0.extract()?;
-                                        let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async {
-                                            let result: teo::prelude::Response = next.call(request.teo_request).await?;
-                                            Python::with_gil(|py| {
-                                                let response = Response {
-                                                    teo_response: result
-                                                };
-                                                Ok::<PyObject, PyErr>(response.into_py_any(py)?)    
-                                            })
+                                        let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (move || {
+                                            let next = next.clone();
+                                            async move {
+                                                let result: teo::prelude::Response = next.call(request.teo_request).await?;
+                                                Python::with_gil(|py| {
+                                                    let response = Response {
+                                                        teo_response: result
+                                                    };
+                                                    Ok::<PyObject, PyErr>(response.into_py_any(py)?)    
+                                                })    
+                                            }
                                         })())?;
                                         Ok::<PyObject, PyErr>(coroutine.unbind())
                                     })
@@ -448,7 +452,7 @@ impl Namespace {
                             })
                         }
                     };                
-                    return Ok(MiddlewareImpl::new(wrapped_result));    
+                    return Ok(Middleware::new(wrapped_result));
                 })    
             }
         });
@@ -471,7 +475,7 @@ impl Namespace {
                     let main = py.import("__main__")?;
                     let teo_wrap_async = main.getattr("teo_wrap_async")?;
                     let wrapped_result_function = teo_wrap_async.call1((result_function,))?.unbind();
-                    let wrapped_result = move |request: request::Request, next: &'static dyn Next| {
+                    let wrapped_result = move |request: request::Request, next: Next| {
                         let (wrapped_result_function, main_thread_locals) = Python::with_gil(|py| {
                             (wrapped_result_function.clone_ref(py), main_thread_locals.clone_ref(py))
                         });
@@ -479,17 +483,21 @@ impl Namespace {
                             let coroutine = Python::with_gil(|py| {
                                 let py_ctx = Request::new(request);
                                 let py_next = PyCFunction::new_closure(py, Some(name_cstr), None, move |args, _kwargs| {
+                                    let next = next.clone();
                                     Python::with_gil(|py| {
                                         let arg0 = args.get_item(0)?;
                                         let request: Request = arg0.extract()?;
-                                        let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async {
-                                            let result: teo::prelude::Response = next.call(request.teo_request).await?;
-                                            Python::with_gil(|py| {
-                                                let response = Response {
-                                                    teo_response: result
-                                                };
-                                                Ok::<PyObject, PyErr>(response.into_py_any(py)?)    
-                                            })
+                                        let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (move || {
+                                            let next = next.clone();
+                                            async move {
+                                                let result: teo::prelude::Response = next.call(request.teo_request).await?;
+                                                Python::with_gil(|py| {
+                                                    let response = Response {
+                                                        teo_response: result
+                                                    };
+                                                    Ok::<PyObject, PyErr>(response.into_py_any(py)?)    
+                                                })    
+                                            }
                                         })())?;
                                         Ok::<PyObject, PyErr>(coroutine.unbind())
                                     })
@@ -511,7 +519,7 @@ impl Namespace {
                             })
                         }
                     };                
-                    return Ok(MiddlewareImpl::new(wrapped_result));    
+                    return Ok(Middleware::new(wrapped_result));
                 })    
             }
         });
