@@ -398,7 +398,7 @@ impl Namespace {
         check_callable(&callback.bind(py))?;
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-        self.teo_namespace.define_request_middleware(name, move |arguments| {
+        self.teo_namespace.define_request_middleware_impl(name, move |arguments| {
             let (callback, main_thread_locals) = Python::with_gil(|py| {
                 (callback.clone_ref(py), main_thread_locals.clone_ref(py))
             });
@@ -461,7 +461,7 @@ impl Namespace {
         check_callable(&callback.bind(py))?;
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-        self.teo_namespace.define_handler_middleware(name, move |arguments| {
+        self.teo_namespace.define_handler_middleware_impl(name, move |arguments| {
             let (callback, main_thread_locals) = Python::with_gil(|py| {
                 (callback.clone_ref(py), main_thread_locals.clone_ref(py))
             });
