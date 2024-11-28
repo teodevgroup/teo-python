@@ -153,40 +153,46 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
         teo_wrap_builtin.call1((&model_object_class, "__repr__", repr))?;
         // fields
         for field in model.fields().values() {
-            let snake_case_field_name = Box::leak(Box::new(field.name().to_snake_case())).as_str();
-            let snake_case_field_name_c = Box::leak(Box::new(CString::new(snake_case_field_name)?)).as_c_str();
-            let field_name = Box::leak(Box::new(field.name().to_string())).as_str();
-            let field_property_getter = PyCFunction::new_closure(py, Some(snake_case_field_name_c), None, move |args, _kwargs| {
-                Python::with_gil(|py| {
-                    let map = PYClassLookupMap::from_app_data(app_data);
-                    let slf = args.get_item(0)?;
-                    let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
-                    let value: Value = model_object_wrapper.object.get_value(field_name).unwrap();
-                    Ok::<PyObject, PyErr>(teo_value_to_py_any(py, &value, map)?)    
-                })
+            let snake_case_field_name = field.name().to_snake_case();
+            let snake_case_field_name_cstr = static_cstr(snake_case_field_name.as_str())?;
+            let field_name = field.name().to_string();
+            let field_property_getter = PyCFunction::new_closure(py, Some(snake_case_field_name_cstr), None, {
+                let field_name = field_name.clone();
+                move |args, _kwargs| {
+                    Python::with_gil(|py| {
+                        let map = PYClassLookupMap::from_app_data(app_data);
+                        let slf = args.get_item(0)?;
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
+                        let value: Value = model_object_wrapper.object.get_value(field_name.as_str()).unwrap();
+                        Ok::<PyObject, PyErr>(teo_value_to_py_any(py, &value, map)?)
+                    })
+                }
             })?;
             let field_property_wrapped = property_wrapper.call1((field_property_getter,))?;
-            let field_property_setter = PyCFunction::new_closure(py, Some(snake_case_field_name_c), None, move |args, _kwargs| {
-                Python::with_gil(|py| {
-                    let slf = args.get_item(0)?;
-                    let value = args.get_item(1)?;
-                    let value = py_any_to_teo_value(py, &value)?;
-                    let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
-                    model_object_wrapper.object.set_value(field_name, value).unwrap();
-                    Ok::<(), PyErr>(())
-                })
+            let field_property_setter = PyCFunction::new_closure(py, Some(snake_case_field_name_cstr), None, {
+                let field_name = field_name.clone();
+                move |args, _kwargs| {
+                    Python::with_gil(|py| {
+                        let slf = args.get_item(0)?;
+                        let value = args.get_item(1)?;
+                        let value = py_any_to_teo_value(py, &value)?;
+                        let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
+                        model_object_wrapper.object.set_value(field_name.as_str(), value).unwrap();
+                        Ok::<(), PyErr>(())
+                    })
+                }
             })?;
             let field_property_wrapped = field_property_wrapped.call_method1("setter", (field_property_setter,))?;
             model_object_class.setattr(snake_case_field_name, field_property_wrapped)?;
         }
         // relations
         for relation in model.relations().values() {
-            let base_relation_name = Box::leak(Box::new(relation.name().to_snake_case())).as_str();
-            let base_relation_name_c = Box::leak(Box::new(CString::new(base_relation_name)?)).as_c_str();
+            let base_relation_name = relation.name().to_snake_case();
+            let base_relation_name_cstr = static_cstr(&base_relation_name)?;
             if relation.is_vec() {
                 // to many
                 // get
-                let get = PyCFunction::new_closure(py, Some(base_relation_name_c), None, move |args, _kwargs| {
+                let get = PyCFunction::new_closure(py, Some(base_relation_name_cstr), None, move |args, _kwargs| {
                     Python::with_gil(|py| {
                         let slf = args.get_item(0)?;
                         let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
@@ -211,11 +217,11 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                         Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
-                teo_wrap_builtin.call1((&model_object_class, base_relation_name, get))?;
+                teo_wrap_builtin.call1((&model_object_class, &base_relation_name, get))?;
                 // set
-                let set_name = Box::leak(Box::new("set_".to_owned() + base_relation_name)).as_str();
-                let set_name_c = Box::leak(Box::new(CString::new(set_name)?)).as_c_str();
-                let set = PyCFunction::new_closure(py, Some(set_name_c), None, move |args, _kwargs| {
+                let set_name = "set_".to_owned() + &base_relation_name;
+                let set_name_cstr = static_cstr(&set_name)?;
+                let set = PyCFunction::new_closure(py, Some(set_name_cstr), None, move |args, _kwargs| {
                     Python::with_gil(|py| {
                         let slf = args.get_item(0)?;
                         let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
@@ -238,9 +244,9 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                 })?;
                 teo_wrap_builtin.call1((&model_object_class, set_name, set))?;
                 // add
-                let add_to_name = Box::leak(Box::new("add_to_".to_owned() + base_relation_name)).as_str();
-                let add_to_name_c = Box::leak(Box::new(CString::new(add_to_name)?)).as_c_str();
-                let add_to = PyCFunction::new_closure(py, Some(add_to_name_c), None, move |args, _kwargs| {
+                let add_to_name = "add_to_".to_owned() + &base_relation_name;
+                let add_to_name_cstr = static_cstr(&add_to_name)?;
+                let add_to = PyCFunction::new_closure(py, Some(add_to_name_cstr), None, move |args, _kwargs| {
                     Python::with_gil(|py| {
                         let slf = args.get_item(0)?;
                         let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
@@ -263,9 +269,9 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                 })?;
                 teo_wrap_builtin.call1((&model_object_class, add_to_name, add_to))?;
                 // remove
-                let remove_from_name = Box::leak(Box::new("remove_from_".to_owned() + base_relation_name)).as_str();
-                let remove_from_name_c = Box::leak(Box::new(CString::new(remove_from_name)?)).as_c_str();
-                let remove_from = PyCFunction::new_closure(py, Some(remove_from_name_c), None, move |args, _kwargs| {
+                let remove_from_name = "remove_from_".to_owned() + &base_relation_name;
+                let remove_from_name_cstr = static_cstr(&remove_from_name)?;
+                let remove_from = PyCFunction::new_closure(py, Some(remove_from_name_cstr), None, move |args, _kwargs| {
                     Python::with_gil(|py| {
                         let slf = args.get_item(0)?;
                         let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
@@ -290,7 +296,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
             } else {
                 // to single
                 // get
-                let get = PyCFunction::new_closure(py, Some(base_relation_name_c), None, move |args, _kwargs| {
+                let get = PyCFunction::new_closure(py, Some(base_relation_name_cstr), None, move |args, _kwargs| {
                     Python::with_gil(|py| {
                         let map = PYClassLookupMap::from_app_data(app_data);
                         let slf = args.get_item(0)?;
@@ -307,10 +313,10 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                         Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
-                teo_wrap_builtin.call1((&model_object_class, base_relation_name, get))?;
+                teo_wrap_builtin.call1((&model_object_class, &base_relation_name, get))?;
                 // set
-                let set_name = Box::leak(Box::new("set_".to_owned() + base_relation_name)).as_str();
-                let set_name_c = Box::leak(Box::new(CString::new(set_name)?)).as_c_str();
+                let set_name = "set_".to_owned() + &base_relation_name;
+                let set_name_c = static_cstr(&set_name)?;
                 let set = PyCFunction::new_closure(py, Some(set_name_c), None, move |args, _kwargs| {
                     Python::with_gil(|py| {
                         let slf = args.get_item(0)?;
