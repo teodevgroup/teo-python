@@ -4,7 +4,7 @@ use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction}, Bound, IntoPy
 use pyo3_async_runtimes::TaskLocals;
 use teo::prelude::{r#enum, handler, namespace, pipeline::{self, item::templates::validator::Validity}, request, MiddlewareImpl, Next, Value};
 
-use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::teo_args_to_py_args, value::py_any_to_teo_value}, pipeline::ctx::PipelineCtx, request::Request, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable}};
+use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::teo_args_to_py_args, value::{py_any_to_teo_value, teo_value_to_py_any}}, pipeline::ctx::PipelineCtx, request::Request, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable}};
 
 #[pyclass]
 pub struct Namespace {
@@ -265,6 +265,69 @@ impl Namespace {
                         let (main_thread_locals, python_pipeline_item_result) = gil_result?;
                         let _ = await_coroutine_if_needed_value_with_locals(&python_pipeline_item_result, &main_thread_locals).await?;
                         Ok::<Value, Error>(ctx.value().clone())
+                    }
+                })
+            })
+        });
+        Ok(())
+    }
+
+    pub fn define_compare_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
+        let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
+        let callback = Py::from(callback);
+        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
+        self.teo_namespace.define_pipeline_item(name, move |args| {
+            Python::with_gil(|py| {
+                let args = teo_args_to_py_args(py, &args, map)?;
+                let callback = callback.clone_ref(py);
+                let main_thread_locals = main_thread_locals.clone_ref(py);
+//                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
+                let python_pipeline_item = callback.call1(py, (args,))?;
+                return Ok(move |ctx: pipeline::Ctx| {
+                    let gil_result = Python::with_gil(|py| {
+                        let main_thread_locals = main_thread_locals.clone_ref(py);
+                        let python_pipeline_item = python_pipeline_item.clone_ref(py);
+                        Ok::<_, Error>((main_thread_locals, python_pipeline_item))
+                    });
+                    async move {
+                        let (main_thread_locals, python_pipeline_item) = gil_result?;
+                        if ctx.object().is_new() {
+                            return Ok(ctx.value().clone());
+                        }
+                        let key = ctx.path()[ctx.path().len() - 1].as_key().unwrap();
+                        let previous_value = ctx.object().get_previous_value(key)?;
+                        let current_value = ctx.value();
+                        if &previous_value == current_value {
+                            return Ok(ctx.value().clone());
+                        }
+                        let python_pipeline_item_result = Python::with_gil(|py| {
+                            let ctx = PipelineCtx::from(ctx.clone());
+                            let old_value_py = teo_value_to_py_any(py, &previous_value, map)?;
+                            let new_value_py = teo_value_to_py_any(py, current_value, map)?;
+                            let python_pipeline_item_result = python_pipeline_item.call1(py, (old_value_py, new_value_py, ctx))?;
+                            Ok::<PyObject, Error>(python_pipeline_item_result)    
+                        })?;
+                        let python_result = await_coroutine_if_needed_value_with_locals(&python_pipeline_item_result, &main_thread_locals).await?;
+                        let validity = Python::with_gil(|py| {
+                            let bounded_result = python_result.into_bound(py);
+                            let teo_result = py_any_to_teo_value(py, &bounded_result)?;
+                            Ok::<Validity, Error>(match teo_result {
+                                Value::String(s) => {
+                                    Validity::Invalid(s.to_owned())
+                                },
+                                Value::Bool(b) => if b {
+                                    Validity::Valid
+                                } else {
+                                    Validity::Invalid("value is invalid".to_owned())
+                                },
+                                _ => Validity::Valid
+                            })
+                        })?;
+                        match validity {
+                            Validity::Valid => Ok(ctx.value().clone()),
+                            Validity::Invalid(reason) => Err(Error::new_with_code(reason, 400)),
+                        }
                     }
                 })
             })
