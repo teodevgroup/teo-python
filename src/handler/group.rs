@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, Bound, Py, PyAny, PyErr, PyObject, PyResult, Python};
+use pyo3::{pyclass, pymethods, Py, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::TaskLocals;
 use teo::prelude::handler;
 use teo::prelude::request::Request as TeoRequest;
@@ -15,29 +15,26 @@ pub struct HandlerGroup {
 #[pymethods]
 impl HandlerGroup {
 
-    pub fn _define_handler(&mut self, name: String, callback: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
-        check_callable(&callback)?;
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
+    pub fn _define_handler(&mut self, name: String, callback: PyObject, py: Python<'_>) -> PyResult<()> {
+        check_callable(callback.bind(py))?;
+        let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let callback_object = Py::from(callback);
-        let callback_object_never_ends = &*Box::leak(Box::new(callback_object));
         self.teo_handler_group.define_handler(name.as_str(), move |request: TeoRequest| {
+            let (main_thread_locals, callback_object) = Python::with_gil(|py| {
+                (main_thread_locals.clone_ref(py), callback_object.clone_ref(py))
+            });
             async move {
-                let result = Python::with_gil(|py| {
+                let (coroutine, thread_locals) = Python::with_gil(|py| {
                     let request = Request::new(request);
-                    let result = callback_object_never_ends.call1(py, (request,))?;
+                    let result = callback_object.call1(py, (request,))?;
                     let current_thread_locals_result = pyo3_async_runtimes::tokio::get_current_locals(py);
                     if let Ok(current_thread_locals) = current_thread_locals_result {
-                        Ok::<(PyObject, Option<TaskLocals>, Option<&TaskLocals>), PyErr>((result, Some(current_thread_locals), None))
+                        Ok::<(PyObject, TaskLocals), PyErr>((result, current_thread_locals))
                     } else {
-                        Ok::<(PyObject, Option<TaskLocals>, Option<&TaskLocals>), PyErr>((result, None, Some(main_thread_locals)))
+                        Ok::<(PyObject, TaskLocals), PyErr>((result, main_thread_locals))
                     }
                 })?;
-                let locals = if result.2.is_some() {
-                    result.2.unwrap()
-                } else {
-                    result.1.as_ref().unwrap()
-                };
-                let awaited_result = await_coroutine_if_needed_value_with_locals(&result.0, locals).await?;
+                let awaited_result = await_coroutine_if_needed_value_with_locals(&coroutine, &thread_locals).await?;
                 Python::with_gil(|py| {
                     let response: Response = awaited_result.extract(py)?;
                     Ok(response.teo_response.clone())
