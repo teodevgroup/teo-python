@@ -1,9 +1,9 @@
 use std::ffi::CString;
 use teo_result::Error;
-use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction}, Bound, IntoPyObjectExt, Py, PyAny, PyErr, PyObject, PyResult, Python};
+use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction, PyString}, Bound, IntoPyObjectExt, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::TaskLocals;
 use teo::prelude::{r#enum, handler, namespace, pipeline::{self, item::templates::validator::Validity}, request, MiddlewareImpl, Next, Value};
-use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::teo_args_to_py_args, value::{py_any_to_teo_value, teo_value_to_py_any}}, pipeline::ctx::PipelineCtx, request::Request, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable}};
+use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::teo_args_to_py_args, value::{py_any_to_teo_value, teo_value_to_py_any}}, pipeline::ctx::PipelineCtx, request::Request, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable, cstr::static_cstr}};
 use teo::prelude::request::Request as TeoRequest;
 
 #[pyclass]
@@ -46,17 +46,16 @@ impl Namespace {
         Namespace { teo_namespace: self.teo_namespace.descendant_namespace_or_create_at_path(&path) }
     }
 
-    pub fn define_model_decorator(&self, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
-        check_callable(&callback)?;
-        let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
+    pub fn define_model_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
+        check_callable(callback.bind(py))?;
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_model_decorator(name, |arguments, model| {
+        self.teo_namespace.define_model_decorator(name, move |arguments, model| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let model_wrapped = Model {
                     teo_model: model.clone()
                 };
-                callback_owned.call1(py, (arguments, model_wrapped))?;
+                callback.call1(py, (arguments, model_wrapped))?;
                 Ok::<(), PyErr>(())
             })?;
             Ok(())
@@ -64,17 +63,16 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_model_field_decorator(&self, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
-        check_callable(&callback)?;
-        let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
+    pub fn define_model_field_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
+        check_callable(callback.bind(py))?;
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_model_field_decorator(name, |arguments, field| {
+        self.teo_namespace.define_model_field_decorator(name, move |arguments, field| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let field_wrapped = Field {
                     teo_field: field.clone()
                 };
-                callback_owned.call1(py, (arguments, field_wrapped))?;
+                callback.call1(py, (arguments, field_wrapped))?;
                 Ok::<(), PyErr>(())
             })?;
             Ok(())
@@ -82,17 +80,16 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_model_relation_decorator(&self, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
-        check_callable(&callback)?;
-        let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
+    pub fn define_model_relation_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
+        check_callable(callback.bind(py))?;
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_model_relation_decorator(name, |arguments, relation| {
+        self.teo_namespace.define_model_relation_decorator(name, move |arguments, relation| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let relation_wrapped = Relation {
                     teo_relation: relation.clone()
                 };
-                callback_owned.call1(py, (arguments, relation_wrapped))?;
+                callback.call1(py, (arguments, relation_wrapped))?;
                 Ok::<(), PyErr>(())
             })?;
             Ok(())
@@ -100,17 +97,16 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_model_property_decorator(&self, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
-        check_callable(&callback)?;
-        let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
+    pub fn define_model_property_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
+        check_callable(callback.bind(py))?;
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_model_property_decorator(name, |arguments, property| {
+        self.teo_namespace.define_model_property_decorator(name, move |arguments, property| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let property_wrapped = Property {
                     teo_property: property.clone()
                 };
-                callback_owned.call1(py, (arguments, property_wrapped))?;
+                callback.call1(py, (arguments, property_wrapped))?;
                 Ok::<(), PyErr>(())
             })?;
             Ok(())
@@ -118,17 +114,16 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_enum_decorator(&self, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
-        check_callable(&callback)?;
-        let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
+    pub fn define_enum_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
+        check_callable(callback.bind(py))?;
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_enum_decorator(name, |arguments, teo_enum: &r#enum::Builder| {
+        self.teo_namespace.define_enum_decorator(name, move |arguments, teo_enum: &r#enum::Builder| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let enum_wrapped = Enum {
                     teo_enum: teo_enum.clone()
                 };
-                callback_owned.call1(py, (arguments, enum_wrapped))?;
+                callback.call1(py, (arguments, enum_wrapped))?;
                 Ok::<(), PyErr>(())
             })?;
             Ok(())
@@ -136,17 +131,16 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_enum_member_decorator(&self, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
-        check_callable(&callback)?;
-        let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
+    pub fn define_enum_member_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
+        check_callable(callback.bind(py))?;
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_enum_member_decorator(name, |arguments, member: &r#enum::member::Builder| {
+        self.teo_namespace.define_enum_member_decorator(name, move |arguments, member: &r#enum::member::Builder| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let enum_member_wrapped = EnumMember {
                     teo_enum_member: member.clone()
                 };
-                callback_owned.call1(py, (arguments, enum_member_wrapped))?;
+                callback.call1(py, (arguments, enum_member_wrapped))?;
                 Ok::<(), PyErr>(())
             })?;
             Ok(())
@@ -154,10 +148,9 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
-        check_callable(&callback)?;
+    pub fn define_pipeline_item(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
+        check_callable(&callback.bind(py))?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-        let callback = Py::from(callback);
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
         self.teo_namespace.define_pipeline_item(name, move |args| {
             Python::with_gil(|py| {
@@ -188,11 +181,11 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_transform_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
-        self.define_pipeline_item(py, name, callback)
+    pub fn define_transform_pipeline_item(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
+        self.define_pipeline_item(name, callback, py)
     }
 
-    pub fn define_validator_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+    pub fn define_validator_pipeline_item(&self, name: &str, callback: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
         check_callable(&callback)?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let callback = Py::from(callback);
@@ -241,7 +234,7 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_callback_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+    pub fn define_callback_pipeline_item(&self, name: &str, callback: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
         check_callable(&callback)?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let callback = Py::from(callback);
@@ -272,7 +265,7 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_compare_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+    pub fn define_compare_pipeline_item(&self, name: &str, callback: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
         check_callable(&callback)?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let callback = Py::from(callback);
@@ -368,8 +361,9 @@ impl Namespace {
         check_callable(&callback)?;
         self.teo_namespace.define_handler_group(name.as_str(), |teo_handler_group: &handler::group::Builder| {
             let handler_group = HandlerGroup { teo_handler_group: teo_handler_group.clone() };
-            callback.call1((handler_group,)).unwrap();
-        });
+            callback.call1((handler_group,))?;
+            Ok(())
+        })?;
         Ok(())
     }
 
@@ -385,8 +379,9 @@ impl Namespace {
         check_callable(&callback)?;
         self.teo_namespace.define_model_handler_group(name.as_str(), |teo_handler_group: &handler::group::Builder| {
             let handler_group = HandlerGroup { teo_handler_group: teo_handler_group.clone() };
-            callback.call1((handler_group,)).unwrap();
-        });
+            callback.call1((handler_group,))?;
+            Ok(())
+        })?;
         Ok(())
     }
 
@@ -398,126 +393,128 @@ impl Namespace {
         HandlerGroup { teo_handler_group: self.teo_namespace.model_handler_group_or_create(name) }
     }
 
-    pub fn _define_request_middleware(&self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
-        let name = Box::leak(Box::new(name)).as_str();
-        let name_c = Box::leak(Box::new(CString::new(name)?)).as_c_str();
+    pub fn _define_request_middleware(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
+        let name_cstr = static_cstr(name)?;
         check_callable(&callback.bind(py))?;
-        let shared_callback = &*Box::leak(Box::new(callback));
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
-        self.teo_namespace.define_request_middleware(name, move |arguments| async move {
-            Python::with_gil(|py| {
-                let py_args = teo_args_to_py_args(py, &arguments, map)?;
-                let result_function = shared_callback.call1(py, (py_args,))?;
-                let main = py.import("__main__")?;
-                let teo_wrap_async = main.getattr("teo_wrap_async")?;
-                let wrapped_result_function = teo_wrap_async.call1((result_function,))?.unbind();
-                let wrapped_result = move |request: request::Request, next: &'static dyn Next| {
-                    let wrapped_result_function = Python::with_gil(|py| {
-                        wrapped_result_function.clone_ref(py)
-                    });
-                    async move {
-                        let coroutine = Python::with_gil(|py| {
-                            let py_ctx = Request::new(request);
-                            let py_next = PyCFunction::new_closure(py, Some(name_c), None, move |args, _kwargs| {
-                                Python::with_gil(|py| {
-                                    let arg0 = args.get_item(0)?;
-                                    let request: Request = arg0.extract()?;
-                                    let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async {
-                                        let result: teo::prelude::Response = next.call(request.teo_request).await?;
-                                        Python::with_gil(|py| {
-                                            let response = Response {
-                                                teo_response: result
-                                            };
-                                            Ok::<PyObject, PyErr>(response.into_py_any(py)?)    
-                                        })
-                                    })())?;
-                                    Ok::<PyObject, PyErr>(coroutine.unbind())
-                                })
-                            }).unwrap();
-                            let coroutine = wrapped_result_function.call1(py, (py_ctx, py_next))?;
-                            Ok::<PyObject, teo::prelude::Error>(coroutine)
-                        })?;
-                        let current_thread_locals_result = Python::with_gil(|py| {
-                            let locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-                            Ok::<_, PyErr>(locals)
+        let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
+        self.teo_namespace.define_request_middleware(name, move |arguments| {
+            let (callback, main_thread_locals) = Python::with_gil(|py| {
+                (callback.clone_ref(py), main_thread_locals.clone_ref(py))
+            });
+            async move {
+                Python::with_gil(|py| {
+                    let py_args = teo_args_to_py_args(py, &arguments, map)?;
+                    let result_function = callback.call1(py, (py_args,))?;
+                    let main = py.import("__main__")?;
+                    let teo_wrap_async = main.getattr("teo_wrap_async")?;
+                    let wrapped_result_function = teo_wrap_async.call1((result_function,))?.unbind();
+                    let wrapped_result = move |request: request::Request, next: &'static dyn Next| {
+                        let (wrapped_result_function, main_thread_locals) = Python::with_gil(|py| {
+                            (wrapped_result_function.clone_ref(py), main_thread_locals.clone_ref(py))
                         });
-                        let locals = if let Ok(current_thread_locals) = current_thread_locals_result {
-                            unsafe { &*(&current_thread_locals as * const TaskLocals) }
-                        } else {
-                            main_thread_locals
-                        };
-                        let result = await_coroutine_if_needed_value_with_locals(&coroutine, locals).await?;
-                        Python::with_gil(|py| {
-                            let response: Response = result.extract(py)?;
-                            Ok(response.teo_response)    
-                        })
-                    }
-                };                
-                return Ok(MiddlewareImpl::new(wrapped_result));    
-            })
+                        async move {
+                            let coroutine = Python::with_gil(|py| {
+                                let py_ctx = Request::new(request);
+                                let py_next = PyCFunction::new_closure(py, Some(name_cstr), None, move |args, _kwargs| {
+                                    Python::with_gil(|py| {
+                                        let arg0 = args.get_item(0)?;
+                                        let request: Request = arg0.extract()?;
+                                        let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async {
+                                            let result: teo::prelude::Response = next.call(request.teo_request).await?;
+                                            Python::with_gil(|py| {
+                                                let response = Response {
+                                                    teo_response: result
+                                                };
+                                                Ok::<PyObject, PyErr>(response.into_py_any(py)?)    
+                                            })
+                                        })())?;
+                                        Ok::<PyObject, PyErr>(coroutine.unbind())
+                                    })
+                                }).unwrap();
+                                let coroutine = wrapped_result_function.call1(py, (py_ctx, py_next))?;
+                                Ok::<PyObject, teo::prelude::Error>(coroutine)
+                            })?;
+                            let thread_locals = Python::with_gil(|py| {
+                                if let Ok(local_thread_locals) = pyo3_async_runtimes::tokio::get_current_locals(py) {
+                                    local_thread_locals
+                                } else {
+                                    main_thread_locals
+                                }
+                            });
+                            let result = await_coroutine_if_needed_value_with_locals(&coroutine, &thread_locals).await?;
+                            Python::with_gil(|py| {
+                                let response: Response = result.extract(py)?;
+                                Ok(response.teo_response)    
+                            })
+                        }
+                    };                
+                    return Ok(MiddlewareImpl::new(wrapped_result));    
+                })    
+            }
         });
         Ok(())
     }
 
-    pub fn _define_handler_middleware(&self, py: Python<'_>, name: String, callback: PyObject) -> PyResult<()> {
-        let name = Box::leak(Box::new(name)).as_str();
-        let name_c = Box::leak(Box::new(CString::new(name)?)).as_c_str();
+    pub fn _define_handler_middleware(&self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
+        let name_cstr = static_cstr(name)?;
         check_callable(&callback.bind(py))?;
-        let shared_callback = &*Box::leak(Box::new(callback));
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        let main_thread_locals = &*Box::leak(Box::new(pyo3_async_runtimes::tokio::get_current_locals(py)?));
-        self.teo_namespace.define_handler_middleware(name, move |arguments| async move {
-            Python::with_gil(|py| {
-                let py_args = teo_args_to_py_args(py, &arguments, map)?;
-                let result_function = shared_callback.call1(py, (py_args,))?;
-                let main = py.import("__main__")?;
-                let teo_wrap_async = main.getattr("teo_wrap_async")?;
-                let wrapped_result_function = teo_wrap_async.call1((result_function,))?.unbind();
-                let wrapped_result = move |request: request::Request, next: &'static dyn Next| {
-                    let wrapped_result_function = Python::with_gil(|py| {
-                        wrapped_result_function.clone_ref(py)
-                    });
-                    async move {
-                        let coroutine = Python::with_gil(|py| {
-                            let py_ctx = Request::new(request);
-                            let py_next = PyCFunction::new_closure(py, Some(name_c), None, move |args, _kwargs| {
-                                Python::with_gil(|py| {
-                                    let arg0 = args.get_item(0)?;
-                                    let request: Request = arg0.extract()?;
-                                    let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async {
-                                        let result: teo::prelude::Response = next.call(request.teo_request).await?;
-                                        Python::with_gil(|py| {
-                                            let response = Response {
-                                                teo_response: result
-                                            };
-                                            Ok::<PyObject, PyErr>(response.into_py_any(py)?)    
-                                        })
-                                    })())?;
-                                    Ok::<PyObject, PyErr>(coroutine.unbind())
-                                })
-                            }).unwrap();
-                            let coroutine = wrapped_result_function.call1(py, (py_ctx, py_next))?;
-                            Ok::<PyObject, teo::prelude::Error>(coroutine)
-                        })?;
-                        let current_thread_locals_result = Python::with_gil(|py| {
-                            let locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-                            Ok::<_, PyErr>(locals)
+        let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
+        self.teo_namespace.define_handler_middleware(name, move |arguments| {
+            let (callback, main_thread_locals) = Python::with_gil(|py| {
+                (callback.clone_ref(py), main_thread_locals.clone_ref(py))
+            });
+            async move {
+                Python::with_gil(|py| {
+                    let py_args = teo_args_to_py_args(py, &arguments, map)?;
+                    let result_function = callback.call1(py, (py_args,))?;
+                    let main = py.import("__main__")?;
+                    let teo_wrap_async = main.getattr("teo_wrap_async")?;
+                    let wrapped_result_function = teo_wrap_async.call1((result_function,))?.unbind();
+                    let wrapped_result = move |request: request::Request, next: &'static dyn Next| {
+                        let (wrapped_result_function, main_thread_locals) = Python::with_gil(|py| {
+                            (wrapped_result_function.clone_ref(py), main_thread_locals.clone_ref(py))
                         });
-                        let locals = if let Ok(current_thread_locals) = current_thread_locals_result {
-                            unsafe { &*(&current_thread_locals as * const TaskLocals) }
-                        } else {
-                            main_thread_locals
-                        };
-                        let result = await_coroutine_if_needed_value_with_locals(&coroutine, locals).await?;
-                        Python::with_gil(|py| {
-                            let response: Response = result.extract(py)?;
-                            Ok(response.teo_response)    
-                        })
-                    }
-                };                
-                return Ok(MiddlewareImpl::new(wrapped_result));    
-            })
+                        async move {
+                            let coroutine = Python::with_gil(|py| {
+                                let py_ctx = Request::new(request);
+                                let py_next = PyCFunction::new_closure(py, Some(name_cstr), None, move |args, _kwargs| {
+                                    Python::with_gil(|py| {
+                                        let arg0 = args.get_item(0)?;
+                                        let request: Request = arg0.extract()?;
+                                        let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async {
+                                            let result: teo::prelude::Response = next.call(request.teo_request).await?;
+                                            Python::with_gil(|py| {
+                                                let response = Response {
+                                                    teo_response: result
+                                                };
+                                                Ok::<PyObject, PyErr>(response.into_py_any(py)?)    
+                                            })
+                                        })())?;
+                                        Ok::<PyObject, PyErr>(coroutine.unbind())
+                                    })
+                                }).unwrap();
+                                let coroutine = wrapped_result_function.call1(py, (py_ctx, py_next))?;
+                                Ok::<PyObject, teo::prelude::Error>(coroutine)
+                            })?;
+                            let thread_locals = Python::with_gil(|py| {
+                                if let Ok(local_thread_locals) = pyo3_async_runtimes::tokio::get_current_locals(py) {
+                                    local_thread_locals
+                                } else {
+                                    main_thread_locals
+                                }
+                            });
+                            let result = await_coroutine_if_needed_value_with_locals(&coroutine, &thread_locals).await?;
+                            Python::with_gil(|py| {
+                                let response: Response = result.extract(py)?;
+                                Ok(response.teo_response)    
+                            })
+                        }
+                    };                
+                    return Ok(MiddlewareImpl::new(wrapped_result));    
+                })    
+            }
         });
         Ok(())
     }

@@ -63,8 +63,6 @@ pub(crate) fn teo_transaction_ctx_from_py_ctx_object(py: Python<'_>, ctx_object:
     Ok(wrapper.ctx.clone())
 }
 
-static INIT_ERROR_MESSAGE: &str = "class is not initialized";
-
 pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut PYClassLookupMap, app: &'static App, namespace: &'static Namespace, py: Python<'_>) -> PyResult<()> {
     let app_data = app.app_data();
     let main = py.import("__main__")?;
