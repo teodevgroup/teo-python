@@ -1,10 +1,10 @@
 use std::ffi::CString;
-
-use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction}, Bound, IntoPyObject, IntoPyObjectExt, Py, PyAny, PyErr, PyObject, PyResult, Python};
+use teo_result::Error;
+use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction}, Bound, IntoPyObjectExt, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::TaskLocals;
-use teo::prelude::{r#enum, handler, namespace, request, MiddlewareImpl, Next};
+use teo::prelude::{r#enum, handler, namespace, pipeline, request, MiddlewareImpl, Next};
 
-use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::teo_args_to_py_args, model::teo_model_object_to_py_any, value::{py_any_to_teo_value, teo_value_to_py_any}}, pipeline::ctx::PipelineCtx, request::Request, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable}};
+use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::teo_args_to_py_args, value::py_any_to_teo_value}, pipeline::ctx::PipelineCtx, request::Request, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable}};
 
 #[pyclass]
 pub struct Namespace {
@@ -46,7 +46,7 @@ impl Namespace {
         Namespace { teo_namespace: self.teo_namespace.descendant_namespace_or_create_at_path(&path) }
     }
 
-    pub fn define_model_decorator(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+    pub fn define_model_decorator(&self, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
@@ -100,7 +100,7 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_model_property_decorator(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+    pub fn define_model_property_decorator(&self, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
@@ -118,7 +118,7 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_enum_decorator(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+    pub fn define_enum_decorator(&self, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
@@ -136,7 +136,7 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_enum_member_decorator(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+    pub fn define_enum_member_decorator(&self, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
         let callback_owned = &*Box::leak(Box::new(Py::from(callback)));
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
@@ -154,43 +154,43 @@ impl Namespace {
         Ok(())
     }
 
-//     pub fn define_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
-//         check_callable(&callback)?;
-//         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-//         let callback = Py::from(callback);
-//         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-//         self.teo_namespace.define_pipeline_item(name, move |args| {
-//             Python::with_gil(|py| {
-//                 let args = teo_args_to_py_args(py, &args, map)?;
-//                 let callback = callback.clone_ref(py);
-//                 let main_thread_locals = main_thread_locals.clone_ref(py);
-// //                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-//                 let python_pipeline_item = callback.call1(py, (args,))?;
-//                 return Ok(move |ctx: pipeline::Ctx| {
-//                     let gil_result = Python::with_gil(|py| {
-//                         let main_thread_locals = main_thread_locals.clone_ref(py);
-//                         let python_pipeline_item = python_pipeline_item.clone_ref(py);
-//                         let ctx = PipelineCtx::from(ctx);
-//                         let python_pipeline_item_result = python_pipeline_item.call1(py, (ctx,))?;
-//                         Ok::<_, Error>((main_thread_locals, python_pipeline_item_result))
-//                     });
-//                     async move {
-//                         let (main_thread_locals, python_pipeline_item_result) = gil_result?;
-//                         let python_result = await_coroutine_if_needed_value_with_locals(&python_pipeline_item_result, &main_thread_locals).await?;
-//                         Python::with_gil(|py| {
-//                             let bounded_result = python_result.into_bound(py);
-//                             Ok(py_any_to_teo_value(py, &bounded_result)?)
-//                         })
-//                     }
-//                 })
-//             })
-//         });
-//         Ok(())
-//     }
+    pub fn define_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+        check_callable(&callback)?;
+        let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
+        let callback = Py::from(callback);
+        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
+        self.teo_namespace.define_pipeline_item(name, move |args| {
+            Python::with_gil(|py| {
+                let args = teo_args_to_py_args(py, &args, map)?;
+                let callback = callback.clone_ref(py);
+                let main_thread_locals = main_thread_locals.clone_ref(py);
+//                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
+                let python_pipeline_item = callback.call1(py, (args,))?;
+                return Ok(move |ctx: pipeline::Ctx| {
+                    let gil_result = Python::with_gil(|py| {
+                        let main_thread_locals = main_thread_locals.clone_ref(py);
+                        let python_pipeline_item = python_pipeline_item.clone_ref(py);
+                        let ctx = PipelineCtx::from(ctx);
+                        let python_pipeline_item_result = python_pipeline_item.call1(py, (ctx,))?;
+                        Ok::<_, Error>((main_thread_locals, python_pipeline_item_result))
+                    });
+                    async move {
+                        let (main_thread_locals, python_pipeline_item_result) = gil_result?;
+                        let python_result = await_coroutine_if_needed_value_with_locals(&python_pipeline_item_result, &main_thread_locals).await?;
+                        Python::with_gil(|py| {
+                            let bounded_result = python_result.into_bound(py);
+                            Ok(py_any_to_teo_value(py, &bounded_result)?)
+                        })
+                    }
+                })
+            })
+        });
+        Ok(())
+    }
 
-//     pub fn define_transform_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
-//         self.define_pipeline_item(py, name, callback)
-//     }
+    pub fn define_transform_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
+        self.define_pipeline_item(py, name, callback)
+    }
 
 //     pub fn define_validator_pipeline_item(&self, py: Python<'_>, name: &str, callback: Bound<PyAny>) -> PyResult<()> {
 //         check_callable(&callback)?;
