@@ -3,7 +3,6 @@ pub mod transaction_ctx_wrapper;
 pub mod model_ctx_wrapper;
 pub mod py_class_lookup_map;
 
-use std::ffi::CString;
 use std::sync::Arc;
 use indexmap::IndexMap;
 use inflector::Inflector;
@@ -16,7 +15,7 @@ use pyo3::{Bound, IntoPyObjectExt, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3::types::{PyAnyMethods, PyCFunction, PyDict, PyList, PyListMethods, PyNone};
 use teo::prelude::{Namespace, Value, model, transaction};
 use crate::dynamic::model_object_wrapper::ModelObjectWrapper;
-
+use crate::object::array::teo_array_to_py_any;
 use crate::object::model::teo_model_object_to_py_any;
 use crate::object::value::{teo_value_to_py_any, py_any_to_teo_value};
 use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals;
@@ -49,19 +48,9 @@ pub(crate) fn synthesize_dynamic_python_classes_for_namespace(map: &mut PYClassL
     Ok(())
 }
 
-pub(crate) fn teo_model_ctx_from_py_model_class_object(py: Python<'_>, model_class_object: PyObject) -> PyResult<model::Ctx> {
-    let wrapper: ModelCtxWrapper = model_class_object.getattr(py, "__teo_model_ctx__")?.extract(py)?;
-    Ok(wrapper.ctx.clone())
-}
-
 pub(crate) fn teo_model_object_from_py_model_object(py: Python<'_>, model_object: PyObject) -> PyResult<model::Object> {
     let wrapper: ModelObjectWrapper = model_object.getattr(py, "__teo_object__")?.extract(py)?;
     Ok(wrapper.object.clone())
-}
-
-pub(crate) fn teo_transaction_ctx_from_py_ctx_object(py: Python<'_>, ctx_object: PyObject) -> PyResult<transaction::Ctx> {
-    let wrapper: TransactionCtxWrapper = ctx_object.getattr(py, "__teo_transaction_ctx__")?.extract(py)?;
-    Ok(wrapper.ctx.clone())
 }
 
 pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut PYClassLookupMap, app: &'static App, namespace: &'static Namespace, py: Python<'_>) -> PyResult<()> {
@@ -663,12 +652,7 @@ fn group_by_function<'py>(py: Python<'py>, app_data: &'static AppData) -> PyResu
                 let result: Vec<Value> = model_ctx_wrapper.ctx.group_by(&group_by_arg).await?;
                 Python::with_gil(|py| {
                     let map = PYClassLookupMap::from_app_data(app_data);
-                    let py_result = PyList::empty(py);
-                    for value in result {
-                        let instance = teo_value_to_py_any(py, &value, map)?;
-                        py_result.append(instance)?;
-                    }
-                    Ok(py_result.into_py_any(py)?)
+                    Ok(teo_array_to_py_any(py, &result, map)?)
                 })
             })())?;
             Ok::<PyObject, PyErr>(coroutine.unbind())

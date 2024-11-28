@@ -1,9 +1,9 @@
 use std::{collections::BTreeMap, ffi::CStr};
 
-use pyo3::{exceptions::PyRuntimeError, types::{PyAnyMethods, PyCFunction, PyDict, PyNone}, PyErr, PyObject, PyResult, Python};
+use pyo3::{exceptions::PyRuntimeError, types::{PyAnyMethods, PyCFunction, PyDict}, PyErr, PyObject, PyResult, Python};
 use teo::prelude::{app::data::AppData, model, transaction};
 
-use super::{model_ctx_wrapper::ModelCtxWrapper, model_object_wrapper::ModelObjectWrapper, transaction_ctx_wrapper::TransactionCtxWrapper};
+use super::{model_object_wrapper::ModelObjectWrapper, transaction_ctx_wrapper::TransactionCtxWrapper};
 
 static INIT_ERROR_MESSAGE_C: &CStr = c"class is not initialized";
 
@@ -30,18 +30,6 @@ impl PYClassLookupMap {
             classes: BTreeMap::new(),
             objects: BTreeMap::new(),
         }
-    }
-
-    pub(crate) fn ctxs(&self) -> &BTreeMap<String, PyObject> {
-        &self.ctxs
-    }
-
-    pub(crate) fn classes(&self) -> &BTreeMap<String, PyObject> {
-        &self.classes
-    }
-
-    pub(crate) fn objects(&self) -> &BTreeMap<String, PyObject> {
-        &self.objects
     }
 
     // Building methods
@@ -141,27 +129,12 @@ impl PYClassLookupMap {
 
     // Query methods
 
-    pub(crate) fn teo_model_ctx_to_py_model_class_object(&self, py: Python<'_>, model_ctx: model::Ctx) -> PyResult<PyObject> {
-        let model_name = model_ctx.model().path().join(".");
-        let model_class_class = self.class(&model_name)?.unwrap();
-        let model_class_object = model_class_class.call_method1(py, "__new__", (model_class_class.as_any(),))?;
-        model_class_object.setattr(py, "__teo_model_ctx__", ModelCtxWrapper::new(model_ctx))?;
-        Ok(model_class_object)
-    }
-
     pub(crate) fn teo_model_object_to_py_model_object_object(&self, py: Python<'_>, teo_model_object: model::Object) -> PyResult<PyObject> {
         let model_name = teo_model_object.model().path().join(".");
         let model_object_class = self.object(&model_name)?.unwrap();
         let model_object = model_object_class.call_method1(py, "__new__", (model_object_class.as_any(),))?;
         model_object.setattr(py, "__teo_object__", ModelObjectWrapper::new(teo_model_object))?;
         Ok(model_object)
-    }
-
-    pub(crate) fn teo_optional_model_object_to_py_optional_model_object_object(&self, py: Python<'_>, teo_model_object: Option<model::Object>) -> PyResult<PyObject> {
-        Ok(match teo_model_object {
-            Some(teo_model_object) => self.teo_model_object_to_py_model_object_object(py, teo_model_object)?,
-            None => PyNone::get(py).as_unbound().as_any().clone_ref(py),
-        })
     }
 
     pub(crate) fn teo_transaction_ctx_to_py_ctx_object(&self, py: Python<'_>, transaction_ctx: transaction::Ctx, name: &str) -> PyResult<PyObject> {

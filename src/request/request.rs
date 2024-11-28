@@ -130,15 +130,11 @@ impl Request {
     }
 
     pub fn local_values(&self) -> LocalValues {
-        LocalValues {
-            teo_local_values: self.teo_request.local_values().clone()
-        }
+        LocalValues::new(self.teo_request.local_values().clone())
     }
 
     pub fn local_objects(&self) -> LocalObjects {
-        LocalObjects {
-            teo_local_objects: self.teo_request.local_objects().clone()
-        }
+        LocalObjects::new(self.teo_request.local_objects().clone())
     }
 
     // TODO: take incoming as stream? temp file? string?
