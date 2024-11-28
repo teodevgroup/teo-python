@@ -21,6 +21,7 @@ use crate::object::model::teo_model_object_to_py_any;
 use crate::object::value::{teo_value_to_py_any, py_any_to_teo_value};
 use crate::utils::await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals;
 use crate::utils::check_py_dict::check_py_dict;
+use crate::utils::cstr::static_cstr;
 
 use self::model_ctx_wrapper::ModelCtxWrapper;
 use self::transaction_ctx_wrapper::TransactionCtxWrapper;
@@ -72,81 +73,84 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
     let property_wrapper = builtins.getattr("property")?;
     let ctx_class = map.ctx_or_create(&namespace.path().join("."), py)?;
     for model in namespace.models().values() {
-        let model_name = Box::leak(Box::new(model.path().join("."))).as_str();
-        let model_name_c = Box::leak(Box::new(CString::new(model_name)?)).as_c_str();
+        let model_name = model.path().join(".");
+        let model_name_cstr = static_cstr(model_name.as_str())?;
         let model_property_name = model.path().last().unwrap().to_snake_case();
-        let model_property = PyCFunction::new_closure(py, Some(model_name_c), None, move |args, _kwargs| {
-            let model_class_object = Python::with_gil(|py| {
-                let map = PYClassLookupMap::from_app_data(app_data);
-                let slf = args.get_item(0)?;
-                let transaction_ctx_wrapper: TransactionCtxWrapper = slf.getattr("__teo_transaction_ctx__")?.extract()?;
-                let model_ctx = transaction_ctx_wrapper.ctx.model_ctx_for_model_at_path(&model.path()).unwrap();
-                let model_class_class = map.class(&model_name)?.unwrap();
-                let model_class_object = model_class_class.call_method1(py, "__new__", (model_class_class.clone_ref(py),))?;
-                model_class_object.setattr(py, "__teo_model_ctx__", ModelCtxWrapper::new(model_ctx))?;
+        let model_property = PyCFunction::new_closure(py, Some(model_name_cstr), None, {
+            let model_name = model_name.clone();
+            move |args, _kwargs| {
+                let model_class_object = Python::with_gil(|py| {
+                    let map = PYClassLookupMap::from_app_data(app_data);
+                    let slf = args.get_item(0)?;
+                    let transaction_ctx_wrapper: TransactionCtxWrapper = slf.getattr("__teo_transaction_ctx__")?.extract()?;
+                    let model_ctx = transaction_ctx_wrapper.ctx.model_ctx_for_model_at_path(&model.path()).unwrap();
+                    let model_class_class = map.class(&model_name)?.unwrap();
+                    let model_class_object = model_class_class.call_method1(py, "__new__", (model_class_class.clone_ref(py),))?;
+                    model_class_object.setattr(py, "__teo_model_ctx__", ModelCtxWrapper::new(model_ctx))?;
+                    Ok::<PyObject, PyErr>(model_class_object)
+                })?;
                 Ok::<PyObject, PyErr>(model_class_object)
-            })?;
-            Ok::<PyObject, PyErr>(model_class_object)
+            }
         })?;
         let model_property_wrapped = property_wrapper.call1((model_property,))?;
         ctx_class.setattr(py, model_property_name.as_str(), model_property_wrapped)?;
         // class object methods
-        let model_class_class = map.class_or_create(&model_name, py)?;
+        let model_class_class = map.class_or_create(&model_name, py)?.into_bound(py);
         // find unique
         let find_unique_object = find_unique_object_function(py, app_data)?;
-        teo_wrap_builtin.call1((model_class_class.bind(py), "find_unique_object", teo_wrap_async.call1((find_unique_object,))?))?;
+        teo_wrap_builtin.call1((&model_class_class, "find_unique_object", teo_wrap_async.call1((find_unique_object,))?))?;
         // find first
         let find_first_object = find_first_object_function(py, app_data)?;
-        teo_wrap_builtin.call1((model_class_class.bind(py), "find_first_object", teo_wrap_async.call1((find_first_object,))?))?;
+        teo_wrap_builtin.call1((&model_class_class, "find_first_object", teo_wrap_async.call1((find_first_object,))?))?;
         // find many
         let find_many_objects = find_many_objects_function(py, app_data)?;
-        teo_wrap_builtin.call1((model_class_class.bind(py), "find_many_objects", teo_wrap_async.call1((find_many_objects,))?))?;
+        teo_wrap_builtin.call1((&model_class_class, "find_many_objects", teo_wrap_async.call1((find_many_objects,))?))?;
         // create
         let create_object: Bound<'_, PyCFunction> = create_object_function(py, app_data)?;
-        teo_wrap_builtin.call1((model_class_class.bind(py), "create_object", teo_wrap_async.call1((create_object,))?))?;
+        teo_wrap_builtin.call1((&model_class_class, "create_object", teo_wrap_async.call1((create_object,))?))?;
         // count objects
         let count_objects = count_objects_function(py)?;
-        teo_wrap_builtin.call1((model_class_class.bind(py), "count_objects", count_objects))?;
+        teo_wrap_builtin.call1((&model_class_class, "count_objects", count_objects))?;
         // count fields
         let count_fields = count_fields_function(py, app_data)?;
-        teo_wrap_builtin.call1((model_class_class.bind(py), "count_fields", count_fields))?;
+        teo_wrap_builtin.call1((&model_class_class, "count_fields", count_fields))?;
         // aggregate
         let aggregate = aggregate_function(py, app_data)?;
-        teo_wrap_builtin.call1((model_class_class.bind(py), "aggregate", aggregate))?;
+        teo_wrap_builtin.call1((&model_class_class, "aggregate", aggregate))?;
         // group by
         let group_by = group_by_function(py, app_data)?;
-        teo_wrap_builtin.call1((model_class_class.bind(py), "group_by", group_by))?;
+        teo_wrap_builtin.call1((&model_class_class, "group_by", group_by))?;
         // sql
         if namespace.database().is_some() && namespace.database().unwrap().is_sql() {
             let sql = sql_function(py, app_data)?;
-            teo_wrap_builtin.call1((model_class_class.bind(py), "sql", sql))?;    
+            teo_wrap_builtin.call1((&model_class_class, "sql", sql))?;    
         }
         // model object methods
-        let model_object_class = map.object_or_create(&model_name, py)?;
+        let model_object_class = map.object_or_create(&model_name, py)?.into_bound(py);
         // is new
         let is_new = is_new_function(py)?;
-        teo_wrap_builtin.call1((model_object_class.bind(py), "is_new", is_new))?;
+        teo_wrap_builtin.call1((&model_object_class, "is_new", is_new))?;
         // is modified
         let is_modified = is_modified_function(py)?;
-        teo_wrap_builtin.call1((model_object_class.bind(py), "is_modified", is_modified))?;
+        teo_wrap_builtin.call1((&model_object_class, "is_modified", is_modified))?;
         // set
         let set = set_function(py)?;
-        teo_wrap_builtin.call1((model_object_class.bind(py), "set", set))?;
+        teo_wrap_builtin.call1((&model_object_class, "set", set))?;
         // update
         let update = update_function(py)?;
-        teo_wrap_builtin.call1((model_object_class.bind(py), "update", update))?;
+        teo_wrap_builtin.call1((&model_object_class, "update", update))?;
         // save
         let save = save_function(py)?;
-        teo_wrap_builtin.call1((model_object_class.bind(py), "save", save))?;
+        teo_wrap_builtin.call1((&model_object_class, "save", save))?;
         // delete
         let delete = delete_function(py)?;
-        teo_wrap_builtin.call1((model_object_class.bind(py), "delete", delete))?;
+        teo_wrap_builtin.call1((&model_object_class, "delete", delete))?;
         // to teon
         let to_teon = to_teon_function(py, app_data)?;
-        teo_wrap_builtin.call1((model_object_class.bind(py), "to_teon", to_teon))?;
+        teo_wrap_builtin.call1((&model_object_class, "to_teon", to_teon))?;
         // __repr__
         let repr = repr_function(py, app_data)?;
-        teo_wrap_builtin.call1((model_object_class.bind(py), "__repr__", repr))?;
+        teo_wrap_builtin.call1((&model_object_class, "__repr__", repr))?;
         // fields
         for field in model.fields().values() {
             let snake_case_field_name = Box::leak(Box::new(field.name().to_snake_case())).as_str();
@@ -173,7 +177,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                 })
             })?;
             let field_property_wrapped = field_property_wrapped.call_method1("setter", (field_property_setter,))?;
-            model_object_class.setattr(py, snake_case_field_name, field_property_wrapped)?;
+            model_object_class.setattr(snake_case_field_name, field_property_wrapped)?;
         }
         // relations
         for relation in model.relations().values() {
@@ -207,7 +211,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                         Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
-                teo_wrap_builtin.call1((model_object_class.bind(py), base_relation_name, get))?;
+                teo_wrap_builtin.call1((&model_object_class, base_relation_name, get))?;
                 // set
                 let set_name = Box::leak(Box::new("set_".to_owned() + base_relation_name)).as_str();
                 let set_name_c = Box::leak(Box::new(CString::new(set_name)?)).as_c_str();
@@ -232,7 +236,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                         Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
-                teo_wrap_builtin.call1((model_object_class.bind(py), set_name, set))?;
+                teo_wrap_builtin.call1((&model_object_class, set_name, set))?;
                 // add
                 let add_to_name = Box::leak(Box::new("add_to_".to_owned() + base_relation_name)).as_str();
                 let add_to_name_c = Box::leak(Box::new(CString::new(add_to_name)?)).as_c_str();
@@ -257,7 +261,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                         Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
-                teo_wrap_builtin.call1((model_object_class.bind(py), add_to_name, add_to))?;
+                teo_wrap_builtin.call1((&model_object_class, add_to_name, add_to))?;
                 // remove
                 let remove_from_name = Box::leak(Box::new("remove_from_".to_owned() + base_relation_name)).as_str();
                 let remove_from_name_c = Box::leak(Box::new(CString::new(remove_from_name)?)).as_c_str();
@@ -282,7 +286,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                         Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
-                teo_wrap_builtin.call1((model_object_class.bind(py), remove_from_name, remove_from))?;
+                teo_wrap_builtin.call1((&model_object_class, remove_from_name, remove_from))?;
             } else {
                 // to single
                 // get
@@ -303,7 +307,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                         Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
-                teo_wrap_builtin.call1((model_object_class.bind(py), base_relation_name, get))?;
+                teo_wrap_builtin.call1((&model_object_class, base_relation_name, get))?;
                 // set
                 let set_name = Box::leak(Box::new("set_".to_owned() + base_relation_name)).as_str();
                 let set_name_c = Box::leak(Box::new(CString::new(set_name)?)).as_c_str();
@@ -331,7 +335,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                         Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
-                teo_wrap_builtin.call1((model_object_class.bind(py), set_name, set))?;
+                teo_wrap_builtin.call1((&model_object_class, set_name, set))?;
             }
         }
         // properties
@@ -355,7 +359,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                         Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
-                teo_wrap_builtin.call1((model_object_class.bind(py), name, setter))?;
+                teo_wrap_builtin.call1((&model_object_class, name, setter))?;
             }
             if model_property.getter().is_some() {
                 let name: &str = Box::leak(Box::new(field_name.to_snake_case())).as_str();
@@ -375,7 +379,7 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
                         Ok::<PyObject, PyErr>(coroutine.unbind())
                     })
                 })?;
-                teo_wrap_builtin.call1((model_object_class.bind(py), name, getter))?;
+                teo_wrap_builtin.call1((&model_object_class, name, getter))?;
             }
         }
     }
