@@ -346,44 +346,58 @@ pub(crate) fn synthesize_direct_dynamic_python_classes_for_namespace(map: &mut P
         }
         // properties
         for model_property in model.properties().values() {
-            let field_name: &str = Box::leak(Box::new(model_property.name().to_string())).as_str();
+            let field_name = model_property.name().to_string();
             if model_property.setter().is_some() {
-                let name: &str = Box::leak(Box::new("set_".to_owned() + &field_name.to_snake_case())).as_str();
-                let name_c = Box::leak(Box::new(CString::new(name)?)).as_c_str();
-                let setter = PyCFunction::new_closure(py, Some(name_c), None, move |args, _kwargs| {
-                    Python::with_gil(|py| {
-                        let slf = args.get_item(0)?;
-                        let value = args.get_item(1)?;
-                        let value = py_any_to_teo_value(py, &value)?;
-                        let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
-                        let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
-                            let _: () = model_object_wrapper.object.set_property(field_name, value).await?;
-                            Python::with_gil(|py| {
-                                Ok(PyNone::get(py).as_unbound().clone_ref(py).into_any())
-                            })
-                        })())?;
-                        Ok::<PyObject, PyErr>(coroutine.unbind())
-                    })
+                let name = "set_".to_owned() + &field_name.to_snake_case();
+                let name_cstr = static_cstr(&name)?;
+                let setter = PyCFunction::new_closure(py, Some(name_cstr), None, {
+                    let field_name = field_name.clone();
+                    move |args, _kwargs| {
+                        let field_name = field_name.clone();
+                        Python::with_gil(move |py| {
+                            let slf = args.get_item(0)?;
+                            let value = args.get_item(1)?;
+                            let value = py_any_to_teo_value(py, &value)?;
+                            let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
+                            let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (move || {
+                                let field_name = field_name.clone();
+                                async move {
+                                    let _: () = model_object_wrapper.object.set_property(&field_name, value).await?;
+                                    Python::with_gil(|py| {
+                                        Ok(PyNone::get(py).as_unbound().clone_ref(py).into_any())
+                                    })    
+                                }
+                            })())?;
+                            Ok::<PyObject, PyErr>(coroutine.unbind())
+                        })
+                    }
                 })?;
                 teo_wrap_builtin.call1((&model_object_class, name, setter))?;
             }
             if model_property.getter().is_some() {
-                let name: &str = Box::leak(Box::new(field_name.to_snake_case())).as_str();
-                let name_c = Box::leak(Box::new(CString::new(name)?)).as_c_str();
-                let getter = PyCFunction::new_closure(py, Some(name_c), None, move |args, _kwargs| {
-                    Python::with_gil(|py| {
-                        let map = PYClassLookupMap::from_app_data(app_data);
-                        let slf = args.get_item(0)?;
-                        let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
-                        let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (|| async move {
-                            let result = model_object_wrapper.object.get_property_value(field_name).await?;
-                            Python::with_gil(|py| {
-                                let any = teo_value_to_py_any(py, &result, map)?;
-                                Ok(any)
-                            })
-                        })())?;
-                        Ok::<PyObject, PyErr>(coroutine.unbind())
-                    })
+                let name = field_name.to_snake_case();
+                let name_cstr = static_cstr(&name)?;
+                let getter = PyCFunction::new_closure(py, Some(name_cstr), None, {
+                    let field_name = field_name.clone();
+                    move |args, _kwargs| {
+                        let field_name = field_name.clone();
+                        Python::with_gil(move |py| {
+                            let map = PYClassLookupMap::from_app_data(app_data);
+                            let slf = args.get_item(0)?;
+                            let model_object_wrapper: ModelObjectWrapper = slf.getattr("__teo_object__")?.extract()?;
+                            let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (move || {
+                                let field_name = field_name.clone();
+                                async move {
+                                    let result = model_object_wrapper.object.get_property_value(&field_name).await?;
+                                    Python::with_gil(|py| {
+                                        let any = teo_value_to_py_any(py, &result, map)?;
+                                        Ok(any)
+                                    })    
+                                }
+                            })())?;
+                            Ok::<PyObject, PyErr>(coroutine.unbind())
+                        })
+                    }
                 })?;
                 teo_wrap_builtin.call1((&model_object_class, name, getter))?;
             }
