@@ -186,9 +186,9 @@ dependencies = [
 
 [[package]]
 name = "async-compression"
-version = "0.4.17"
+version = "0.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0cb8f1d480b0ea3783ab015936d2a55c87e219676f0c0b7dec61494043f21857"
+checksum = "df895a515f70646414f4b45c0b79082783b80552b373a68283012928df56f522"
 dependencies = [
  "brotli",
  "flate2",
@@ -303,9 +303,9 @@ dependencies = [
 
 [[package]]
 name = "bcrypt"
-version = "0.15.1"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e65938ed058ef47d92cf8b346cc76ef48984572ade631927e9937b5ffc7662c7"
+checksum = "2b1866ecef4f2d06a0bb77880015fdf2b89e25a1c2e5addacb87e459c86dc67e"
 dependencies = [
  "base64 0.22.0",
  "blowfish",
@@ -1460,12 +1460,12 @@ dependencies = [
 
 [[package]]
 name = "http-body-util"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0475f8b2ac86659c21b64320d5d653f9efe42acd2a4e560073ec61a155a34f1d"
+checksum = "793429d76616a256bcb62c2a2ec2bed781c8307e797e2598c50010f2bee2544f"
 dependencies = [
  "bytes",
- "futures-core",
+ "futures-util",
  "http",
  "http-body",
  "pin-project-lite",
@@ -1500,9 +1500,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "1.5.0"
+version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbbff0a806a4728c99295b254c8838933b5b082d75e3cb70c8dab21fdfbcfa9a"
+checksum = "97818827ef4f364230e16705d4706e2897df2bb60617d6ca15d598025a3c481f"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -1736,9 +1736,9 @@ checksum = "b1a46d1a171d865aa5f83f92695765caa047a9b4cbae2cbf37dbd613a793fd4c"
 
 [[package]]
 name = "jobserver"
-version = "0.1.27"
+version = "0.1.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c37f63953c4c63420ed5fd3d6d398c719489b9f872b9fa683262f8edd363c7d"
+checksum = "48d1dbcbbeb6a7fec7e059840aa538bd62aaccf972c7346c4d9d2059312853d0"
 dependencies = [
  "libc",
 ]
@@ -3800,8 +3800,6 @@ name = "teo"
 version = "0.3.5"
 dependencies = [
  "array_tool",
- "async-recursion",
- "async-trait",
  "bigdecimal",
  "bson",
  "bytes",
@@ -3821,13 +3819,9 @@ dependencies = [
  "key-path",
  "maplit",
  "mime",
- "mime_guess",
  "multer",
  "openssl",
- "path-absolutize",
- "rand 0.8.5",
  "regex",
- "ring",
  "rustc_version 0.4.0",
  "serde",
  "serde_json",
@@ -3837,7 +3831,6 @@ dependencies = [
  "teo-result",
  "teo-runtime",
  "teo-sql-connector",
- "time",
  "tokio",
  "tower-http",
 ]
@@ -3979,13 +3972,11 @@ dependencies = [
  "history-box",
  "http-body-util",
  "hyper",
- "hyper-util",
  "indexmap 2.6.0",
  "inflector-plus",
  "itertools 0.13.0",
  "jsonwebtoken",
  "key-path",
- "log",
  "maplit",
  "mime",
  "num-integer",
@@ -3998,7 +3989,6 @@ dependencies = [
  "serde_json",
  "teo-parser",
  "teo-result",
- "time",
  "tokio",
  "uuid",
 ]
@@ -4297,9 +4287,9 @@ dependencies = [
 
 [[package]]
 name = "tower-http"
-version = "0.6.1"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8437150ab6bbc8c5f0f519e3d5ed4aa883a83dd4cdd3d1b21f9482936046cb97"
+checksum = "403fa3b783d4b626a8ad51d766ab03cb6d2dbfc46b1c5d4448395e6628dc9697"
 dependencies = [
  "async-compression",
  "base64 0.22.0",
