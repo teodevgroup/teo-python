@@ -10,7 +10,7 @@ from .teo import (
     EnumMember, Response, Request, ReadWriteHeaderMap, Cookie, Expiration,
     HandlerMatch, ObjectId, Range, OptionVariant, File, Pipeline, LocalObjects,
     LocalValues, InterfaceEnumVariant, Pipeline, TestRequest, TestResponse, 
-    TestServer
+    TestServer, PipelineCtx
 )
 from .annotations import CapturesAnnotationMark, RequestBodyObjectAnnotationMark, TeoAnnotationMark
 
@@ -23,15 +23,23 @@ Enumerable = Union[T, list[T]]
 signal(SIGINT, lambda _, __: exit(0))
 
 
-async def _main(self):
+# Extension: App
+
+async def _app_run(self):
     await self._run()
-App.run = _main
+App.run = _app_run
 
 
 @property
-def main(self) -> Namespace:
+def _app_main(self) -> Namespace:
     return self.main_namespace()
-App.main = main
+App.main = _app_main
+
+
+# Extension: Arguments extractors
+
+def _extract_middleware_creator_arguments(args: dict[str, Any]) -> dict[str, Any]:
+    return args
 
 
 def _extract_handler_arguments(handler_function: Callable[..., Response | Awaitable[Response]], request: Request) -> list[Any]:
@@ -76,7 +84,9 @@ def _extract_to_list(parameters: dict[str, Parameter], request: Request, next: O
     return arguments
 
 
-def _define_handler(self, name: str, callable: Callable[..., Response | Awaitable[Response]], /) -> None:
+# Extension: Namespace & HandlerGroup
+
+def _namespace_define_handler(self, name: str, callable: Callable[..., Response | Awaitable[Response]], /) -> None:
     async def base_handler(request: Request) -> Response:
         coroutine_or_response = callable(*_extract_handler_arguments(callable, request))
         if iscoroutine(coroutine_or_response):
@@ -84,24 +94,18 @@ def _define_handler(self, name: str, callable: Callable[..., Response | Awaitabl
         else:
             return coroutine_or_response
     self._define_handler(name, base_handler)
-Namespace.define_handler = _define_handler
-HandlerGroup.define_handler = _define_handler
+Namespace.define_handler = _namespace_define_handler
+HandlerGroup.define_handler = _namespace_define_handler
 
-
-def _handler(self, name: str) -> Callable[[Callable[..., Response | Awaitable[Response]]], None]:
+def _namespace_handler(self, name: str) -> Callable[[Callable[..., Response | Awaitable[Response]]], None]:
     def decorator(callable: Callable[..., Response | Awaitable[Response]]) -> None:
         self.define_handler(name, callable)
         return callable
     return decorator
-Namespace.handler = _handler
-HandlerGroup.handler = _handler
+Namespace.handler = _namespace_handler
+HandlerGroup.handler = _namespace_handler
 
-
-def _extract_middleware_creator_arguments(args: dict[str, Any]) -> dict[str, Any]:
-    return args
-
-
-def _define_request_middleware(self, name: str, callback: Callable[..., Callable[[Request, Next], Awaitable[Response]]], /) -> None:
+def _namespace_define_request_middleware(self, name: str, callback: Callable[..., Callable[[Request, Next], Awaitable[Response]]], /) -> None:
     def base_callback(args: dict[str, Any]) -> Callable[[Request, Next], Awaitable[Response]]:
         extracted_args = _extract_middleware_creator_arguments(args)
         middleware_function = callback(**extracted_args)
@@ -110,10 +114,9 @@ def _define_request_middleware(self, name: str, callback: Callable[..., Callable
             return await middleware_function(*middleware_function_arguments)
         return middleware
     self._define_request_middleware(name, base_callback)
-Namespace.define_request_middleware = _define_request_middleware
+Namespace.define_request_middleware = _namespace_define_request_middleware
 
-
-def _define_handler_middleware(self, name: str, callback: Callable[..., Callable[[Request, Next], Awaitable[Response]]], /) -> None:
+def _namespace_define_handler_middleware(self, name: str, callback: Callable[..., Callable[[Request, Next], Awaitable[Response]]], /) -> None:
     def base_callback(args: dict[str, Any]) -> Callable[[Request, Next], Awaitable[Response]]:
         extracted_args = _extract_middleware_creator_arguments(args)
         middleware_function = callback(**extracted_args)
@@ -122,35 +125,53 @@ def _define_handler_middleware(self, name: str, callback: Callable[..., Callable
             return await middleware_function(*middleware_function_arguments)
         return middleware
     self._define_handler_middleware(name, base_callback)
-Namespace.define_handler_middleware = _define_handler_middleware
+Namespace.define_handler_middleware = _namespace_define_handler_middleware
 
-
-def _request_middleware(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Response]]]], None]:
+def _namespace_request_middleware(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Response]]]], None]:
     def decorator(callable: Callable[..., Callable[..., Awaitable[Response]]]) -> None:
         self.define_request_middleware(name, callable)
         return callable
     return decorator
-Namespace.request_middleware = _request_middleware
+Namespace.request_middleware = _namespace_request_middleware
 
-
-def _handler_middleware(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Response]]]], None]:
+def _namespace_handler_middleware(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Response]]]], None]:
     def decorator(callable: Callable[..., Callable[..., Awaitable[Response]]]) -> None:
         self.define_handler_middleware(name, callable)
         return callable
     return decorator
-Namespace.handler_middleware = _handler_middleware
+Namespace.handler_middleware = _namespace_handler_middleware
 
+
+# Extension: PipelineCtx
+
+@property
+def _pipeline_ctx_value(self) -> Any:
+    return self._value()
+PipelineCtx.value = _pipeline_ctx_value
+
+@property
+def _pipeline_ctx_object(self) -> Any:
+    return self._object()
+PipelineCtx.object = _pipeline_ctx_object
+
+@property
+def _pipeline_ctx_path(self) -> Any:
+    return self._path()
+PipelineCtx.path = _pipeline_ctx_path
+
+@property
+def _pipeline_ctx_teo(self) -> Any:
+    return self._teo()
+PipelineCtx.teo = _pipeline_ctx_teo
+
+
+# Extension: TeoException
 
 class TeoException(Exception):
 
     error_message: str
     code: int
     errors: Optional[dict[str, str]]
-
-    # @property
-    # def message(self) -> str:
-    #     object = { "code": self.code, "message": self.error_message, "errors": self.errors }
-    #     return dumps(object)
 
     def __init__(self, message: str, code: int = 500, errors: Optional[dict[str, str]] = None) -> None:
         self.code = code

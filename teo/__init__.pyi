@@ -1003,6 +1003,40 @@ class InterfaceEnumVariant:
 class Pipeline:
     pass
 
+class PipelineCtx:
+    """
+    The context of pipeline.
+    """
+
+    @property
+    def value(self) -> Any:
+        """
+        Get the context's current value.
+        """
+        ...
+
+    @property
+    def object(self) -> Any:
+        """
+        Get the context's current model object.
+        """
+        ...
+
+    @property
+    def path(self) -> list[str | int]:
+        """
+        Get the pipeline item's path.
+        """
+        ...
+
+    @property
+    def teo(self) -> Any:
+        """
+        Get Teo from this pipeline context.
+        """
+        ...
+
+
 class File:
     """
     A file input in form data requests.
