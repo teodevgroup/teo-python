@@ -180,10 +180,6 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn _define_transform_pipeline_item(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
-        self._define_pipeline_item(name, callback, py)
-    }
-
     pub fn _define_validator_pipeline_item(&self, name: &str, callback: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
         check_callable(&callback)?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;

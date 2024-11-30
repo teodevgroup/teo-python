@@ -62,6 +62,9 @@ def _extract_from_pipeline_ctx(parameters: dict[str, Parameter], ctx: PipelineCt
             if parameter.annotation == PipelineCtx:
                 arguments.append(ctx)
                 continue
+            if parameter.annotation == Optional[Request]:
+                arguments.append(ctx.request)
+                continue
             elif hasattr(parameter.annotation, '__bases__'):
                 if TeoAnnotationMark in parameter.annotation.__bases__:
                     arguments.append(ctx.teo)
