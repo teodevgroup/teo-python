@@ -142,9 +142,15 @@ class Namespace:
         """
         ...
 
-    def pipeline_item(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+    def pipeline_item(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Any] | Any]]], None]:
         """
         Define a pipeline item with decorator.
+        """
+        ...
+
+    def pipeline_item_function(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+        """
+        Define a pipeline item without creator.
         """
         ...
 
@@ -154,11 +160,18 @@ class Namespace:
         """
         ...
 
-    def transform_pipeline_item(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+    def transform_pipeline_item(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Any] | Any]]], None]:
         """
         Define a transform pipeline item with decorator.
         """
         ...
+
+    def transform_pipeline_item_function(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+        """
+        Define a transform pipeline item without creator.
+        """
+        ...
+
 
     def define_validator_pipeline_item(self, name: str, callback: Callable[..., Callable[..., Any | Awaitable[Any]]]) -> None:
         """
@@ -166,11 +179,18 @@ class Namespace:
         """
         ...
 
-    def validator_pipeline_item(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+    def validator_pipeline_item(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Any] | Any]]], None]:
         """
         Define a validator pipeline item with decorator.
         """
         ...
+
+    def validator_pipeline_item_function(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+        """
+        Define a validator pipeline item without creator.
+        """
+        ...
+
 
     def define_callback_pipeline_item(self, name: str, callback: Callable[..., Callable[..., Any | Awaitable[Any]]]) -> None:
         """
@@ -178,11 +198,17 @@ class Namespace:
         """
         ...
 
-    def callback_pipeline_item(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+    def callback_pipeline_item(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Any] | Any]]], None]:
         """
         Define a callback pipeline item with decorator.
         """
         ...
+
+    def callback_pipeline_item_function(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+        """
+        Define a callback pipeline item without creator.
+        """
+        ...        
 
     def define_compare_pipeline_item(self, name: str, callback: Callable[..., Callable[..., Any | Awaitable[Any]]]) -> None:
         """
@@ -190,9 +216,15 @@ class Namespace:
         """
         ...
 
-    def compare_pipeline_item(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+    def compare_pipeline_item(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Any] | Any]]], None]:
         """
         Define a compare pipeline item with decorator.
+        """
+        ...
+
+    def compare_pipeline_item_function(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+        """
+        Define a compare pipeline item without creator.
         """
         ...
 

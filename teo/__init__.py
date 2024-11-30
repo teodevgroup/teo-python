@@ -228,40 +228,74 @@ def _namespace_define_compare_pipeline_item(self, name: str, callback: Callable[
     self._define_compare_pipeline_item(name, base_callback)
 Namespace.define_compare_pipeline_item = _namespace_define_compare_pipeline_item
 
-def _namespace_pipeline_item(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
-    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+def _namespace_pipeline_item(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Any] | Any]]], None]:
+    def decorator(callable: Callable[..., Callable[..., Awaitable[Any] | Any]]) -> None:
         self.define_pipeline_item(name, callable)
         return callable
     return decorator
 Namespace.pipeline_item = _namespace_pipeline_item
 
-def _namespace_transform_pipeline_item(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
-    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+def _namespace_transform_pipeline_item(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Any] | Any]]], None]:
+    def decorator(callable: Callable[..., Callable[..., Awaitable[Any] | Any]]) -> None:
         self.define_transform_pipeline_item(name, callable)
         return callable
     return decorator
 Namespace.transform_pipeline_item = _namespace_transform_pipeline_item
 
-def _namespace_validator_pipeline_item(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
-    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+def _namespace_validator_pipeline_item(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Any] | Any]]], None]:
+    def decorator(callable: Callable[..., Callable[..., Awaitable[Any] | Any]]) -> None:
         self.define_validator_pipeline_item(name, callable)
         return callable
     return decorator
 Namespace.validator_pipeline_item = _namespace_validator_pipeline_item
 
-def _namespace_callback_pipeline_item(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
-    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+def _namespace_callback_pipeline_item(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Any] | Any]]], None]:
+    def decorator(callable: Callable[..., Callable[..., Awaitable[Any] | Any]]) -> None:
         self.define_callback_pipeline_item(name, callable)
         return callable
     return decorator
 Namespace.callback_pipeline_item = _namespace_callback_pipeline_item
 
-def _namespace_compare_pipeline_item(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
-    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+def _namespace_compare_pipeline_item(self, name: str) -> Callable[[Callable[..., Callable[..., Awaitable[Any] | Any]]], None]:
+    def decorator(callable: Callable[..., Callable[..., Awaitable[Any] | Any]]) -> None:
         self.define_compare_pipeline_item(name, callable)
         return callable
     return decorator
 Namespace.compare_pipeline_item = _namespace_compare_pipeline_item
+
+def _namespace_pipeline_item_function(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
+    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+        self.define_pipeline_item(name, lambda: callable)
+    return decorator
+Namespace.pipeline_item_function = _namespace_pipeline_item_function
+
+def _namespace_transform_pipeline_item_function(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
+    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+        self.define_transform_pipeline_item(name, lambda: callable)
+        return callable
+    return decorator
+Namespace.transform_pipeline_item_function = _namespace_transform_pipeline_item_function
+
+def _namespace_validator_pipeline_item_function(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
+    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+        self.define_validator_pipeline_item(name, lambda: callable)
+        return callable
+    return decorator
+Namespace.validator_pipeline_item_function = _namespace_validator_pipeline_item_function
+
+def _namespace_callback_pipeline_item_function(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
+    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+        self.define_callback_pipeline_item(name, lambda: callable)
+        return callable
+    return decorator
+Namespace.callback_pipeline_item_function = _namespace_callback_pipeline_item_function
+
+def _namespace_compare_pipeline_item_function(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
+    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+        self.define_compare_pipeline_item(name, lambda: callable)
+        return callable
+    return decorator
+Namespace.compare_pipeline_item_function = _namespace_compare_pipeline_item_function
 
 
 # Extension: PipelineCtx
