@@ -55,9 +55,16 @@ def _extract_pipeline_item_arguments(pipeline_item_function: Callable[..., Await
     parameters = signature(pipeline_item_function).parameters
     return _extract_from_pipeline_ctx(parameters, ctx)
 
+def _extract_compare_pipeline_item_arguments(pipeline_item_function: Callable[..., Awaitable[Any] | Any], ctx: PipelineCtx) -> list[Any]:
+    parameters = signature(pipeline_item_function).parameters
+    (k := next(iter(parameters)), parameters.pop(k))
+    (k := next(iter(parameters)), parameters.pop(k))
+    return _extract_from_pipeline_ctx(parameters, ctx)
+
 def _extract_from_pipeline_ctx(parameters: dict[str, Parameter], ctx: PipelineCtx) -> list[Any]:
     arguments: list[Any] = []
-    for name, parameter in parameters.items():
+    should_convert_value_to_model_object = True
+    for _, parameter in parameters.items():
         if parameter.kind == Parameter.POSITIONAL_ONLY or parameter.kind == Parameter.POSITIONAL_OR_KEYWORD:
             if parameter.annotation == PipelineCtx:
                 arguments.append(ctx)
@@ -65,17 +72,24 @@ def _extract_from_pipeline_ctx(parameters: dict[str, Parameter], ctx: PipelineCt
             if parameter.annotation == Optional[Request]:
                 arguments.append(ctx.request)
                 continue
-            elif hasattr(parameter.annotation, '__bases__'):
+            if hasattr(parameter.annotation, '__bases__'):
                 if TeoAnnotationMark in parameter.annotation.__bases__:
                     arguments.append(ctx.teo)
                 elif ModelObjectAnnotationMark in parameter.annotation.__bases__:
-                    arguments.append(ctx.object)
-                elif CapturesAnnotationMark in parameter.annotation.__orig_bases__:
-                    arguments.append(ctx.captures())
-                elif RequestBodyObjectAnnotationMark in parameter.annotation.__orig_bases__:
-                    arguments.append(ctx.object())
+                    if should_convert_value_to_model_object:
+                        if hasattr(ctx.value, '__teo_object__'):
+                            arguments.append(ctx.value)
+                        else:
+                            arguments.append(ctx.object)
+                        should_convert_value_to_model_object = False
+                    else:
+                        arguments.append(ctx.object)
                 else:
-                    arguments.append(ctx.object())
+                    arguments.append(ctx.value)
+                    should_convert_value_to_model_object = False
+            else:
+                arguments.append(ctx.value)
+                should_convert_value_to_model_object = False
         else:
             raise TeoException(f"unsupported parameter extraction: {parameter}")
     return arguments
@@ -180,6 +194,75 @@ def _namespace_define_pipeline_item(self, name: str, callback: Callable[..., Cal
     self._define_pipeline_item(name, base_callback)
 Namespace.define_pipeline_item = _namespace_define_pipeline_item
 Namespace.define_transform_pipeline_item = _namespace_define_pipeline_item
+
+def _namespace_define_validator_pipeline_item(self, name: str, callback: Callable[..., Callable[..., Awaitable[Any] | Any]]) -> None:
+    def base_callback(args: dict[str, Any]) -> Callable[[PipelineCtx], Awaitable[Any] | Any]:
+        extracted_args = _extract_arguments_arguments(args)
+        pipeline_item_function = callback(**extracted_args)
+        def pipeline_item(ctx: PipelineCtx) -> Any:
+            pipeline_item_function_arguments = _extract_pipeline_item_arguments(pipeline_item_function, ctx)
+            return pipeline_item_function(*pipeline_item_function_arguments)
+        return pipeline_item
+    self._define_validator_pipeline_item(name, base_callback)
+Namespace.define_validator_pipeline_item = _namespace_define_validator_pipeline_item
+
+def _namespace_define_callback_pipeline_item(self, name: str, callback: Callable[..., Callable[..., Awaitable[Any] | Any]]) -> None:
+    def base_callback(args: dict[str, Any]) -> Callable[[PipelineCtx], Awaitable[Any] | Any]:
+        extracted_args = _extract_arguments_arguments(args)
+        pipeline_item_function = callback(**extracted_args)
+        def pipeline_item(ctx: PipelineCtx) -> Any:
+            pipeline_item_function_arguments = _extract_pipeline_item_arguments(pipeline_item_function, ctx)
+            return pipeline_item_function(*pipeline_item_function_arguments)
+        return pipeline_item
+    self._define_callback_pipeline_item(name, base_callback)
+Namespace.define_callback_pipeline_item = _namespace_define_callback_pipeline_item
+
+def _namespace_define_compare_pipeline_item(self, name: str, callback: Callable[..., Callable[..., Awaitable[Any] | Any]]) -> None:
+    def base_callback(args: dict[str, Any]) -> Callable[[PipelineCtx], Awaitable[Any] | Any]:
+        extracted_args = _extract_arguments_arguments(args)
+        pipeline_item_function = callback(**extracted_args)
+        def pipeline_item(old: Any, new: Any, ctx: PipelineCtx) -> Any:
+            pipeline_item_function_arguments = _extract_compare_pipeline_item_arguments(pipeline_item_function, ctx)
+            return pipeline_item_function(old, new, *pipeline_item_function_arguments)
+        return pipeline_item
+    self._define_compare_pipeline_item(name, base_callback)
+Namespace.define_compare_pipeline_item = _namespace_define_compare_pipeline_item
+
+def _namespace_pipeline_item(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
+    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+        self.define_pipeline_item(name, callable)
+        return callable
+    return decorator
+Namespace.pipeline_item = _namespace_pipeline_item
+
+def _namespace_transform_pipeline_item(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
+    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+        self.define_transform_pipeline_item(name, callable)
+        return callable
+    return decorator
+Namespace.transform_pipeline_item = _namespace_transform_pipeline_item
+
+def _namespace_validator_pipeline_item(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
+    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+        self.define_validator_pipeline_item(name, callable)
+        return callable
+    return decorator
+Namespace.validator_pipeline_item = _namespace_validator_pipeline_item
+
+def _namespace_callback_pipeline_item(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
+    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+        self.define_callback_pipeline_item(name, callable)
+        return callable
+    return decorator
+Namespace.callback_pipeline_item = _namespace_callback_pipeline_item
+
+def _namespace_compare_pipeline_item(self, name: str) -> Callable[[Callable[..., Awaitable[Any] | Any]], None]:
+    def decorator(callable: Callable[..., Awaitable[Any] | Any]) -> None:
+        self.define_compare_pipeline_item(name, callable)
+        return callable
+    return decorator
+Namespace.compare_pipeline_item = _namespace_compare_pipeline_item
+
 
 # Extension: PipelineCtx
 

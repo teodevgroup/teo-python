@@ -136,33 +136,63 @@ class Namespace:
         """
         ...
 
-    def define_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any], Any | Awaitable[Any]], /) -> None:
+    def define_pipeline_item(self, name: str, callback: Callable[..., Callable[..., Any | Awaitable[Any]]]) -> None:
         """
         Define a pipeline item.
         """
         ...
 
-    def define_transform_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any], Any | Awaitable[Any]], /) -> None:
+    def pipeline_item(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+        """
+        Define a pipeline item with decorator.
+        """
+        ...
+
+    def define_transform_pipeline_item(self, name: str, callback: Callable[..., Callable[..., Any | Awaitable[Any]]]) -> None:
         """
         Define a transform pipeline item.
         """
         ...
 
-    def define_validator_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any], str | bool | None | Awaitable[str | bool | None]], /) -> None:
+    def transform_pipeline_item(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+        """
+        Define a transform pipeline item with decorator.
+        """
+        ...
+
+    def define_validator_pipeline_item(self, name: str, callback: Callable[..., Callable[..., Any | Awaitable[Any]]]) -> None:
         """
         Define a validator pipeline item.
         """
         ...
 
-    def define_callback_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any], None | Awaitable[None]], /) -> None:
+    def validator_pipeline_item(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+        """
+        Define a validator pipeline item with decorator.
+        """
+        ...
+
+    def define_callback_pipeline_item(self, name: str, callback: Callable[..., Callable[..., Any | Awaitable[Any]]]) -> None:
         """
         Define a callback pipeline item.
         """
         ...
 
-    def define_compare_pipeline_item(self, name: str, callback: Callable[[Any, Any, Any, Any, Any], str | bool | None | Awaitable[str | bool | None]], /) -> None:
+    def callback_pipeline_item(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+        """
+        Define a callback pipeline item with decorator.
+        """
+        ...
+
+    def define_compare_pipeline_item(self, name: str, callback: Callable[..., Callable[..., Any | Awaitable[Any]]]) -> None:
         """
         Define a compare pipeline item.
+        """
+        ...
+
+    def compare_pipeline_item(self, name: str) -> Callable[[Callable[..., Any | Awaitable[Any]]], None]:
+        """
+        Define a compare pipeline item with decorator.
         """
         ...
 
