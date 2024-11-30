@@ -204,4 +204,64 @@ def load_app():
     @app.main.validator_pipeline_item_function("validateStatusArray")
     def validate_status_array(value: list[Status]):
         return True
+    @app.main.callback_pipeline_item_function("int32Callback")
+    def int_32_callback(value: int, container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("int64Callback")
+    def int_64_callback(value: int, container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("float32Callback")
+    def float_32_callback(value: float, container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("float64Callback")
+    def float_64_callback(value: float, container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("boolCallback")
+    def bool_callback(value: bool, container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("stringCallback")
+    def string_callback(value: str, container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("dateCallback")
+    def date_callback(value: date, container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("dateTimeCallback")
+    def date_time_callback(value: datetime, container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("decimalCallback")
+    def decimal_callback(value: Decimal, container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("statusCallback")
+    def status_callback(value: Status, container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("int32ArrayCallback")
+    def int_32_array_callback(value: list[int], container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("int64ArrayCallback")
+    def int_64_array_callback(value: list[int], container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("float32ArrayCallback")
+    def float_32_array_callback(value: list[float], container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("float64ArrayCallback")
+    def float_64_array_callback(value: list[float], container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("boolArrayCallback")
+    def bool_array_callback(value: list[bool], container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("stringArrayCallback")
+    def string_array_callback(value: list[str], container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("dateArrayCallback")
+    def date_array_callback(value: list[date], container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("dateTimeArrayCallback")
+    def date_time_array_callback(value: list[datetime], container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("decimalArrayCallback")
+    def decimal_array_callback(value: list[Decimal], container: Container):
+        container.message = f"{value}"
+    @app.main.callback_pipeline_item_function("statusArrayCallback")
+    def status_array_callback(value: list[Status], container: Container):
+        container.message = f"{value}"
     return app
