@@ -32,7 +32,8 @@ App.run = _app_run
 
 @property
 def _app_main(self) -> Namespace:
-    return self.main_namespace()
+    return self._main_namespace()
+App.main_namespace = _app_main
 App.main = _app_main
 
 

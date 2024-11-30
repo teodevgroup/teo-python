@@ -9,15 +9,15 @@ def load_app() -> App:
         response = Response.string('foo', 'text/plain')
         response.add_cookie(Cookie('foo', 'bar'))
         return response
-    app.main_namespace().define_handler('textResponse', text_response)
+    app.main_namespace.define_handler('textResponse', text_response)
     def json_response(_request: Request) -> Response:
         response = Response.teon({'foo': 'bar'})
         response.add_cookie(Cookie('foo', 'bar'))
         return response
-    app.main_namespace().define_handler('jsonResponse', json_response)
+    app.main_namespace.define_handler('jsonResponse', json_response)
     def file_response(_request: Request) -> Response:
         response = Response.file(path.join(path.dirname(__file__), 'response.txt'))
         response.add_cookie(Cookie('foo', 'bar'))
         return response
-    app.main_namespace().define_handler('fileResponse', file_response)
+    app.main_namespace.define_handler('fileResponse', file_response)
     return app

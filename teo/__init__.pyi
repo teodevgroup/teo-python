@@ -33,6 +33,7 @@ class App:
         """
         ...
 
+    @property
     def main_namespace(self) -> Namespace:
         """
         Get the attached main namespace of the app.
