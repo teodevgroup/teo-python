@@ -111,5 +111,34 @@ def load_app():
     @app.main.transform_pipeline_item("alterStatus")
     def alter_status(to: Status):
         return lambda: to
-    
+    @app.main.transform_pipeline_item("alterInt32Array")
+    def alter_int_32_array(to: list[int]):
+        return lambda: to
+    @app.main.transform_pipeline_item("alterInt64Array")
+    def alter_int_64_array(to: list[int]):
+        return lambda: to 
+    @app.main.transform_pipeline_item("alterFloat32Array")
+    def alter_float_32_array(to: list[float]):
+        return lambda: to 
+    @app.main.transform_pipeline_item("alterFloat64Array")
+    def alter_float_64_array(to: list[float]):
+        return lambda: to 
+    @app.main.transform_pipeline_item("alterBoolArray")
+    def alter_bool_array(to: list[bool]):
+        return lambda: to 
+    @app.main.transform_pipeline_item("alterStringArray")
+    def alter_string_array(to: list[str]):
+        return lambda: to 
+    @app.main.transform_pipeline_item("alterDateArray")
+    def alter_date_array(to: list[date]):
+        return lambda: to 
+    @app.main.transform_pipeline_item("alterDateTimeArray")
+    def alter_date_time_array(to: list[datetime]):
+        return lambda: to 
+    @app.main.transform_pipeline_item("alterDecimalArray")
+    def alter_decimal_array(to: list[Decimal]):
+        return lambda: to
+    @app.main.transform_pipeline_item("alterStatusArray")
+    def alter_status_array(to: list[Status]):
+        return lambda: to
     return app
