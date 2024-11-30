@@ -264,4 +264,64 @@ def load_app():
     @app.main.callback_pipeline_item_function("statusArrayCallback")
     def status_array_callback(value: list[Status], container: Container):
         container.message = f"{value}"
+    @app.main.compare_pipeline_item_function("compareInt32")
+    def compare_int_32(old: int, new: int):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareInt64")
+    def compare_int_64(old: int, new: int):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareFloat32")
+    def compare_float_32(old: float, new: float):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareFloat64")
+    def compare_float_64(old: float, new: float):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareBool")
+    def compare_bool(old: bool, new: bool):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareString")
+    def compare_string(old: str, new: str):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareDate")
+    def compare_date(old: date, new: date):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareDateTime")
+    def compare_date_time(old: datetime, new: datetime):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareDecimal")
+    def compare_decimal(old: Decimal, new: Decimal):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareStatus")
+    def compare_status(old: Status, new: Status):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareInt32Array")
+    def compare_int_32_array(old: list[int], new: list[int]):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareInt64Array")
+    def compare_int_64_array(old: list[int], new: list[int]):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareFloat32Array")
+    def compare_float_32_array(old: list[float], new: list[float]):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareFloat64Array")
+    def compare_float_64_array(old: list[float], new: list[float]):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareBoolArray")
+    def compare_bool_array(old: list[bool], new: list[bool]):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareStringArray")
+    def compare_string_array(old: list[str], new: list[str]):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareDateArray")
+    def compare_date_array(old: list[date], new: list[date]):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareDateTimeArray")
+    def compare_date_time_array(old: list[datetime], new: list[datetime]):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareDecimalArray")
+    def compare_decimal_array(old: list[Decimal], new: list[Decimal]):
+        return old != new
+    @app.main.compare_pipeline_item_function("compareStatusArray")
+    def compare_status_array(old: list[Status], new: list[Status]):
+        return old != new
     return app
