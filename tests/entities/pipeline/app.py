@@ -174,4 +174,34 @@ def load_app():
     @app.main.validator_pipeline_item_function("validateStatus")
     def validate_status(value: Status):
         return True
+    @app.main.validator_pipeline_item_function("validateInt32Array")
+    def validate_int_32_array(value: list[int]):
+        return True
+    @app.main.validator_pipeline_item_function("validateInt64Array")
+    def validate_int_64_array(value: list[int]):
+        return True
+    @app.main.validator_pipeline_item_function("validateFloat32Array")
+    def validate_float_32_array(value: list[float]):
+        return True
+    @app.main.validator_pipeline_item_function("validateFloat64Array")
+    def validate_float_64_array(value: list[float]):
+        return True
+    @app.main.validator_pipeline_item_function("validateBoolArray")
+    def validate_bool_array(value: list[float]):
+        return True
+    @app.main.validator_pipeline_item_function("validateStringArray")    
+    def validate_string_array(value: list[str]):
+        return True
+    @app.main.validator_pipeline_item_function("validateDateArray")
+    def validate_date_array(value: list[date]):
+        return True
+    @app.main.validator_pipeline_item_function("validateDateTimeArray")
+    def validate_date_time_array(value: list[datetime]):
+        return True
+    @app.main.validator_pipeline_item_function("validateDecimalArray")
+    def validate_decimal_array(value: list[Decimal]):
+        return True
+    @app.main.validator_pipeline_item_function("validateStatusArray")
+    def validate_status_array(value: list[Status]):
+        return True
     return app
