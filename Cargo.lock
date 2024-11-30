@@ -1712,15 +1712,6 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
@@ -3807,6 +3798,7 @@ dependencies = [
  "clap",
  "colored",
  "cookie",
+ "deferred-box",
  "dotenvy",
  "educe 0.6.0",
  "futures",
@@ -3815,7 +3807,7 @@ dependencies = [
  "hyper",
  "hyper-util",
  "indexmap 2.6.0",
- "itertools 0.13.0",
+ "itertools",
  "key-path",
  "maplit",
  "mime",
@@ -3846,7 +3838,7 @@ dependencies = [
  "indent",
  "indexmap 2.6.0",
  "inflector-plus",
- "itertools 0.13.0",
+ "itertools",
  "maplit",
  "once_cell",
  "pad",
@@ -3865,7 +3857,7 @@ dependencies = [
 
 [[package]]
 name = "teo-mongodb-connector"
-version = "0.3.0"
+version = "0.3.5"
 dependencies = [
  "async-recursion",
  "async-trait",
@@ -3874,7 +3866,7 @@ dependencies = [
  "chrono",
  "futures-util",
  "indexmap 2.6.0",
- "itertools 0.13.0",
+ "itertools",
  "key-path",
  "maplit",
  "mongodb",
@@ -3898,7 +3890,7 @@ dependencies = [
  "educe 0.6.0",
  "getrandom 0.2.12",
  "indexmap 2.6.0",
- "itertools 0.13.0",
+ "itertools",
  "maplit",
  "once_cell",
  "path-clean",
@@ -3974,7 +3966,7 @@ dependencies = [
  "hyper",
  "indexmap 2.6.0",
  "inflector-plus",
- "itertools 0.13.0",
+ "itertools",
  "jsonwebtoken",
  "key-path",
  "maplit",
@@ -3995,7 +3987,7 @@ dependencies = [
 
 [[package]]
 name = "teo-sql-connector"
-version = "0.3.0"
+version = "0.3.5"
 dependencies = [
  "array_tool",
  "async-recursion",
@@ -4003,7 +3995,7 @@ dependencies = [
  "bigdecimal",
  "chrono",
  "indexmap 2.6.0",
- "itertools 0.12.1",
+ "itertools",
  "key-path",
  "maplit",
  "once_cell",
