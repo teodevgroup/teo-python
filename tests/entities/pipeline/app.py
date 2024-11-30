@@ -141,4 +141,37 @@ def load_app():
     @app.main.transform_pipeline_item("alterStatusArray")
     def alter_status_array(to: list[Status]):
         return lambda: to
+    @app.main.validator_pipeline_item_function("validateInt32")
+    def validate_int_32(value: int):
+        return True
+    @app.main.validator_pipeline_item_function("validateInt64")
+    def validate_int_64(value: int):
+        return None
+    @app.main.validator_pipeline_item_function("validateFloat32")
+    def validate_float_32(value: float):
+        return True
+    @app.main.validator_pipeline_item_function("validateFloat64")
+    def validate_float_64(value: float):
+        return True
+    @app.main.validator_pipeline_item_function("validateBool")
+    def validate_bool(value: float):
+        return True
+    @app.main.validator_pipeline_item_function("validateString")    
+    def validate_string(value: str):
+        if len(value) > 1:
+            return None
+        else:
+            return "string is too short, expect length > 1"
+    @app.main.validator_pipeline_item_function("validateDate")
+    def validate_date(value: date):
+        return True
+    @app.main.validator_pipeline_item_function("validateDateTime")
+    def validate_date_time(value: datetime):
+        return True
+    @app.main.validator_pipeline_item_function("validateDecimal")
+    def validate_decimal(value: Decimal):
+        return True
+    @app.main.validator_pipeline_item_function("validateStatus")
+    def validate_status(value: Status):
+        return True
     return app
