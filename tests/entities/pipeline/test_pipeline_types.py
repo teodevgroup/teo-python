@@ -688,3 +688,343 @@ class TestTypes(TestCase):
                 "statusArray": ["open", "inProgress", "pending", "waitingForReview", "done"]
             }),
         })
+
+    async def test_callback_int32(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'int32': 1
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "1"
+            }),
+        })
+
+    async def test_callback_int64(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'int64': 1
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "1"
+            }),
+        })
+
+    async def test_callback_float32(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'float32': 1.0
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "1.0"
+            }),
+        })
+
+    async def test_callback_float64(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'float64': 1.0
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "1.0"
+            }),
+        })
+
+    async def test_callback_bool(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'bool': False
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "False"
+            }),
+        })
+
+    async def test_callback_string(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'string': 'Love'
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "Love"
+            }),
+        })
+
+    async def test_callback_date(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'date': '2005-06-01'
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "2005-06-01"
+            }),
+        })
+
+    async def test_callback_date_time(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'dateTime': '2024-11-29T14:49:13.498Z'
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "2024-11-29 14:49:13.498000+00:00"
+            }),
+        })
+
+    async def test_callback_decimal(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'decimal': '1'
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "1"
+            }),
+        })
+
+    async def test_callback_status(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'status': 'open'
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "open"
+            }),
+        })
+
+    async def test_callback_int32_array(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'int32Array': [1, 1]
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "[1, 1]"
+            }),
+        })
+
+    async def test_callback_int64_array(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'int64Array': [1, 1]
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "[1, 1]"
+            }),
+        })
+
+    async def test_callback_float32_array(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'float32Array': [1.0, 1.0]
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "[1.0, 1.0]"
+            }),
+        })
+
+    async def test_callback_float64_array(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'float64Array': [1.0, 1.0]
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "[1.0, 1.0]"
+            }),
+        })
+
+    async def test_callback_bool_array(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'boolArray': [False, False]
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "[False, False]"
+            }),
+        })
+
+    async def test_callback_string_array(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'stringArray': ['Love', 'Love']
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "['Love', 'Love']"
+            }),
+        })
+
+    async def test_callback_date_array(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'dateArray': ['2005-06-01', '2005-06-01']
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "[datetime.date(2005, 6, 1), datetime.date(2005, 6, 1)]"
+            }),
+        })
+
+    async def test_callback_date_time_array(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'dateTimeArray': ['2024-11-29T14:49:13.498Z', '2024-11-29T14:49:13.498Z']
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "[datetime.datetime(2024, 11, 29, 14, 49, 13, 498000, tzinfo=datetime.timezone.utc), datetime.datetime(2024, 11, 29, 14, 49, 13, 498000, tzinfo=datetime.timezone.utc)]"
+            }),
+        })
+
+    async def test_callback_decimal_array(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'decimalArray': ['1', '1']
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "[Decimal('1'), Decimal('1')]"
+            }),
+        })
+
+    async def test_callback_status_array(self):
+        request = TestRequest(
+            method='POST', 
+            uri='/Container/create',
+            body={
+                'create': {
+                    'statusArray': ['open', 'open']
+                }
+            })
+        response = await self.server.process(request)
+        match_json_value(response.body_as_json(), {
+            "data": partial({
+                "id": ignore,
+                "message": "['open', 'open']"
+            }),
+        })
