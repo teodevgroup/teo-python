@@ -147,7 +147,7 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_pipeline_item(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
+    pub fn _define_pipeline_item(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(&callback.bind(py))?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
@@ -180,11 +180,11 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_transform_pipeline_item(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
-        self.define_pipeline_item(name, callback, py)
+    pub fn _define_transform_pipeline_item(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
+        self._define_pipeline_item(name, callback, py)
     }
 
-    pub fn define_validator_pipeline_item(&self, name: &str, callback: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
+    pub fn _define_validator_pipeline_item(&self, name: &str, callback: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
         check_callable(&callback)?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let callback = Py::from(callback);
@@ -233,7 +233,7 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_callback_pipeline_item(&self, name: &str, callback: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
+    pub fn _define_callback_pipeline_item(&self, name: &str, callback: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
         check_callable(&callback)?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let callback = Py::from(callback);
@@ -264,7 +264,7 @@ impl Namespace {
         Ok(())
     }
 
-    pub fn define_compare_pipeline_item(&self, name: &str, callback: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
+    pub fn _define_compare_pipeline_item(&self, name: &str, callback: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
         check_callable(&callback)?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let callback = Py::from(callback);

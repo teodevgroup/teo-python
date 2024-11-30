@@ -1036,6 +1036,13 @@ class PipelineCtx:
         """
         ...
 
+    @property
+    def request(self) -> Optional[Request]:
+        """
+        Get the request from this pipeline context. This value may be none.
+        """
+        ...
+
 
 class File:
     """

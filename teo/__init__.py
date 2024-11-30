@@ -12,7 +12,7 @@ from .teo import (
     LocalValues, InterfaceEnumVariant, Pipeline, TestRequest, TestResponse, 
     TestServer, PipelineCtx
 )
-from .annotations import CapturesAnnotationMark, RequestBodyObjectAnnotationMark, TeoAnnotationMark
+from .annotations import CapturesAnnotationMark, RequestBodyObjectAnnotationMark, TeoAnnotationMark, ModelObjectAnnotationMark
 
 
 T = TypeVar('T')
@@ -38,21 +38,46 @@ App.main = _app_main
 
 # Extension: Arguments extractors
 
-def _extract_middleware_creator_arguments(args: dict[str, Any]) -> dict[str, Any]:
+def _extract_arguments_arguments(args: dict[str, Any]) -> dict[str, Any]:
     return args
 
 
 def _extract_handler_arguments(handler_function: Callable[..., Response | Awaitable[Response]], request: Request) -> list[Any]:
     parameters = signature(handler_function).parameters
-    return _extract_to_list(parameters, request, None)
+    return _extract_from_request(parameters, request, None)
 
 
 def _extract_middleware_function_arguments(middleware_function: Callable[..., Awaitable[Response]], request: Request, next: Next) -> list[Any]:
     parameters = signature(middleware_function).parameters
-    return _extract_to_list(parameters, request, next)
+    return _extract_from_request(parameters, request, next)
 
+def _extract_pipeline_item_arguments(pipeline_item_function: Callable[..., Awaitable[Any] | Any], ctx: PipelineCtx) -> list[Any]:
+    parameters = signature(pipeline_item_function).parameters
+    return _extract_from_pipeline_ctx(parameters, ctx)
 
-def _extract_to_list(parameters: dict[str, Parameter], request: Request, next: Optional[Next]) -> list[Any]:
+def _extract_from_pipeline_ctx(parameters: dict[str, Parameter], ctx: PipelineCtx) -> list[Any]:
+    arguments: list[Any] = []
+    for name, parameter in parameters.items():
+        if parameter.kind == Parameter.POSITIONAL_ONLY or parameter.kind == Parameter.POSITIONAL_OR_KEYWORD:
+            if parameter.annotation == PipelineCtx:
+                arguments.append(ctx)
+                continue
+            elif hasattr(parameter.annotation, '__bases__'):
+                if TeoAnnotationMark in parameter.annotation.__bases__:
+                    arguments.append(ctx.teo)
+                elif ModelObjectAnnotationMark in parameter.annotation.__bases__:
+                    arguments.append(ctx.object)
+                elif CapturesAnnotationMark in parameter.annotation.__orig_bases__:
+                    arguments.append(ctx.captures())
+                elif RequestBodyObjectAnnotationMark in parameter.annotation.__orig_bases__:
+                    arguments.append(ctx.object())
+                else:
+                    arguments.append(ctx.object())
+        else:
+            raise TeoException(f"unsupported parameter extraction: {parameter}")
+    return arguments
+
+def _extract_from_request(parameters: dict[str, Parameter], request: Request, next: Optional[Next]) -> list[Any]:
     arguments: list[Any] = []
     for name, parameter in parameters.items():
         if parameter.kind == Parameter.POSITIONAL_ONLY or parameter.kind == Parameter.POSITIONAL_OR_KEYWORD:
@@ -107,7 +132,7 @@ HandlerGroup.handler = _namespace_handler
 
 def _namespace_define_request_middleware(self, name: str, callback: Callable[..., Callable[[Request, Next], Awaitable[Response]]], /) -> None:
     def base_callback(args: dict[str, Any]) -> Callable[[Request, Next], Awaitable[Response]]:
-        extracted_args = _extract_middleware_creator_arguments(args)
+        extracted_args = _extract_arguments_arguments(args)
         middleware_function = callback(**extracted_args)
         async def middleware(request: Request, next: Next) -> Response:
             middleware_function_arguments = _extract_middleware_function_arguments(middleware_function, request, next)
@@ -118,7 +143,7 @@ Namespace.define_request_middleware = _namespace_define_request_middleware
 
 def _namespace_define_handler_middleware(self, name: str, callback: Callable[..., Callable[[Request, Next], Awaitable[Response]]], /) -> None:
     def base_callback(args: dict[str, Any]) -> Callable[[Request, Next], Awaitable[Response]]:
-        extracted_args = _extract_middleware_creator_arguments(args)
+        extracted_args = _extract_arguments_arguments(args)
         middleware_function = callback(**extracted_args)
         async def middleware(request: Request, next: Next) -> Response:
             middleware_function_arguments = _extract_middleware_function_arguments(middleware_function, request, next)
@@ -141,6 +166,17 @@ def _namespace_handler_middleware(self, name: str) -> Callable[[Callable[..., Ca
     return decorator
 Namespace.handler_middleware = _namespace_handler_middleware
 
+def _namespace_define_pipeline_item(self, name: str, callback: Callable[..., Callable[..., Awaitable[Any] | Any]]) -> None:
+    def base_callback(args: dict[str, Any]) -> Callable[[PipelineCtx], Awaitable[Any] | Any]:
+        extracted_args = _extract_arguments_arguments(args)
+        pipeline_item_function = callback(**extracted_args)
+        def pipeline_item(ctx: PipelineCtx) -> Any:
+            pipeline_item_function_arguments = _extract_pipeline_item_arguments(pipeline_item_function, ctx)
+            return pipeline_item_function(*pipeline_item_function_arguments)
+        return pipeline_item
+    self._define_pipeline_item(name, base_callback)
+Namespace.define_pipeline_item = _namespace_define_pipeline_item
+Namespace.define_transform_pipeline_item = _namespace_define_pipeline_item
 
 # Extension: PipelineCtx
 
@@ -155,7 +191,7 @@ def _pipeline_ctx_object(self) -> Any:
 PipelineCtx.object = _pipeline_ctx_object
 
 @property
-def _pipeline_ctx_path(self) -> Any:
+def _pipeline_ctx_path(self) -> list[str | int]:
     return self._path()
 PipelineCtx.path = _pipeline_ctx_path
 
@@ -163,6 +199,11 @@ PipelineCtx.path = _pipeline_ctx_path
 def _pipeline_ctx_teo(self) -> Any:
     return self._teo()
 PipelineCtx.teo = _pipeline_ctx_teo
+
+@property
+def _pipeline_ctx_request(self) -> Optional[Request]:
+    return self._request()
+PipelineCtx.request = _pipeline_ctx_request
 
 
 # Extension: TeoException
