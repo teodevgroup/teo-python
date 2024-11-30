@@ -43,5 +43,73 @@ def load_app():
             case 'waitingForReview': return 'done'
             case 'done': return 'open'
             case _: raise Exception(f"unknown status {value}")
+    @app.main.transform_pipeline_item_function("transformInt32Array")
+    def transform_int_32_array(value: list[int]):
+        return [v * 10 for v in value]
+    @app.main.transform_pipeline_item_function("transformInt64Array")
+    def transform_int_64_array(value: list[int]):
+        return [v * 10 for v in value]
+    @app.main.transform_pipeline_item_function("transformFloat32Array")
+    def transform_float_32_array(value: list[float]):
+        return [v * 10.0 for v in value]
+    @app.main.transform_pipeline_item_function("transformFloat64Array")
+    def transform_float_64_array(value: list[float]):
+        return [v * 10.0 for v in value]
+    @app.main.transform_pipeline_item_function("transformBoolArray")
+    def transform_bool_array(value: list[bool]):
+        return [not v for v in value]
+    @app.main.transform_pipeline_item_function("transformStringArray")
+    def transform_string_array(value: list[float]):
+        return [f"*{v}*" for v in value]
+    @app.main.transform_pipeline_item_function("transformDateArray")
+    def transform_date_array(value: list[date]):
+        return [v + timedelta(days=1) for v in value]
+    @app.main.transform_pipeline_item_function("transformDateTimeArray")
+    def transform_date_time_array(value: list[datetime]):
+        return [v + timedelta(days=1) for v in value]
+    @app.main.transform_pipeline_item_function("transformDecimalArray")
+    def transform_decimal_array(value: list[Decimal]):
+        return [v * 10 for v in value]
+    @app.main.transform_pipeline_item_function("transformStatusArray")
+    def transform_status_array(value: list[Status]) -> list[Status]:
+        def mapper(value: Status) -> Status:
+            match value:
+                case 'open': return 'pending'
+                case 'pending': return 'inProgress'
+                case 'inProgress': return 'waitingForReview'
+                case 'waitingForReview': return 'done'
+                case 'done': return 'open'
+                case _: raise Exception(f"unknown status {value}")
+        return [mapper(v) for v in value]
+    @app.main.transform_pipeline_item("alterInt32")
+    def alter_int_32(to: int):
+        return lambda: to
+    @app.main.transform_pipeline_item("alterInt64")
+    def alter_int_64(to: int):
+        return lambda: to 
+    @app.main.transform_pipeline_item("alterFloat32")
+    def alter_float_32(to: float):
+        return lambda: to 
+    @app.main.transform_pipeline_item("alterFloat64")
+    def alter_float_64(to: float):
+        return lambda: to 
+    @app.main.transform_pipeline_item("alterBool")
+    def alter_bool(to: bool):
+        return lambda: to 
+    @app.main.transform_pipeline_item("alterString")
+    def alter_string(to: str):
+        return lambda: to 
+    @app.main.transform_pipeline_item("alterDate")
+    def alter_date(to: date):
+        return lambda: to 
+    @app.main.transform_pipeline_item("alterDateTime")
+    def alter_date_time(to: datetime):
+        return lambda: to 
+    @app.main.transform_pipeline_item("alterDecimal")
+    def alter_decimal(to: Decimal):
+        return lambda: to
+    @app.main.transform_pipeline_item("alterStatus")
+    def alter_status(to: Status):
+        return lambda: to
     
     return app
