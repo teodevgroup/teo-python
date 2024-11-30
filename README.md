@@ -149,7 +149,7 @@ async def main():
     def echo_handler(request: Request):
         captures: EchoCaptures = request.captures()
         return Response.string(captures["data"], "text/plain")
-    app.main_namespace().define_handler("echo", echo_handler)
+    app.main_namespace.define_handler("echo", echo_handler)
     await app.run()
  
 run(main())
