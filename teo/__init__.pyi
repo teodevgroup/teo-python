@@ -421,6 +421,12 @@ class EnumMember:
         """
         ...
 
+class Cookies:
+    """
+    HTTP request or response cookies.
+    """
+    ...
+
 class Response:
     """
     An HTTP response.
@@ -489,82 +495,87 @@ class Response:
         """
         ...
 
-    def set_code(self, code: int, /) -> None:
-        """
-        Set the response' status code.
-        """
-        ...
-
+    @property
     def code(self) -> int:
         """
         Get the response' status code.
         """
         ...
 
+    @code.setter
+    def set_code(self, code: int, /) -> None:
+        """
+        Set the response' status code.
+        """
+        ...
+
+    @property
     def headers(self) -> ReadWriteHeaderMap:
         """
         Get the headers of the response.
         """
         ...
 
+    @property
     def is_file(self) -> bool:
         """
         Whether the response body is file.
         """
         ...
 
+    @property
     def is_text(self) -> bool:
         """
         Whether the response body is text.
         """
         ...
 
+    @property
     def is_empty(self) -> bool:
         """
         Whether the response body is empty.
         """
         ...
 
+    @property
     def is_teon(self) -> bool:
         """
         Whether the response body is Teon.
         """
         ...
 
-    def get_text(self) -> Optional[str]:
+    @property
+    def text(self) -> Optional[str]:
         """
         Get the response text. If the response' type is not text, None is returned.
         """
         ...
 
+    @property
     def get_teon(self) -> Optional[Any]:
         """
         Get the response Teon value. If the response' type is not Teon, None is returned.
         """
         ...
 
+    @property
     def get_file(self) -> Optional[str]:
         """
         Get the response file path. If the response' type is not file, None is returned.
         """
         ...
 
-    def add_cookie(self, cookie: Cookie) -> None:
-        """
-        Add a cookie entry to the response.
-        """
-        ...
-
-    def cookies(self) -> list[Cookie]:
+    @property
+    def cookies(self) -> Cookies:
         """
         Get the cookies of the response.
         """
         ...
 
 
-class ReadWriteHeaderMap:
+class HeaderMap:
     """
-    The readwrite headers of the response. 
+    The request or response headers. 
     """
 
     def keys(self) -> list[str]:

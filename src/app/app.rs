@@ -120,7 +120,13 @@ impl App {
         Ok::<Bound<PyAny>, PyErr>(coroutine.into_pyobject(py)?)
     }
 
-    fn _main_namespace(&self) -> Namespace {
+    #[getter]
+    fn main_namespace(&self) -> Namespace {
+        Namespace { teo_namespace: self.teo_app.main_namespace().clone() }
+    }
+
+    #[getter]
+    fn main(&self) -> Namespace {
         Namespace { teo_namespace: self.teo_app.main_namespace().clone() }
     }
 }

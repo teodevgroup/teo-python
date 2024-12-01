@@ -25,15 +25,18 @@ impl From<pipeline::Ctx> for PipelineCtx {
 #[pymethods]
 impl PipelineCtx {
 
-    fn _value(&self, py: Python<'_>) -> PyResult<PyObject> {
+    #[getter]
+    fn value(&self, py: Python<'_>) -> PyResult<PyObject> {
         teo_value_to_py_any(py, self.original.value(), self.map)
     }
 
-    fn _object(&self, py: Python<'_>) -> PyResult<PyObject> {
+    #[getter]
+    fn object(&self, py: Python<'_>) -> PyResult<PyObject> {
         teo_model_object_to_py_any(py, self.original.object(), self.map)
     }
 
-    fn _path(&self, py: Python<'_>) -> PyResult<PyObject> {
+    #[getter]
+    fn path(&self, py: Python<'_>) -> PyResult<PyObject> {
         let keypath = self.original.path();
         let list = PyList::empty(py);
         for item in keypath {
@@ -45,11 +48,13 @@ impl PipelineCtx {
         Ok(list.into_any().unbind())
     }
 
-    fn _teo(&self, py: Python<'_>) -> PyResult<PyObject> {
+    #[getter]
+    fn teo(&self, py: Python<'_>) -> PyResult<PyObject> {
         self.map.teo_transaction_ctx_to_py_ctx_object(py, self.original.transaction_ctx(), "")
     }
 
-    fn _request(&self) -> Option<Request> {
+    #[getter]
+    fn request(&self) -> Option<Request> {
         self.original.request().map(|r| Request::new(r))
     }
 }

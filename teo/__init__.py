@@ -7,8 +7,8 @@ from asyncio.coroutines import iscoroutine
 from inspect import signature, Parameter
 from .teo import (
     App, Namespace, HandlerGroup, Model, Field, Relation, Property, Enum, 
-    EnumMember, Response, Request, ReadWriteHeaderMap, Cookie, Expiration,
-    HandlerMatch, ObjectId, Range, OptionVariant, File, Pipeline, LocalObjects,
+    EnumMember, Response, Request, Headers, Cookie, Cookies, Expiration, 
+    HandlerMatch, ObjectId, Range, OptionVariant, File, Pipeline,  LocalObjects,
     LocalValues, InterfaceEnumVariant, Pipeline, TestRequest, TestResponse, 
     TestServer, PipelineCtx
 )
@@ -28,13 +28,6 @@ signal(SIGINT, lambda _, __: exit(0))
 async def _app_run(self):
     await self._run()
 App.run = _app_run
-
-
-@property
-def _app_main(self) -> Namespace:
-    return self._main_namespace()
-App.main_namespace = _app_main
-App.main = _app_main
 
 
 # Extension: Arguments extractors
@@ -297,34 +290,6 @@ def _namespace_compare_pipeline_item_function(self, name: str) -> Callable[[Call
         return callable
     return decorator
 Namespace.compare_pipeline_item_function = _namespace_compare_pipeline_item_function
-
-
-# Extension: PipelineCtx
-
-@property
-def _pipeline_ctx_value(self) -> Any:
-    return self._value()
-PipelineCtx.value = _pipeline_ctx_value
-
-@property
-def _pipeline_ctx_object(self) -> Any:
-    return self._object()
-PipelineCtx.object = _pipeline_ctx_object
-
-@property
-def _pipeline_ctx_path(self) -> list[str | int]:
-    return self._path()
-PipelineCtx.path = _pipeline_ctx_path
-
-@property
-def _pipeline_ctx_teo(self) -> Any:
-    return self._teo()
-PipelineCtx.teo = _pipeline_ctx_teo
-
-@property
-def _pipeline_ctx_request(self) -> Optional[Request]:
-    return self._request()
-PipelineCtx.request = _pipeline_ctx_request
 
 
 # Extension: TeoException

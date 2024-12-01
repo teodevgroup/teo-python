@@ -81,40 +81,49 @@ impl Response {
         })
     }
 
+    #[setter]
     pub fn set_code(&self, code: u16) {
         self.original.set_code(code)
     }
 
+    #[getter]
     pub fn code(&self) -> u16 {
         self.original.code()
     }
 
+    #[getter]
     pub fn headers(&self) -> Headers {
         Headers {
             original: self.original.headers()
         }
     }
 
+    #[getter]
     pub fn is_file(&self) -> bool {
         self.original.body().is_file()
     }
 
+    #[getter]
     pub fn is_text(&self) -> bool {
         self.original.body().is_text()
     }
 
+    #[getter]
     pub fn is_empty(&self) -> bool {
         self.original.body().is_empty()
     }
 
+    #[getter]
     pub fn is_teon(&self) -> bool {
         self.original.body().is_teon()
     }
 
+    #[getter]
     pub fn get_text(&self) -> Option<String> {
         self.original.body().as_text().cloned()
     }
 
+    #[getter]
     pub fn get_teon(&self, py: Python<'_>) -> PyResult<PyObject> {
         Ok(match self.original.body().as_teon() {
             None => PyNone::get(py).as_unbound().clone_ref(py).into_any(),
@@ -122,6 +131,7 @@ impl Response {
         })
     }
 
+    #[getter]
     pub fn get_file(&self) -> Option<String> {
         match self.original.body().as_file() {
             None => None,
@@ -129,6 +139,7 @@ impl Response {
         }
     }
 
+    #[getter]
     pub fn cookies(&self) -> Cookies {
         let cookies = self.original.cookies();
         Cookies {
