@@ -10,14 +10,17 @@ pub struct HandlerMatch {
 #[pymethods]
 impl HandlerMatch {
 
+    #[getter]
     pub fn path(&self) -> Vec<String> {
         self.teo_inner.path().clone()
     }
 
+    #[getter]
     pub fn handler_name(&self) -> &str {
         self.teo_inner.handler_name()
     }
 
+    #[getter]
     pub fn captures(&self, py: Python<'_>) -> PyResult<PyObject> {
         let captures_map = self.teo_inner.captures();
         let py_dict = PyDict::new(py);

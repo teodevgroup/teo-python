@@ -15,6 +15,7 @@ pub mod test;
 
 use std::ffi::CString;
 use headers::Headers;
+use headers::HeadersIter;
 use pipeline::ctx::PipelineCtx;
 use pyo3::prelude::*;
 use cookies::Cookie;
@@ -72,6 +73,7 @@ def teo_wrap_async(callable):
     m.add_class::<Cookies>()?;
     m.add_class::<Expiration>()?;
     m.add_class::<Headers>()?;
+    m.add_class::<HeadersIter>()?;
     m.add_class::<HandlerMatch>()?;
     m.add_class::<LocalObjects>()?;
     m.add_class::<LocalValues>()?;

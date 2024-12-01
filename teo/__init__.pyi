@@ -53,18 +53,21 @@ class Namespace:
     Namespace is where handlers and models are defined.
     """
 
+    @property
     def is_main(self) -> bool:
         """
         Whether this namespace is the main namespace.
         """
         ...
 
+    @property
     def is_std(self) -> bool:
         """
         Whether this namespace is the standard namespace.        
         """
         ...
 
+    @property
     def path(self) -> list[str]:
         """
         Get the namespace's path.
@@ -510,7 +513,7 @@ class Response:
         ...
 
     @property
-    def headers(self) -> ReadWriteHeaderMap:
+    def headers(self) -> Headers:
         """
         Get the headers of the response.
         """
@@ -573,7 +576,7 @@ class Response:
         ...
 
 
-class HeaderMap:
+class Headers:
     """
     The request or response headers. 
     """
@@ -584,28 +587,71 @@ class HeaderMap:
         """
         ...
 
-    def len(self) -> int:
+    def __len__(self) -> int:
         """
         Get the number of header entries in this map.
         """
         ...
 
-    def contains_key(self, key: str, /) -> bool:
+    def __contains__(self, key: str, /) -> bool:
         """
         Whether the header map contains an entry by key.
         """
         ...
 
-    def get(self, key: str, /) -> Optional[str]:
+    def __getitem__(self, key: str, /) -> Optional[str]:
         """
         Get header value by key.
         """
         ...
 
-    def set(self, key: str, value: str, /) -> None:
+    def __setitem__(self, key: str, value: str, /) -> None:
         """
-        Set a header value.
+        Insert a header value.
         """
+        ...
+
+    def append(self, key: str, value: str, /) -> None:
+        """
+        Append a header value.
+        """
+        ...
+
+    def __delitem__(self, key: str, /) -> None:
+        """
+        Remove a header by key.
+        """
+        ...
+
+    def clear(self) -> None:
+        """
+        Clear the header map.
+        """
+        ...
+
+    def copy(self) -> Headers:
+        """
+        Copy this header map.
+        """    
+        ...
+
+    def __iter__(self) -> HeadersIter:
+        """
+        Create a iterator from this header map.
+        """
+        ...
+
+class HeadersIter:
+    """
+    Headers iterator.
+    """
+    
+    def __next__(self) -> tuple[str, str]:
+        """
+        The next pair of header name and value.
+        """
+        ...
+
 
 class Cookie:
     """
@@ -757,31 +803,34 @@ class Expiration:
     """
 
     @staticmethod
-    def create_session():
+    def session():
         """
         Create a session expiration.
         """
         ...
 
     @staticmethod
-    def create_datetime(datetime: datetime):
+    def datetime(datetime: datetime):
         """
         Create a datetime expiration.
         """
         ...
 
+    @property
     def is_session(self) -> bool:
         """
         Whether the expiration is session.
         """
         ...
 
+    @property
     def is_datetime(self) -> bool:
         """
         Whether the expiration is datetime.
         """
         ...
 
+    @property
     def datetime(self) -> Optional[datetime]:
         """
         Get the expiration datetime.
@@ -1002,18 +1051,21 @@ class HandlerMatch:
     The request handler match result.
     """
 
+    @property
     def path(self) -> list[str]:
         """
         Get the matched handler's path.
         """
         ...
 
+    @property
     def handler_name(self) -> str:
         """
         Get the handler's name.
         """
         ...
 
+    @property
     def captures(self) -> dict[str, str]:
         """
         Get the URL path captures dict.

@@ -13,16 +13,19 @@ pub struct Namespace {
 #[pymethods]
 impl Namespace {
 
+    #[getter]
     pub fn is_main(&self) -> bool {
         self.teo_namespace.is_main()
     }
 
+    #[getter]
     pub fn is_std(&self) -> bool {
         self.teo_namespace.is_std()
     }
 
-    pub fn path(&self) -> Vec<String> {
-        self.teo_namespace.path().clone()
+    #[getter]
+    pub fn path(&self) -> &Vec<String> {
+        self.teo_namespace.path()
     }
 
     pub fn namespace(&self, name: &str) -> Namespace {

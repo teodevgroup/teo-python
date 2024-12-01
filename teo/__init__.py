@@ -6,11 +6,11 @@ from copy import copy
 from asyncio.coroutines import iscoroutine
 from inspect import signature, Parameter
 from .teo import (
-    App, Namespace, HandlerGroup, Model, Field, Relation, Property, Enum, 
-    EnumMember, Response, Request, Headers, Cookie, Cookies, Expiration, 
-    HandlerMatch, ObjectId, Range, OptionVariant, File, Pipeline,  LocalObjects,
-    LocalValues, InterfaceEnumVariant, Pipeline, TestRequest, TestResponse, 
-    TestServer, PipelineCtx
+    App, Namespace, HandlerGroup, Model, Field, Relation, Property, Enum,
+    EnumMember, Response, Request, Headers, HeadersIter, Cookie, Cookies,
+    CookiesIter, Expiration, HandlerMatch, ObjectId, Range, OptionVariant,
+    File, Pipeline, LocalObjects, LocalValues, InterfaceEnumVariant, Pipeline,
+    TestRequest, TestResponse, TestServer, PipelineCtx
 )
 from .annotations import CapturesAnnotationMark, RequestBodyObjectAnnotationMark, TeoAnnotationMark, ModelObjectAnnotationMark
 
