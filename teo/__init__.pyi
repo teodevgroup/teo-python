@@ -843,130 +843,139 @@ class Request:
     An HTTP request.
     """
 
+    @property
     def version(self) -> str:
         """
         Get the request's HTTP version.
         """
+        ...
 
+    @version.setter
+    def set_version(self, version: str) -> None:
+        """
+        Set the request's HTTP version.
+        """
+        ...
+
+    @property
     def method(self) -> str:
         """
         Get the request's HTTP method.
         """
         ...
 
+    @method.setter
+    def set_method(self, method: str) -> None:
+        """
+        Set the request's HTTP method.
+        """
+        ...
+
+    @property
     def uri(self) -> str:
         """
         Get the request's URI.
         """
         ...
 
+    @uri.setter
+    def set_uri(self, uri: str) -> None:
+        """
+        Set the request's URI.
+        """
+        ...
+
+    @property
     def scheme(self) -> Optional[str]:
         """
         Get the request URI's scheme.
         """
         ...
 
+    @property
     def host(self) -> Optional[str]:
         """
         Get the request URI's host.
         """
         ...
 
+    @property
     def path(self) -> str:
         """
         Get the request URI's path.
         """
         ...
 
+    @property
     def query(self) -> str:
         """
         Get the request URI's query string.
         """
         ...
 
+    @property
     def content_type(self) -> Optional[str]:
         """
         Get the request's content type.
         """
         ...
 
-    def contains_header(self, name: str) -> bool:
+    @property
+    def headers(self) -> Headers:
         """
-        Whether the header of name exists.
-        """
-        ...
-
-    def header_value(self, name: str) -> Optional[str]:
-        """
-        Return the first header value in the header entries.
-        """
-        ...
-
-    def header_values(self, name: str) -> list[str]:
-        """
-        Return all values of the header named `name`.
-        """
-        ...
-
-    def header_keys(self) -> list[str]:
-        """
-        Get all header keys.
-        """
-        ...
-
-    def headers_length(self) -> int:
-        """
-        Get the length of the headers.
+        Get the request's header map.
         """
 
-    def cookies(self) -> list[Cookie]:
+    @property
+    def cookies(self) -> Cookies:
         """
         Get the cookies from the request.
         """
         ...
 
-    def cookie(self, name: str) -> Optional[Cookie]:
-        """
-        Get a cookie from the request by name.
-        """
-        ...
-
+    @property
     def body_object(self) -> Any:
         """
         Get the HTTP request's body object.
         """
         ...
 
+    @property
     def set_body_object(self, new_value: Any) -> None:
         """
         Set the request's body object.
         """
         ...
 
+    @property
     def teo(self) -> Any:
         """
         Get the ORM context.
         """
         ...
 
+    @property
     def handler_match(self) -> HandlerMatch:
         """
         Get the handler match result.
         """
         ...
 
+    @property
     def captures(self) -> dict[str, str]:
         """
         Get the path captures.
         """
         ...
 
+    @property
     def local_values(self) -> LocalValues:
         """
         Get the request local values map.
         """
         ...
 
+    @property
     def local_objects(self) -> LocalObjects:
         """
         Get the request local objects map.
