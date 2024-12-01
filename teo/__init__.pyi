@@ -803,14 +803,14 @@ class Expiration:
     """
 
     @staticmethod
-    def session():
+    def session_expiration():
         """
         Create a session expiration.
         """
         ...
 
     @staticmethod
-    def datetime(datetime: datetime):
+    def datetime_expiration(datetime: datetime):
         """
         Create a datetime expiration.
         """

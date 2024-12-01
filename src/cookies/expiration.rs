@@ -13,12 +13,12 @@ pub struct Expiration {
 impl Expiration {
 
     #[staticmethod]
-    pub fn session() -> Self {
+    pub fn session_expiration() -> Self {
         Expiration { original: OriginalExpiration::Session }
     }
 
     #[staticmethod]
-    pub fn datetime(datetime: DateTime<Utc>) -> Self {
+    pub fn datetime_expiration(datetime: DateTime<Utc>) -> Self {
         let timestamp = datetime.timestamp_millis();
         Self {
             original: OriginalExpiration::DateTime(OffsetDateTime::from_unix_timestamp(timestamp).unwrap())
