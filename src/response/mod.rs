@@ -1,8 +1,5 @@
-pub mod header_map;
-
 use std::path::PathBuf;
-use crate::{object::value::{py_any_to_teo_value, teo_value_to_py_any_without_model_objects}, request::Cookie};
-use self::header_map::ReadWriteHeaderMap;
+use crate::{headers::Headers, object::value::{py_any_to_teo_value, teo_value_to_py_any_without_model_objects}, request::Cookie};
 use pyo3::{pyclass, pymethods, types::PyNone, Bound, PyAny, PyObject, PyResult, Python};
 use teo::prelude::response::Response as TeoResponse;
 
@@ -23,10 +20,10 @@ impl Response {
     }
 
     #[staticmethod]
-    pub fn string(content: String, content_type: String) -> Self {
-        Self {
-            teo_response: TeoResponse::string(content, &content_type.as_str())
-        }
+    pub fn string(content: String, content_type: String) -> PyResult<Self> {
+        Ok(Self {
+            teo_response: TeoResponse::string(content, &content_type.as_str())?
+        })
     }
 
     #[staticmethod]
@@ -39,8 +36,8 @@ impl Response {
     }
 
     #[staticmethod]
-    pub fn html(content: String) -> Self {
-        Self::string(content, "text/html".to_owned())
+    pub fn html(content: String) -> PyResult<Self> {
+        Ok(Self::string(content, "text/html".to_owned())?)
     }
 
     #[staticmethod]
@@ -78,10 +75,10 @@ impl Response {
     }
 
     #[staticmethod]
-    pub fn redirect(path: String) -> Self {
-        Self {
-            teo_response: TeoResponse::redirect(path)
-        }
+    pub fn redirect(path: String) -> PyResult<Self> {
+        Ok(Self {
+            teo_response: TeoResponse::redirect(path)?
+        })
     }
 
     pub fn set_code(&self, code: u16) {
@@ -92,9 +89,9 @@ impl Response {
         self.teo_response.code()
     }
 
-    pub fn headers(&self) -> ReadWriteHeaderMap {
-        ReadWriteHeaderMap {
-            inner: self.teo_response.headers()
+    pub fn headers(&self) -> Headers {
+        Headers {
+            original: self.teo_response.headers()
         }
     }
 
@@ -130,10 +127,6 @@ impl Response {
             None => None,
             Some(path_buf) => Some(path_buf.to_str().unwrap().to_string()),
         }
-    }
-
-    pub fn add_cookie(&self, cookie: Cookie) {
-        self.teo_response.add_cookie(cookie.teo_cookie)
     }
 
     pub fn cookies(&self) -> Vec<Cookie> {

@@ -7,15 +7,18 @@ pub mod r#enum;
 pub mod model;
 pub mod pipeline;
 pub mod handler;
+pub mod headers;
+pub mod cookies;
 pub mod request;
 pub mod response;
 pub mod test;
 
 use std::ffi::CString;
+use headers::Headers;
 use pipeline::ctx::PipelineCtx;
 use pyo3::prelude::*;
 use request::{Expiration, Request};
-use response::{Response, header_map::ReadWriteHeaderMap};
+use response::Response;
 use crate::app::app::App;
 use crate::namespace::namespace::Namespace;
 use crate::r#enum::r#enum::Enum;
@@ -65,7 +68,7 @@ def teo_wrap_async(callable):
     m.add_class::<Request>()?;
     m.add_class::<Cookie>()?;
     m.add_class::<Expiration>()?;
-    m.add_class::<ReadWriteHeaderMap>()?;
+    m.add_class::<Headers>()?;
     m.add_class::<HandlerMatch>()?;
     m.add_class::<LocalObjects>()?;
     m.add_class::<LocalValues>()?;

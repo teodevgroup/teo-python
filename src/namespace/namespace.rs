@@ -419,7 +419,7 @@ impl Namespace {
                                         let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (move || {
                                             let next = next.clone();
                                             async move {
-                                                let result: teo::prelude::Response = next.call(request.teo_request).await?;
+                                                let result: teo::prelude::Response = next.call(request.original).await?;
                                                 Python::with_gil(|py| {
                                                     let response = Response {
                                                         teo_response: result
@@ -486,7 +486,7 @@ impl Namespace {
                                         let coroutine = pyo3_async_runtimes::tokio::future_into_py::<_, PyObject>(py, (move || {
                                             let next = next.clone();
                                             async move {
-                                                let result: teo::prelude::Response = next.call(request.teo_request).await?;
+                                                let result: teo::prelude::Response = next.call(request.original).await?;
                                                 Python::with_gil(|py| {
                                                     let response = Response {
                                                         teo_response: result
