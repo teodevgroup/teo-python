@@ -37,7 +37,7 @@ impl HandlerGroup {
                 let awaited_result = await_coroutine_if_needed_value_with_locals(&coroutine, &thread_locals).await?;
                 Python::with_gil(|py| {
                     let response: Response = awaited_result.extract(py)?;
-                    Ok(response.teo_response.clone())
+                    Ok(response.original.clone())
                 })
             }
         });

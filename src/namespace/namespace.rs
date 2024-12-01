@@ -345,7 +345,7 @@ impl Namespace {
                 let awaited_result = await_coroutine_if_needed_value_with_locals(&coroutine, &thread_locals).await?;
                 Python::with_gil(|py| {
                     let response: Response = awaited_result.extract(py)?;
-                    Ok(response.teo_response.clone())
+                    Ok(response.original.clone())
                 })
             }
         });
@@ -422,7 +422,7 @@ impl Namespace {
                                                 let result: teo::prelude::Response = next.call(request.original).await?;
                                                 Python::with_gil(|py| {
                                                     let response = Response {
-                                                        teo_response: result
+                                                        original: result
                                                     };
                                                     Ok::<PyObject, PyErr>(response.into_py_any(py)?)    
                                                 })    
@@ -444,7 +444,7 @@ impl Namespace {
                             let result = await_coroutine_if_needed_value_with_locals(&coroutine, &thread_locals).await?;
                             Python::with_gil(|py| {
                                 let response: Response = result.extract(py)?;
-                                Ok(response.teo_response)    
+                                Ok(response.original)    
                             })
                         }
                     };                
@@ -489,7 +489,7 @@ impl Namespace {
                                                 let result: teo::prelude::Response = next.call(request.original).await?;
                                                 Python::with_gil(|py| {
                                                     let response = Response {
-                                                        teo_response: result
+                                                        original: result
                                                     };
                                                     Ok::<PyObject, PyErr>(response.into_py_any(py)?)    
                                                 })    
@@ -511,7 +511,7 @@ impl Namespace {
                             let result = await_coroutine_if_needed_value_with_locals(&coroutine, &thread_locals).await?;
                             Python::with_gil(|py| {
                                 let response: Response = result.extract(py)?;
-                                Ok(response.teo_response)    
+                                Ok(response.original)    
                             })
                         }
                     };                

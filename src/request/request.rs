@@ -1,6 +1,6 @@
 use pyo3::{pyclass, pymethods, Bound, PyAny, PyObject, PyResult, Python};
 use teo::prelude::Request as TeoRequest;
-use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, headers::Headers, object::value::{py_any_to_teo_value, teo_value_to_py_any_without_model_objects}};
+use crate::{cookies::cookies::Cookies, dynamic::py_class_lookup_map::PYClassLookupMap, headers::Headers, object::value::{py_any_to_teo_value, teo_value_to_py_any_without_model_objects}};
 
 use super::{local::{objects::LocalObjects, values::LocalValues}, HandlerMatch};
 
@@ -60,12 +60,9 @@ impl Request {
         }
     }
 
-    pub fn cookie(&self, name: String) -> PyResult<Option<Cookie>> {
-        Ok(self.original.cookies()?.get(&name).map(|c| Cookie { teo_cookie: c.clone() }))
-    }
-
-    pub fn cookies(&self) -> PyResult<Vec<Cookie>> {
-        Ok(self.original.cookies()?.iter().map(|c| Cookie { teo_cookie: c.clone() }).collect())
+    pub fn cookies(&self) -> PyResult<Cookies> {
+        let cookies = self.original.cookies()?;
+        Ok(Cookies { original: cookies.clone() })
     }
 
     pub fn handler_match(&self) -> PyResult<HandlerMatch> {

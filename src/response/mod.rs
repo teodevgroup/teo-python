@@ -1,12 +1,12 @@
 use std::path::PathBuf;
-use crate::{headers::Headers, object::value::{py_any_to_teo_value, teo_value_to_py_any_without_model_objects}, request::Cookie};
+use crate::{cookies::Cookies, headers::Headers, object::value::{py_any_to_teo_value, teo_value_to_py_any_without_model_objects}};
 use pyo3::{pyclass, pymethods, types::PyNone, Bound, PyAny, PyObject, PyResult, Python};
-use teo::prelude::response::Response as TeoResponse;
+use teo::prelude::response::Response as OriginalResponse;
 
 #[pyclass]
 #[derive(Clone)]
 pub struct Response {
-    pub(crate) teo_response: TeoResponse,
+    pub(crate) original: OriginalResponse,
 }
 
 #[pymethods]
@@ -15,23 +15,23 @@ impl Response {
     #[staticmethod]
     pub fn empty() -> Self {
         Self {
-            teo_response: TeoResponse::empty()
+            original: OriginalResponse::empty()
         }
     }
 
     #[staticmethod]
     pub fn string(content: String, content_type: String) -> PyResult<Self> {
         Ok(Self {
-            teo_response: TeoResponse::string(content, &content_type.as_str())?
+            original: OriginalResponse::string(content, &content_type.as_str())?
         })
     }
 
     #[staticmethod]
     pub fn teon(py: Python<'_>, value: Bound<PyAny>) -> PyResult<Self> {
         let teo_value = py_any_to_teo_value(py, &value)?;
-        let response = TeoResponse::teon(teo_value);
+        let response = OriginalResponse::teon(teo_value);
         Ok(Self {
-            teo_response: response
+            original: response
         })
     }
 
@@ -43,9 +43,9 @@ impl Response {
     #[staticmethod]
     pub fn data(py: Python<'_>, value: Bound<PyAny>) -> PyResult<Self> {
         let teo_value = py_any_to_teo_value(py, &value)?;
-        let response = TeoResponse::data(teo_value);
+        let response = OriginalResponse::data(teo_value);
         Ok(Self {
-            teo_response: response
+            original: response
         })
     }
     
@@ -53,9 +53,9 @@ impl Response {
     pub fn data_meta(py: Python<'_>, data: Bound<PyAny>, meta: Bound<PyAny>) -> PyResult<Self> {
         let teo_data = py_any_to_teo_value(py, &data)?;
         let teo_meta = py_any_to_teo_value(py, &meta)?;
-        let response = TeoResponse::data_meta(teo_data, teo_meta);
+        let response = OriginalResponse::data_meta(teo_data, teo_meta);
         Ok(Self {
-            teo_response: response
+            original: response
         })
     }
     
@@ -63,73 +63,76 @@ impl Response {
     pub fn file(path: String) -> Self {
         let path_buf = PathBuf::from(path);
         Self {
-            teo_response: TeoResponse::file(path_buf)
+            original: OriginalResponse::file(path_buf)
         }
     }
 
     #[staticmethod]
     pub fn send_file(base: &str, path: &str) -> PyResult<Self> {
         Ok(Self {
-            teo_response: TeoResponse::send_file(base, path)?
+            original: OriginalResponse::send_file(base, path)?
         })
     }
 
     #[staticmethod]
     pub fn redirect(path: String) -> PyResult<Self> {
         Ok(Self {
-            teo_response: TeoResponse::redirect(path)?
+            original: OriginalResponse::redirect(path)?
         })
     }
 
     pub fn set_code(&self, code: u16) {
-        self.teo_response.set_code(code)
+        self.original.set_code(code)
     }
 
     pub fn code(&self) -> u16 {
-        self.teo_response.code()
+        self.original.code()
     }
 
     pub fn headers(&self) -> Headers {
         Headers {
-            original: self.teo_response.headers()
+            original: self.original.headers()
         }
     }
 
     pub fn is_file(&self) -> bool {
-        self.teo_response.body().is_file()
+        self.original.body().is_file()
     }
 
     pub fn is_text(&self) -> bool {
-        self.teo_response.body().is_text()
+        self.original.body().is_text()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.teo_response.body().is_empty()
+        self.original.body().is_empty()
     }
 
     pub fn is_teon(&self) -> bool {
-        self.teo_response.body().is_teon()
+        self.original.body().is_teon()
     }
 
     pub fn get_text(&self) -> Option<String> {
-        self.teo_response.body().as_text().cloned()
+        self.original.body().as_text().cloned()
     }
 
     pub fn get_teon(&self, py: Python<'_>) -> PyResult<PyObject> {
-        Ok(match self.teo_response.body().as_teon() {
+        Ok(match self.original.body().as_teon() {
             None => PyNone::get(py).as_unbound().clone_ref(py).into_any(),
             Some(value) => teo_value_to_py_any_without_model_objects(py, value)?
         })
     }
 
     pub fn get_file(&self) -> Option<String> {
-        match self.teo_response.body().as_file() {
+        match self.original.body().as_file() {
             None => None,
             Some(path_buf) => Some(path_buf.to_str().unwrap().to_string()),
         }
     }
 
-    pub fn cookies(&self) -> Vec<Cookie> {
-        self.teo_response.cookies().into_iter().map(|c| Cookie { teo_cookie: c }).collect()
+    pub fn cookies(&self) -> Cookies {
+        let cookies = self.original.cookies();
+        Cookies {
+            original: cookies
+        }
     }
 }
