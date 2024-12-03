@@ -1,18 +1,18 @@
 use pyo3::{pyclass, pymethods, Bound, PyAny, PyObject, PyResult, Python};
-use teo::prelude::{request::local_values::LocalValues as TeoLocalValues, Value};
+use teo::prelude::{request::local_values::LocalValues as OriginalLocalValues, Value};
 
 use crate::object::value::{py_any_to_teo_value, teo_value_to_py_any_without_model_objects};
 
 #[pyclass]
 #[derive(Clone)]
 pub struct LocalValues {
-    pub(crate) teo_local_values: TeoLocalValues,
+    pub(crate) original: OriginalLocalValues,
 }
 
 impl LocalValues {
-    pub(crate) fn new(teo_local_values: TeoLocalValues) -> Self {
+    pub(crate) fn new(original: OriginalLocalValues) -> Self {
         Self {
-            teo_local_values
+            original
         }
     }
 }
@@ -20,26 +20,30 @@ impl LocalValues {
 #[pymethods]
 impl LocalValues {
 
-    pub fn insert(&self, key: String, value: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
+    pub fn __setitem__(&self, key: String, value: Bound<PyAny>, py: Python<'_>) -> PyResult<()> {
         let value = py_any_to_teo_value(py, &value)?;
-        self.teo_local_values.insert(key, value);
+        self.original.insert(key, value);
         Ok(())
     }
 
-    pub fn get(&self, key: String, py: Python<'_>) -> PyResult<PyObject> {
-        let value: &Value = self.teo_local_values.get(&key)?;
+    pub fn __getitem__(&self, key: String, py: Python<'_>) -> PyResult<PyObject> {
+        let value: &Value = self.original.get(&key)?;
         Ok(teo_value_to_py_any_without_model_objects(py, value)?)
     }
 
-    pub fn contains(&self, key: String) -> bool {
-        self.teo_local_values.contains(&key)
+    pub fn __hasitem__(&self, key: String) -> bool {
+        self.original.contains(&key)
     }
 
-    pub fn remove(&self, key: String) {
-        self.teo_local_values.remove(key.as_str());
+    pub fn __delitem__(&self, key: String) {
+        self.original.remove(key.as_str());
+    }
+
+    pub fn __len__(&self) -> usize {
+        self.original.len()
     }
 
     pub fn clear(&self) {
-        self.teo_local_values.clear();
+        self.original.clear();
     }
 }

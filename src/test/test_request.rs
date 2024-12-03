@@ -85,10 +85,12 @@ impl TestRequest {
         })
     }
 
+    #[getter]
     pub fn method(&self) -> &str {
         self.method.as_str()
     }
 
+    #[setter]
     pub fn set_method(&mut self, method: &str) -> PyResult<()> {
         match Method::from_str(method) {
             Ok(method) => {
@@ -99,10 +101,12 @@ impl TestRequest {
         }
     }
 
+    #[getter]
     pub fn uri(&self) -> &str {
         self.uri.as_str()
     }
 
+    #[setter]
     pub fn set_uri(&mut self, uri: String) {
         self.uri = uri;
     }
@@ -129,11 +133,13 @@ impl TestRequest {
         Ok(())
     }
 
+    #[getter]
     pub fn body<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
         let vec_u8_data = Vec::<u8>::from(self.body.clone());
         PyBytes::new(py, &vec_u8_data)
     }
 
+    #[setter]
     pub fn set_body(&mut self, body: Bound<PyBytes>) -> PyResult<()> {
         let data: &[u8] = body.extract()?;
         self.body = Bytes::copy_from_slice(&data);

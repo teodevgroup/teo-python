@@ -652,136 +652,168 @@ class HeadersIter:
         """
         ...
 
+SameSite = Literal["strict", "lax", "none"]
+
 
 class Cookie:
     """
     The cookie.
     """
 
-    def __init__(self, name: str, value: str) -> None:
+    def __init__(self, 
+                 name: str, 
+                 value: Optional[str] = None,
+                 http_only: Optional[bool] = None,
+                 secure: Optional[bool] = None,
+                 same_site: Optional[SameSite] = None,
+                 partitioned: Optional[bool] = None,
+                 max_age: Optional[float] = None,
+                 path: Optional[str] = None,
+                 domain: Optional[str] = None,
+                 expires: Optional[Expiration] = None) -> None:
         """
-        Create a new cookie with `name` and `value`.
+        Create a new cookie. If only one string parameter is provided, it is 
+        parsed.
         """
         ...
 
+    @property
     def name(self) -> str:
         """
         Get the cookie's name.
         """
         ...
 
-    def value(self) -> str:
-        """
-        Get the cookie's value.
-        """
-        ...
-
-    def path(self) -> Optional[str]:
-        """
-        Get the cookie's path.
-        """
-        ...
-
-    def domain(self) -> Optional[str]:
-        """
-        Get the cookie's domain.
-        """
-        ...
-
-    def max_age(self) -> Optional[int]:
-        """
-        Get the cookie's max age.
-        """
-        ...
-
-    def expires(self) -> Optional[Expiration]:
-        """
-        Get the cookie's expiration.
-        """
-        ...
-
-    def secure(self) -> Optional[bool]:
-        """
-        Whether the cookie is secure.
-        """
-        ...
-
-    def http_only(self) -> Optional[bool]:
-        """
-        Whether the cookie is http only.
-        """
-        ...
-
-    def same_site(self) -> Optional[Literal["strict", "lax", "none"]]:
-        """
-        Get the cookie's same site.
-        """
-        ...
-
+    @name.setter
     def set_name(self, name: str) -> None:
         """
         Set the cookie's name.
         """
         ...
 
-    def set_value(self, value: str) -> None:
+    @property
+    def value(self) -> str:
+        """
+        Get the cookie's value.
+        """
+        ...
+
+    @value.setter
+    def set_value(self, name: str) -> None:
         """
         Set the cookie's value.
         """
         ...
 
-    def set_path(self, path: str) -> None:
+    @property
+    def http_only(self) -> Optional[bool]:
         """
-        Set the cookie's path.
-        """
-        ...
-
-    def set_domain(self, domain: str) -> None:
-        """
-        Set the cookie's domain.
+        Whether the cookie is http only.
         """
         ...
 
-    def set_max_age(self, max_age: int) -> None:
-        """
-        Set the cookie's max age.
-        """
-        ...
-
-    def set_expires(self, expires: Expiration) -> None:
-        """
-        Set the cookie's expiration.
-        """
-        ...
-
-    def set_secure(self, secure: bool) -> None:
-        """
-        Set whether the cookie is secure.
-        """
-        ...
-
+    @http_only.setter
     def set_http_only(self, http_only: bool) -> None:
         """
         Set whether the cookie is http only.
         """
         ...
 
-    def set_same_site(self, same_site: Literal["strict", "lax", "none"]) -> None:
+    @property
+    def secure(self) -> Optional[bool]:
+        """
+        Whether the cookie is secure.
+        """
+        ...
+
+    @secure.setter
+    def set_secure(self, secure: bool) -> None:
+        """
+        Set whether the cookie is secure.
+        """
+        ...
+
+    @property
+    def same_site(self) -> Optional[SameSite]:
+        """
+        Get the cookie's same site.
+        """
+        ...
+
+    @same_site.setter
+    def set_same_site(self, same_site: SameSite) -> None:
         """
         Set the cookie's same site.
         """
         ...
 
-    def to_string(self) -> str:
+    @property
+    def partitioned(self) -> Optional[bool]:
         """
-        Convert the cookie to string.
+        Get the cookie's partitioned.
+        """
+        ...
+    
+    @partitioned.setter
+    def set_partitioned(self, partitioned: bool) -> None:
+        """
+        Set the cookie's partitioned.
         """
         ...
 
-    @staticmethod
-    def from_string(string: str) -> Cookie:
+    @property
+    def max_age(self) -> Optional[float]:
         """
-        Create a new cookie from a string.
+        Get the cookie's max age.
+        """
+        ...
+
+    @max_age.setter
+    def set_max_age(self, max_age: float) -> None:
+        """
+        Set the cookie's max age.
+        """
+        ...
+
+    @property
+    def path(self) -> Optional[str]:
+        """
+        Get the cookie's path.
+        """
+        ...
+
+    @path.setter
+    def set_path(self, path: str) -> None:
+        """
+        Set the cookie's path.
+        """
+        ...
+
+    @property
+    def domain(self) -> Optional[str]:
+        """
+        Get the cookie's domain.
+        """
+        ...
+
+    @domain.setter
+    def set_domain(self, domain: str) -> None:
+        """
+        Set the cookie's domain.
+        """
+        ...
+
+    @property
+    def expires(self) -> Optional[Expiration]:
+        """
+        Get the cookie's expiration.
+        """
+        ...
+
+    @expires.setter
+    def set_expires(self, expires: Expiration) -> None:
+        """
+        Set the cookie's expiration.
         """
         ...
 
@@ -796,6 +828,13 @@ class Cookie:
         Make the cookie permanent.
         """
         ...
+
+    def encoded(self) -> str:
+        """
+        Get the encoded string.
+        """
+        ...
+
 
 class Expiration:
     """
@@ -1301,24 +1340,28 @@ class TestRequest:
         """
         ...
 
+    @property
     def method(self) -> str:
         """
         Get the request's method.
         """
         ...
 
+    @method.setter
     def set_method(self, method: str) -> None:
         """
         Set the request's method.
         """
         ...
 
+    @property
     def uri(self) -> str:
         """
         Get the request's URI.
         """
         ...
 
+    @uri.setter
     def set_uri(self, uri: str) -> None:
         """
         Set the request's URI.
@@ -1337,12 +1380,14 @@ class TestRequest:
         """
         ...
 
+    @property
     def body(self) -> Optional[bytes]:
         """
         Get the request's body.
         """
         ...
 
+    @body.setter
     def set_body(self, body: bytes) -> None:
         """
         Set the request's body.
@@ -1356,12 +1401,14 @@ class TestResponse:
     """
     ...
 
+    @property
     def status(self) -> int:
         """
         Get the response's status code.
         """
         ...
 
+    @property
     def version(self) -> str:
         """
         Get the response's HTTP version.

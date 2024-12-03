@@ -15,8 +15,34 @@ pub struct Cookie {
 impl Cookie {
 
     #[new]
-    pub fn new(name: &str, value: &str) -> Self {
-        Cookie { original: OriginalCookie::new(name.to_owned(), value.to_owned()) }
+    #[pyo3(signature = (name, value=None, http_only=None, secure=None, same_site=None, partitioned=None, max_age=None, path=None, domain=None, expires=None))]
+    pub fn new(
+        name: &str, 
+        value: Option<&str>, 
+        http_only: Option<bool>, 
+        secure: Option<bool>, 
+        same_site: Option<&str>, 
+        partitioned: Option<bool>, 
+        max_age: Option<f64>, 
+        path: Option<&str>, 
+        domain: Option<String>, 
+        expires: Option<Expiration>) -> PyResult<Self> {
+        if value.is_none() && http_only.is_none() && secure.is_none() && same_site.is_none() && partitioned.is_none() && max_age.is_none() && path.is_none() && domain.is_none() && expires.is_none() {
+            return Ok(Cookie { original: OriginalCookie::parse_encoded(name)? })
+        }
+        let Some(value) = value else {
+            Err(teo_result::Error::internal_server_error_message("value is required"))?
+        };
+        let slf = Cookie { original: OriginalCookie::new(name.to_owned(), value.to_owned()) };
+        slf.set_http_only(http_only);
+        slf.set_secure(secure);
+        slf.set_same_site(same_site)?;
+        slf.set_partitioned(partitioned);
+        slf.set_max_age(max_age);
+        slf.set_path(path.map(|s| s.to_owned()));
+        slf.set_domain(domain);
+        slf.set_expires(expires);
+        Ok(slf)
     }
 
     #[getter]

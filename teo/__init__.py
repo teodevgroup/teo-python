@@ -1,4 +1,4 @@
-from types import GenericAlias
+from types import GenericAlias, Literal
 from typing import TypeVar, Union, Optional, Callable, Awaitable, Self, Any
 from signal import signal, SIGINT
 from sys import exit
@@ -19,6 +19,8 @@ T = TypeVar('T')
 Next = Callable[[Request], Awaitable[Response]]
 
 Enumerable = Union[T, list[T]]
+
+SameSite = Literal["strict", "lax", "none"]
 
 signal(SIGINT, lambda _, __: exit(0))
 
