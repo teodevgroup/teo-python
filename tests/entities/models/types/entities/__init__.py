@@ -1,9 +1,11 @@
+# type: ignore
 from __future__ import annotations
 from typing import Any, Optional, Literal, TypedDict, Generic, TypeVar, NotRequired, cast, TYPE_CHECKING
 from re import Pattern
 from datetime import date, datetime
 from decimal import Decimal
 from teo import ObjectId, Enumerable, File, Range, OptionVariant
+from teo.annotations import CapturesAnnotationMark, RequestBodyObjectAnnotationMark, TeoAnnotationMark, ModelObjectAnnotationMark
 
 from . import std
 
@@ -25,7 +27,7 @@ SupportIndirectRelations = Literal[None]
 # **Support select**
 #
 # This synthesized interface doesn't have a description
-class SupportSelect(TypedDict):
+class SupportSelect(RequestBodyObjectAnnotationMark):
 
 
     # **Bool**
@@ -137,7 +139,7 @@ class SupportSelect(TypedDict):
 # **Support include**
 #
 # This synthesized interface doesn't have a description
-class SupportInclude(TypedDict):
+class SupportInclude(RequestBodyObjectAnnotationMark):
 
     pass
 
@@ -146,7 +148,7 @@ class SupportInclude(TypedDict):
 # **Support where input**
 #
 # This synthesized interface doesn't have a description
-class SupportWhereInput(TypedDict):
+class SupportWhereInput(RequestBodyObjectAnnotationMark):
 
 
     # **And**
@@ -273,7 +275,7 @@ class SupportWhereInput(TypedDict):
 # **Support where unique input**
 #
 # This synthesized interface doesn't have a description
-class SupportWhereUniqueInput(TypedDict):
+class SupportWhereUniqueInput(RequestBodyObjectAnnotationMark):
 
 
     # **Id**
@@ -285,7 +287,7 @@ class SupportWhereUniqueInput(TypedDict):
 # **Support scalar where with aggregates input**
 #
 # This synthesized interface doesn't have a description
-class SupportScalarWhereWithAggregatesInput(TypedDict):
+class SupportScalarWhereWithAggregatesInput(RequestBodyObjectAnnotationMark):
 
 
     # **And**
@@ -412,7 +414,7 @@ class SupportScalarWhereWithAggregatesInput(TypedDict):
 # **Support relation filter**
 #
 # This synthesized interface doesn't have a description
-class SupportRelationFilter(TypedDict):
+class SupportRelationFilter(RequestBodyObjectAnnotationMark):
 
 
     # **Is**
@@ -429,7 +431,7 @@ class SupportRelationFilter(TypedDict):
 # **Support list relation filter**
 #
 # This synthesized interface doesn't have a description
-class SupportListRelationFilter(TypedDict):
+class SupportListRelationFilter(RequestBodyObjectAnnotationMark):
 
 
     # **Every**
@@ -451,7 +453,7 @@ class SupportListRelationFilter(TypedDict):
 # **Support order by input**
 #
 # This synthesized interface doesn't have a description
-class SupportOrderByInput(TypedDict):
+class SupportOrderByInput(RequestBodyObjectAnnotationMark):
 
 
     # **Bool**
@@ -563,7 +565,7 @@ class SupportOrderByInput(TypedDict):
 # **Support count aggregate input type**
 #
 # This synthesized interface doesn't have a description
-class SupportCountAggregateInputType(TypedDict):
+class SupportCountAggregateInputType(RequestBodyObjectAnnotationMark):
 
 
     # **All**
@@ -680,7 +682,7 @@ class SupportCountAggregateInputType(TypedDict):
 # **Support sum aggregate input type**
 #
 # This synthesized interface doesn't have a description
-class SupportSumAggregateInputType(TypedDict):
+class SupportSumAggregateInputType(RequestBodyObjectAnnotationMark):
 
 
     # **Id**
@@ -692,7 +694,7 @@ class SupportSumAggregateInputType(TypedDict):
 # **Support avg aggregate input type**
 #
 # This synthesized interface doesn't have a description
-class SupportAvgAggregateInputType(TypedDict):
+class SupportAvgAggregateInputType(RequestBodyObjectAnnotationMark):
 
 
     # **Id**
@@ -704,7 +706,7 @@ class SupportAvgAggregateInputType(TypedDict):
 # **Support min aggregate input type**
 #
 # This synthesized interface doesn't have a description
-class SupportMinAggregateInputType(TypedDict):
+class SupportMinAggregateInputType(RequestBodyObjectAnnotationMark):
 
 
     # **Bool**
@@ -816,7 +818,7 @@ class SupportMinAggregateInputType(TypedDict):
 # **Support max aggregate input type**
 #
 # This synthesized interface doesn't have a description
-class SupportMaxAggregateInputType(TypedDict):
+class SupportMaxAggregateInputType(RequestBodyObjectAnnotationMark):
 
 
     # **Bool**
@@ -928,7 +930,7 @@ class SupportMaxAggregateInputType(TypedDict):
 # **Support create input**
 #
 # This synthesized interface doesn't have a description
-class SupportCreateInput(TypedDict):
+class SupportCreateInput(RequestBodyObjectAnnotationMark):
 
 
     # **Bool**
@@ -1035,7 +1037,7 @@ class SupportCreateInput(TypedDict):
 # **Support update input**
 #
 # This synthesized interface doesn't have a description
-class SupportUpdateInput(TypedDict):
+class SupportUpdateInput(RequestBodyObjectAnnotationMark):
 
 
     # **Bool**
@@ -1142,7 +1144,7 @@ class SupportUpdateInput(TypedDict):
 # **Support create nested one input**
 #
 # This synthesized interface doesn't have a description
-class SupportCreateNestedOneInput(TypedDict):
+class SupportCreateNestedOneInput(RequestBodyObjectAnnotationMark):
 
 
     # **Connect**
@@ -1164,7 +1166,7 @@ class SupportCreateNestedOneInput(TypedDict):
 # **Support create nested many input**
 #
 # This synthesized interface doesn't have a description
-class SupportCreateNestedManyInput(TypedDict):
+class SupportCreateNestedManyInput(RequestBodyObjectAnnotationMark):
 
 
     # **Connect**
@@ -1186,7 +1188,7 @@ class SupportCreateNestedManyInput(TypedDict):
 # **Support update nested one input**
 #
 # This synthesized interface doesn't have a description
-class SupportUpdateNestedOneInput(TypedDict):
+class SupportUpdateNestedOneInput(RequestBodyObjectAnnotationMark):
 
 
     # **Connect**
@@ -1233,7 +1235,7 @@ class SupportUpdateNestedOneInput(TypedDict):
 # **Support update nested many input**
 #
 # This synthesized interface doesn't have a description
-class SupportUpdateNestedManyInput(TypedDict):
+class SupportUpdateNestedManyInput(RequestBodyObjectAnnotationMark):
 
 
     # **Connect**
@@ -1290,7 +1292,7 @@ class SupportUpdateNestedManyInput(TypedDict):
 # **Support connect or create input**
 #
 # This synthesized interface doesn't have a description
-class SupportConnectOrCreateInput(TypedDict):
+class SupportConnectOrCreateInput(RequestBodyObjectAnnotationMark):
 
 
     # **Create**
@@ -1307,7 +1309,7 @@ class SupportConnectOrCreateInput(TypedDict):
 # **Support update with where unique input**
 #
 # This synthesized interface doesn't have a description
-class SupportUpdateWithWhereUniqueInput(TypedDict):
+class SupportUpdateWithWhereUniqueInput(RequestBodyObjectAnnotationMark):
 
 
     # **Update**
@@ -1324,7 +1326,7 @@ class SupportUpdateWithWhereUniqueInput(TypedDict):
 # **Support upsert with where unique input**
 #
 # This synthesized interface doesn't have a description
-class SupportUpsertWithWhereUniqueInput(TypedDict):
+class SupportUpsertWithWhereUniqueInput(RequestBodyObjectAnnotationMark):
 
 
     # **Create**
@@ -1346,7 +1348,7 @@ class SupportUpsertWithWhereUniqueInput(TypedDict):
 # **Support update many with where input**
 #
 # This synthesized interface doesn't have a description
-class SupportUpdateManyWithWhereInput(TypedDict):
+class SupportUpdateManyWithWhereInput(RequestBodyObjectAnnotationMark):
 
 
     # **Update**
@@ -1363,7 +1365,7 @@ class SupportUpdateManyWithWhereInput(TypedDict):
 # **Support result**
 #
 # This synthesized interface doesn't have a description
-class SupportResult(TypedDict):
+class SupportResult(RequestBodyObjectAnnotationMark):
 
 
     # **Bool**
@@ -1475,7 +1477,7 @@ class SupportResult(TypedDict):
 # **Support count aggregate result**
 #
 # This synthesized interface doesn't have a description
-class SupportCountAggregateResult(TypedDict):
+class SupportCountAggregateResult(RequestBodyObjectAnnotationMark):
 
 
     # **All**
@@ -1592,7 +1594,7 @@ class SupportCountAggregateResult(TypedDict):
 # **Support sum aggregate result**
 #
 # This synthesized interface doesn't have a description
-class SupportSumAggregateResult(TypedDict):
+class SupportSumAggregateResult(RequestBodyObjectAnnotationMark):
 
 
     # **Id**
@@ -1604,7 +1606,7 @@ class SupportSumAggregateResult(TypedDict):
 # **Support avg aggregate result**
 #
 # This synthesized interface doesn't have a description
-class SupportAvgAggregateResult(TypedDict):
+class SupportAvgAggregateResult(RequestBodyObjectAnnotationMark):
 
 
     # **Id**
@@ -1616,7 +1618,7 @@ class SupportAvgAggregateResult(TypedDict):
 # **Support min aggregate result**
 #
 # This synthesized interface doesn't have a description
-class SupportMinAggregateResult(TypedDict):
+class SupportMinAggregateResult(RequestBodyObjectAnnotationMark):
 
 
     # **Bool**
@@ -1728,7 +1730,7 @@ class SupportMinAggregateResult(TypedDict):
 # **Support max aggregate result**
 #
 # This synthesized interface doesn't have a description
-class SupportMaxAggregateResult(TypedDict):
+class SupportMaxAggregateResult(RequestBodyObjectAnnotationMark):
 
 
     # **Bool**
@@ -1840,7 +1842,7 @@ class SupportMaxAggregateResult(TypedDict):
 # **Support aggregate result**
 #
 # This synthesized interface doesn't have a description
-class SupportAggregateResult(TypedDict):
+class SupportAggregateResult(RequestBodyObjectAnnotationMark):
 
 
     # **Avg**
@@ -1872,7 +1874,7 @@ class SupportAggregateResult(TypedDict):
 # **Support group by result**
 #
 # This synthesized interface doesn't have a description
-class SupportGroupByResult(TypedDict):
+class SupportGroupByResult(RequestBodyObjectAnnotationMark):
 
 
     # **Avg**
@@ -2009,7 +2011,7 @@ class SupportGroupByResult(TypedDict):
 # **Support args**
 #
 # This synthesized interface doesn't have a description
-class SupportArgs(TypedDict):
+class SupportArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Include**
@@ -2026,7 +2028,7 @@ class SupportArgs(TypedDict):
 # **Support find many args**
 #
 # This synthesized interface doesn't have a description
-class SupportFindManyArgs(TypedDict):
+class SupportFindManyArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Cursor**
@@ -2083,7 +2085,7 @@ class SupportFindManyArgs(TypedDict):
 # **Support find first args**
 #
 # This synthesized interface doesn't have a description
-class SupportFindFirstArgs(TypedDict):
+class SupportFindFirstArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Cursor**
@@ -2140,7 +2142,7 @@ class SupportFindFirstArgs(TypedDict):
 # **Support find unique args**
 #
 # This synthesized interface doesn't have a description
-class SupportFindUniqueArgs(TypedDict):
+class SupportFindUniqueArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Include**
@@ -2162,7 +2164,7 @@ class SupportFindUniqueArgs(TypedDict):
 # **Support create args**
 #
 # This synthesized interface doesn't have a description
-class SupportCreateArgs(TypedDict):
+class SupportCreateArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Create**
@@ -2184,7 +2186,7 @@ class SupportCreateArgs(TypedDict):
 # **Support update args**
 #
 # This synthesized interface doesn't have a description
-class SupportUpdateArgs(TypedDict):
+class SupportUpdateArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Include**
@@ -2211,7 +2213,7 @@ class SupportUpdateArgs(TypedDict):
 # **Support upsert args**
 #
 # This synthesized interface doesn't have a description
-class SupportUpsertArgs(TypedDict):
+class SupportUpsertArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Create**
@@ -2243,7 +2245,7 @@ class SupportUpsertArgs(TypedDict):
 # **Support copy args**
 #
 # This synthesized interface doesn't have a description
-class SupportCopyArgs(TypedDict):
+class SupportCopyArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Copy**
@@ -2270,7 +2272,7 @@ class SupportCopyArgs(TypedDict):
 # **Support delete args**
 #
 # This synthesized interface doesn't have a description
-class SupportDeleteArgs(TypedDict):
+class SupportDeleteArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Include**
@@ -2292,7 +2294,7 @@ class SupportDeleteArgs(TypedDict):
 # **Support create many args**
 #
 # This synthesized interface doesn't have a description
-class SupportCreateManyArgs(TypedDict):
+class SupportCreateManyArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Create**
@@ -2314,7 +2316,7 @@ class SupportCreateManyArgs(TypedDict):
 # **Support update many args**
 #
 # This synthesized interface doesn't have a description
-class SupportUpdateManyArgs(TypedDict):
+class SupportUpdateManyArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Include**
@@ -2341,7 +2343,7 @@ class SupportUpdateManyArgs(TypedDict):
 # **Support delete many args**
 #
 # This synthesized interface doesn't have a description
-class SupportDeleteManyArgs(TypedDict):
+class SupportDeleteManyArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Include**
@@ -2363,7 +2365,7 @@ class SupportDeleteManyArgs(TypedDict):
 # **Support copy many args**
 #
 # This synthesized interface doesn't have a description
-class SupportCopyManyArgs(TypedDict):
+class SupportCopyManyArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Copy**
@@ -2390,7 +2392,7 @@ class SupportCopyManyArgs(TypedDict):
 # **Support count args**
 #
 # This synthesized interface doesn't have a description
-class SupportCountArgs(TypedDict):
+class SupportCountArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Cursor**
@@ -2442,7 +2444,7 @@ class SupportCountArgs(TypedDict):
 # **Support aggregate args**
 #
 # This synthesized interface doesn't have a description
-class SupportAggregateArgs(TypedDict):
+class SupportAggregateArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Avg**
@@ -2514,7 +2516,7 @@ class SupportAggregateArgs(TypedDict):
 # **Support group by args**
 #
 # This synthesized interface doesn't have a description
-class SupportGroupByArgs(TypedDict):
+class SupportGroupByArgs(RequestBodyObjectAnnotationMark):
 
 
     # **Avg**
@@ -2596,7 +2598,7 @@ class SupportGroupByArgs(TypedDict):
 # **Support scalar update input**
 #
 # This synthesized interface doesn't have a description
-class SupportScalarUpdateInput(TypedDict):
+class SupportScalarUpdateInput(RequestBodyObjectAnnotationMark):
 
 
     # **Bool**
@@ -2708,7 +2710,7 @@ class SupportScalarUpdateInput(TypedDict):
 # **Support sign in checker ids**
 #
 # This synthesized interface doesn't have a description
-class SupportSignInCheckerIds(TypedDict):
+class SupportSignInCheckerIds(RequestBodyObjectAnnotationMark):
 
     pass
 
@@ -2717,7 +2719,7 @@ class SupportSignInCheckerIds(TypedDict):
 # **Support sign in checker companions**
 #
 # This synthesized interface doesn't have a description
-class SupportSignInCheckerCompanions(TypedDict):
+class SupportSignInCheckerCompanions(RequestBodyObjectAnnotationMark):
 
     pass
 
@@ -2726,7 +2728,7 @@ class SupportSignInCheckerCompanions(TypedDict):
 # **Support sign in input**
 #
 # This synthesized interface doesn't have a description
-class SupportSignInInput(TypedDict):
+class SupportSignInInput(RequestBodyObjectAnnotationMark):
 
 
     # **Credentials**
@@ -2748,7 +2750,7 @@ class SupportSignInInput(TypedDict):
 # **Support sign in args**
 #
 # This synthesized interface doesn't have a description
-class SupportSignInArgs(TypedDict):
+class SupportSignInArgs(RequestBodyObjectAnnotationMark):
 
     pass
 
@@ -2777,7 +2779,7 @@ class SupportModel:
     async def sql(self, sql: str) -> list[Any]:
         return cast(Any, None)
     
-class Support:
+class Support(ModelObjectAnnotationMark):
     def is_new(self) -> bool:
         return cast(Any, None)
     def is_modified(self) -> bool:
@@ -2816,7 +2818,7 @@ class Support:
 
 
 
-class Teo:
+class Teo(TeoAnnotationMark):
 
     
     async def transaction[T](self, teo: Teo, /) -> T:

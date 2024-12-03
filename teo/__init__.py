@@ -1,5 +1,5 @@
-from types import GenericAlias, Literal
-from typing import TypeVar, Union, Optional, Callable, Awaitable, Self, Any
+from types import GenericAlias
+from typing import TypeVar, Union, Optional, Callable, Awaitable, Self, Literal, Any
 from signal import signal, SIGINT
 from sys import exit
 from copy import copy
@@ -99,24 +99,26 @@ def _extract_from_request(parameters: dict[str, Parameter], request: Request, ne
                 continue
             if parameter.annotation == Request:
                 arguments.append(request)
+            elif parameter.annotation == Cookies:
+                arguments.append(request.cookies)
+            elif parameter.annotation == Headers:
+                arguments.append(request.headers)
             elif type(parameter.annotation) == GenericAlias:
-                if parameter.annotation.__origin__ == list:
-                    arguments.append(request.cookies())
-                elif parameter.annotation.__origin__ == dict:
-                    arguments.append(request.body_object())
+                if parameter.annotation.__origin__ == dict:
+                    arguments.append(request.body_object)
                 else:
                     raise TeoException(f"unsupported parameter extraction: {parameter}")
             elif hasattr(parameter.annotation, '__bases__'):
                 if TeoAnnotationMark in parameter.annotation.__bases__:
-                    arguments.append(request.teo())
+                    arguments.append(request.teo)
                 elif CapturesAnnotationMark in parameter.annotation.__orig_bases__:
-                    arguments.append(request.captures())
+                    arguments.append(request.captures)
                 elif RequestBodyObjectAnnotationMark in parameter.annotation.__orig_bases__:
-                    arguments.append(request.body_object())
+                    arguments.append(request.body_object)
                 else:
-                    arguments.append(request.body_object())
+                    arguments.append(request.body_object)
             else:
-                arguments.append(request.body_object())
+                arguments.append(request.body_object)
         else:
             raise TeoException(f"unsupported parameter extraction: {parameter}")
     return arguments

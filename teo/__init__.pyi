@@ -430,6 +430,32 @@ class Cookies:
     """
     ...
 
+    def append(self, cookie: Cookie) -> None:
+        """
+        Append a cookie into this map.
+        """
+        ...
+
+    def clear(self) -> None:
+        """
+        Clear this cookie map.
+        """
+        ...
+
+    def __iter__(self) -> CookiesIter:
+        """
+        Create a iterator from this cookie map.
+        """
+        ...
+
+
+class CookiesIter:
+    ...
+
+    def __next__(self) -> Optional[Cookie]:
+        ...
+
+
 class Response:
     """
     An HTTP response.
@@ -1027,25 +1053,25 @@ class LocalValues:
     Represents request's local values.
     """
 
-    def insert(self, key: str, value: Any) -> None:
+    def __setitem__(self, key: str, value: Any) -> None:
         """
         Insert a request local value.
         """
         ...
 
-    def get(self, key: str) -> Optional[Any]:
+    def __getitem__(self, key: str) -> Optional[Any]:
         """
         Fetch a request local value by key.
         """
         ...
 
-    def contains(self, key: str) -> bool:
+    def __hasitem__(self, key: str) -> bool:
         """
         Whether a request local value exists by key.
         """
         ...
 
-    def remove(self, key: str) -> None:
+    def __delitem__(self, key: str) -> None:
         """
         Remove a request local value by key.
         """
@@ -1063,25 +1089,25 @@ class LocalObjects:
     Represents request's local objects.
     """
 
-    def insert(self, key: str, value: Any) -> None:
+    def __setitem__(self, key: str, value: Any) -> None:
         """
         Insert a request local object.
         """
         ...
 
-    def get(self, key: str) -> Optional[Any]:
+    def __getitem__(self, key: str) -> Optional[Any]:
         """
         Fetch a request local object by key.
         """
         ...
 
-    def contains(self, key: str) -> bool:
+    def __hasitem__(self, key: str) -> bool:
         """
         Whether a request local object exists by key.
         """
         ...
 
-    def remove(self, key: str) -> None:
+    def __delitem__(self, key: str) -> None:
         """
         Remove a request local object by key.
         """
@@ -1093,7 +1119,7 @@ class LocalObjects:
         """
         ...
 
- 
+
 class HandlerMatch:
     """
     The request handler match result.

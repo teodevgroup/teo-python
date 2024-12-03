@@ -14,6 +14,7 @@ pub mod response;
 pub mod test;
 
 use std::ffi::CString;
+use cookies::cookies::CookiesIter;
 use headers::Headers;
 use headers::HeadersIter;
 use pipeline::ctx::PipelineCtx;
@@ -70,6 +71,7 @@ def teo_wrap_async(callable):
     m.add_class::<Response>()?;
     m.add_class::<Request>()?;
     m.add_class::<Cookie>()?;
+    m.add_class::<CookiesIter>()?;
     m.add_class::<Cookies>()?;
     m.add_class::<Expiration>()?;
     m.add_class::<Headers>()?;

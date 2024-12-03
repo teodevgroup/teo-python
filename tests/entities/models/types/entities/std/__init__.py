@@ -1,9 +1,11 @@
+# type: ignore
 from __future__ import annotations
 from typing import Any, Optional, Literal, TypedDict, Generic, TypeVar, NotRequired, cast, TYPE_CHECKING
 from re import Pattern
 from datetime import date, datetime
 from decimal import Decimal
 from teo import ObjectId, Enumerable, File, Range, OptionVariant
+from teo.annotations import CapturesAnnotationMark, RequestBodyObjectAnnotationMark, TeoAnnotationMark, ModelObjectAnnotationMark
 
 
 
@@ -27,7 +29,7 @@ StringMatchMode = Literal["default", "caseInsensitive"]
 # **Empty**
 #
 # The empty interface
-class Empty(TypedDict):
+class Empty(RequestBodyObjectAnnotationMark):
 
     pass
 
@@ -36,7 +38,7 @@ class Empty(TypedDict):
 # **Data**
 #
 # This interface is common for action output
-class Data[T](TypedDict):
+class Data[T](RequestBodyObjectAnnotationMark):
 
 
     # **Data**
@@ -48,7 +50,7 @@ class Data[T](TypedDict):
 # **Data and Meta**
 #
 # This interface is common for action output with meta information
-class DataMeta[T, U](TypedDict):
+class DataMeta[T, U](RequestBodyObjectAnnotationMark):
 
 
     # **Data**
@@ -65,7 +67,7 @@ class DataMeta[T, U](TypedDict):
 # **Paging info**
 #
 # This interface doesn't have a description.
-class PagingInfo(TypedDict):
+class PagingInfo(RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -82,7 +84,7 @@ class PagingInfo(TypedDict):
 # **Response error**
 #
 # This interface doesn't have a description.
-class ResponseError(TypedDict):
+class ResponseError(RequestBodyObjectAnnotationMark):
 
 
     # **Type**
@@ -104,7 +106,7 @@ class ResponseError(TypedDict):
 # **Bool filter**
 #
 # This interface doesn't have a description.
-class BoolFilter(TypedDict):
+class BoolFilter(RequestBodyObjectAnnotationMark):
 
 
     # **Equals**
@@ -121,7 +123,7 @@ class BoolFilter(TypedDict):
 # **Bool nullable filter**
 #
 # This interface doesn't have a description.
-class BoolNullableFilter(TypedDict):
+class BoolNullableFilter(RequestBodyObjectAnnotationMark):
 
 
     # **Equals**
@@ -138,7 +140,7 @@ class BoolNullableFilter(TypedDict):
 # **Filter**
 #
 # This interface doesn't have a description.
-class Filter[T](TypedDict):
+class Filter[T](RequestBodyObjectAnnotationMark):
 
 
     # **Equals**
@@ -185,7 +187,7 @@ class Filter[T](TypedDict):
 # **Nullable filter**
 #
 # This interface doesn't have a description.
-class NullableFilter[T](TypedDict):
+class NullableFilter[T](RequestBodyObjectAnnotationMark):
 
 
     # **Equals**
@@ -232,7 +234,7 @@ class NullableFilter[T](TypedDict):
 # **String filter**
 #
 # This interface doesn't have a description.
-class StringFilter(TypedDict):
+class StringFilter(RequestBodyObjectAnnotationMark):
 
 
     # **Equals**
@@ -304,7 +306,7 @@ class StringFilter(TypedDict):
 # **String nullable filter**
 #
 # This interface doesn't have a description.
-class StringNullableFilter(TypedDict):
+class StringNullableFilter(RequestBodyObjectAnnotationMark):
 
 
     # **Equals**
@@ -376,7 +378,7 @@ class StringNullableFilter(TypedDict):
 # **Enum filter**
 #
 # This interface doesn't have a description.
-class EnumFilter[T](TypedDict):
+class EnumFilter[T](RequestBodyObjectAnnotationMark):
 
 
     # **Equals**
@@ -403,7 +405,7 @@ class EnumFilter[T](TypedDict):
 # **Enum nullable filter**
 #
 # This interface doesn't have a description.
-class EnumNullableFilter[T](TypedDict):
+class EnumNullableFilter[T](RequestBodyObjectAnnotationMark):
 
 
     # **Equals**
@@ -430,7 +432,7 @@ class EnumNullableFilter[T](TypedDict):
 # **Array filter**
 #
 # This interface doesn't have a description.
-class ArrayFilter[T](TypedDict):
+class ArrayFilter[T](RequestBodyObjectAnnotationMark):
 
 
     # **Equals**
@@ -467,7 +469,7 @@ class ArrayFilter[T](TypedDict):
 # **Array nullable filter**
 #
 # This interface doesn't have a description.
-class ArrayNullableFilter[T](TypedDict):
+class ArrayNullableFilter[T](RequestBodyObjectAnnotationMark):
 
 
     # **Equals**
@@ -504,7 +506,7 @@ class ArrayNullableFilter[T](TypedDict):
 # **Bool with aggregates filter**
 #
 # This interface doesn't have a description.
-class BoolWithAggregatesFilter(BoolFilter, TypedDict):
+class BoolWithAggregatesFilter(BoolFilter, RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -526,7 +528,7 @@ class BoolWithAggregatesFilter(BoolFilter, TypedDict):
 # **Bool nullable with aggregates filter**
 #
 # This interface doesn't have a description.
-class BoolNullableWithAggregatesFilter(BoolNullableFilter, TypedDict):
+class BoolNullableWithAggregatesFilter(BoolNullableFilter, RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -548,7 +550,7 @@ class BoolNullableWithAggregatesFilter(BoolNullableFilter, TypedDict):
 # **Int number with aggregates filter**
 #
 # This interface doesn't have a description.
-class IntNumberWithAggregatesFilter[T](Filter[T], TypedDict):
+class IntNumberWithAggregatesFilter[T](Filter[T], RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -580,7 +582,7 @@ class IntNumberWithAggregatesFilter[T](Filter[T], TypedDict):
 # **Int number nullable with aggregates filter**
 #
 # This interface doesn't have a description.
-class IntNumberNullableWithAggregatesFilter[T](NullableFilter[T], TypedDict):
+class IntNumberNullableWithAggregatesFilter[T](NullableFilter[T], RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -612,7 +614,7 @@ class IntNumberNullableWithAggregatesFilter[T](NullableFilter[T], TypedDict):
 # **Float number with aggregates filter**
 #
 # This interface doesn't have a description.
-class FloatNumberWithAggregatesFilter[T](Filter[T], TypedDict):
+class FloatNumberWithAggregatesFilter[T](Filter[T], RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -644,7 +646,7 @@ class FloatNumberWithAggregatesFilter[T](Filter[T], TypedDict):
 # **Float number nullable with aggregates filter**
 #
 # This interface doesn't have a description.
-class FloatNumberNullableWithAggregatesFilter[T](NullableFilter[T], TypedDict):
+class FloatNumberNullableWithAggregatesFilter[T](NullableFilter[T], RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -676,7 +678,7 @@ class FloatNumberNullableWithAggregatesFilter[T](NullableFilter[T], TypedDict):
 # **Decimal with aggregates filter**
 #
 # This interface doesn't have a description.
-class DecimalWithAggregatesFilter(Filter[Decimal], TypedDict):
+class DecimalWithAggregatesFilter(Filter[Decimal], RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -708,7 +710,7 @@ class DecimalWithAggregatesFilter(Filter[Decimal], TypedDict):
 # **Decimal nullable with aggregates filter**
 #
 # This interface doesn't have a description.
-class DecimalNullableWithAggregatesFilter[T](NullableFilter[T], TypedDict):
+class DecimalNullableWithAggregatesFilter[T](NullableFilter[T], RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -740,7 +742,7 @@ class DecimalNullableWithAggregatesFilter[T](NullableFilter[T], TypedDict):
 # **Aggregates filter**
 #
 # This interface doesn't have a description.
-class AggregatesFilter[T](Filter[T], TypedDict):
+class AggregatesFilter[T](Filter[T], RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -762,7 +764,7 @@ class AggregatesFilter[T](Filter[T], TypedDict):
 # **Nullable aggregates filter**
 #
 # This interface doesn't have a description.
-class NullableAggregatesFilter[T](NullableFilter[T], TypedDict):
+class NullableAggregatesFilter[T](NullableFilter[T], RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -784,7 +786,7 @@ class NullableAggregatesFilter[T](NullableFilter[T], TypedDict):
 # **String with aggregates filter**
 #
 # This interface doesn't have a description.
-class StringWithAggregatesFilter(StringFilter, TypedDict):
+class StringWithAggregatesFilter(StringFilter, RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -806,7 +808,7 @@ class StringWithAggregatesFilter(StringFilter, TypedDict):
 # **String nullable with aggregates filter**
 #
 # This interface doesn't have a description.
-class StringNullableWithAggregatesFilter(StringNullableFilter, TypedDict):
+class StringNullableWithAggregatesFilter(StringNullableFilter, RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -828,7 +830,7 @@ class StringNullableWithAggregatesFilter(StringNullableFilter, TypedDict):
 # **Enum with aggregates filter**
 #
 # This interface doesn't have a description.
-class EnumWithAggregatesFilter[T](EnumFilter[T], TypedDict):
+class EnumWithAggregatesFilter[T](EnumFilter[T], RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -850,7 +852,7 @@ class EnumWithAggregatesFilter[T](EnumFilter[T], TypedDict):
 # **Enum nullable with aggregates filter**
 #
 # This interface doesn't have a description.
-class EnumNullableWithAggregatesFilter[T](EnumNullableFilter[T], TypedDict):
+class EnumNullableWithAggregatesFilter[T](EnumNullableFilter[T], RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -872,7 +874,7 @@ class EnumNullableWithAggregatesFilter[T](EnumNullableFilter[T], TypedDict):
 # **Array with aggregates filter**
 #
 # This interface doesn't have a description.
-class ArrayWithAggregatesFilter[T](ArrayFilter[T], TypedDict):
+class ArrayWithAggregatesFilter[T](ArrayFilter[T], RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -894,7 +896,7 @@ class ArrayWithAggregatesFilter[T](ArrayFilter[T], TypedDict):
 # **Array nullable with aggregates filter**
 #
 # This interface doesn't have a description.
-class ArrayNullableWithAggregatesFilter[T](ArrayNullableFilter[T], TypedDict):
+class ArrayNullableWithAggregatesFilter[T](ArrayNullableFilter[T], RequestBodyObjectAnnotationMark):
 
 
     # **Count**
@@ -916,7 +918,7 @@ class ArrayNullableWithAggregatesFilter[T](ArrayNullableFilter[T], TypedDict):
 # **Number atomic update operation input**
 #
 # This interface doesn't have a description.
-class NumberAtomicUpdateOperationInput[T](TypedDict):
+class NumberAtomicUpdateOperationInput[T](RequestBodyObjectAnnotationMark):
 
 
     # **Increment**
@@ -943,7 +945,7 @@ class NumberAtomicUpdateOperationInput[T](TypedDict):
 # **Array atomic update operation input**
 #
 # This interface doesn't have a description.
-class ArrayAtomicUpdateOperationInput[T](TypedDict):
+class ArrayAtomicUpdateOperationInput[T](RequestBodyObjectAnnotationMark):
 
 
     # **Push**

@@ -18,13 +18,13 @@ impl LocalObjects {
 #[pymethods]
 impl LocalObjects {
 
-    pub fn insert(&self, key: String, value: Bound<PyAny>) -> PyResult<()> {
+    pub fn __setitem__(&self, key: String, value: Bound<PyAny>) -> PyResult<()> {
         let value = value.unbind();
         self.teo_local_objects.insert(key, value);
         Ok(())
     }
 
-    pub fn get(&self, key: String, py: Python<'_>) -> PyResult<PyObject> {
+    pub fn __getitem__(&self, key: String, py: Python<'_>) -> PyResult<PyObject> {
         let value: Option<&PyObject> = self.teo_local_objects.get(&key);
         match value {
             Some(value) => {
@@ -36,11 +36,11 @@ impl LocalObjects {
         }
     }
 
-    pub fn contains(&self, key: String) -> bool {
+    pub fn __hasitem__(&self, key: String) -> bool {
         self.teo_local_objects.contains(&key)
     }
 
-    pub fn remove(&self, key: String) {
+    pub fn __delitem__(&self, key: String) {
         self.teo_local_objects.remove(key.as_str());
     }
 
