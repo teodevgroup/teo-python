@@ -24,7 +24,7 @@ use super::{array::teo_array_to_py_any, interface_enum_variant::teo_interface_en
 pub fn teo_value_to_py_any_without_model_objects<'p>(py: Python<'p>, value: &Value) -> PyResult<PyObject> {
     Ok(match value {
         Value::Null => PyNone::get(py).as_unbound().clone_ref(py).into_any(),
-        Value::ObjectId(oid) => ObjectId { value: oid.clone() }.into_py_any(py)?,
+        Value::ObjectId(oid) => ObjectId { original: oid.clone() }.into_py_any(py)?,
         Value::String(s) => s.into_py_any(py)?,
         Value::Int(i) => i.into_py_any(py)?,
         Value::Int64(i) => i.into_py_any(py)?,
@@ -50,14 +50,14 @@ pub fn teo_value_to_py_any_without_model_objects<'p>(py: Python<'p>, value: &Val
             dict.into_py_any(py)?
         },
         Value::Range(range) => {
-            let instance = Range { value: range.clone() };
+            let instance = Range { original: range.clone() };
             instance.into_py_any(py)?
         }
         Value::Tuple(tuple) => {
             PyTuple::new(py, tuple.iter().map(|v| teo_value_to_py_any_without_model_objects(py, v)).collect::<PyResult<Vec<PyObject>>>()?)?.into_py_any(py)?
         }
         Value::OptionVariant(option_variant) => {
-            let instance = OptionVariant { value: option_variant.clone() };
+            let instance = OptionVariant { original: option_variant.clone() };
             instance.into_py_any(py)?
         }
         Value::Regex(regex) => {
@@ -100,7 +100,7 @@ pub fn py_any_to_teo_value(py: Python<'_>, object: &Bound<PyAny>) -> PyResult<Va
         Ok(Value::Null)
     } else if object.is_instance_of::<ObjectId>() {
         let object_id: ObjectId = object.extract()?;
-        Ok(Value::ObjectId(object_id.value.clone()))
+        Ok(Value::ObjectId(object_id.original.clone()))
     } else if object.is_instance_of::<PyString>() {
         let s: String = object.extract()?;
         Ok(Value::String(s))
@@ -136,7 +136,7 @@ pub fn py_any_to_teo_value(py: Python<'_>, object: &Bound<PyAny>) -> PyResult<Va
         Ok(Value::Dictionary(map))
     } else if object.is_instance_of::<Range>() {
         let range: Range = object.extract()?;
-        Ok(Value::Range(range.value.clone()))
+        Ok(Value::Range(range.original.clone()))
     } else if object.is_instance_of::<PyTuple>() {
         let tuple: &Bound<PyTuple> = object.downcast()?;
         let mut vec = vec![];

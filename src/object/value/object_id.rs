@@ -1,25 +1,26 @@
-use bson::oid::ObjectId as BsonObjectId;
+use bson::oid::ObjectId as OriginalObjectId;
 use pyo3::{pyclass, pymethods, PyResult, exceptions::PyValueError};
 
 #[pyclass]
 #[derive(Clone)]
 pub struct ObjectId {
-    pub(crate) value: BsonObjectId,
+    pub(crate) original: OriginalObjectId,
 }
 
 
 #[pymethods]
 impl ObjectId {
 
-    pub fn to_string(&self) -> String {
-        self.value.to_hex()
+    #[new]
+    pub fn new(value: &str) -> PyResult<Self> {
+        Ok(ObjectId { original: OriginalObjectId::parse_str(value)? })
     }
 
-    #[staticmethod]
-    pub fn from_string(string: &str) -> PyResult<ObjectId> {
-        match BsonObjectId::parse_str(&string) {
-            Ok(value) => Ok(Self { value }),
-            Err(_) => Err(PyValueError::new_err("string doesn't represent valid ObjectId"))
-        }
+    pub fn __str__(&self) -> String {
+        self.original.to_hex()
+    }
+
+    pub fn __repr__(&self) -> String {
+        format!("teo.ObjectId('{}')", self.original.to_hex())
     }
 }

@@ -1105,24 +1105,28 @@ class Range[T]:
     A range value in Teo schema.
     """
 
+    @property
     def upperbond(self) -> T:
         """
         Get the range's upperbond.
         """
         ...
 
+    @property
     def lowerbond(self) -> T:
         """
         Get the range's lowerbond.
         """
         ...
 
+    @property
     def is_closed(self) -> bool:
         """
         Whether this range is closed.
         """
         ...
 
+    @property
     def is_open(self) -> bool:
         """
         Whether this range is open.

@@ -20,7 +20,7 @@ impl Cookie {
     }
 
     #[getter]
-    pub fn get_name(&self) -> String {
+    pub fn name(&self) -> String {
         self.original.name()
     }
 
@@ -30,7 +30,7 @@ impl Cookie {
     }
 
     #[getter]
-    pub fn get_value(&self) -> String {
+    pub fn value(&self) -> String {
         self.original.value()
     }
 
@@ -40,12 +40,12 @@ impl Cookie {
     }
 
     #[getter]
-    pub fn get_value_trimmed(&self) -> String {
+    pub fn value_trimmed(&self) -> String {
         self.original.value_trimmed()
     }
 
     #[getter]
-    pub fn get_http_only(&self) -> Option<bool> {
+    pub fn http_only(&self) -> Option<bool> {
         self.original.http_only()
     }
 
@@ -55,7 +55,7 @@ impl Cookie {
     }
 
     #[getter]
-    pub fn get_secure(&self) -> Option<bool> {
+    pub fn secure(&self) -> Option<bool> {
         self.original.secure()
     }
 
@@ -65,7 +65,7 @@ impl Cookie {
     }
 
     #[getter]
-    pub fn get_same_site(&self) -> Option<&'static str> {
+    pub fn same_site(&self) -> Option<&'static str> {
         self.original.same_site().map(|s| {
             match s {
                 SameSite::Strict => "strict",
@@ -89,7 +89,7 @@ impl Cookie {
     }
 
     #[getter]
-    pub fn get_partitioned(&self) -> Option<bool> {
+    pub fn partitioned(&self) -> Option<bool> {
         self.original.partitioned()
     }
 
@@ -99,7 +99,7 @@ impl Cookie {
     }
 
     #[getter]
-    pub fn get_max_age(&self) -> Option<f64> {
+    pub fn max_age(&self) -> Option<f64> {
         self.original.max_age().map(|ma| ma.as_seconds_f64())
     }
 
@@ -109,7 +109,7 @@ impl Cookie {
     }
 
     #[getter]
-    pub fn get_path(&self) -> Option<String> {
+    pub fn path(&self) -> Option<String> {
         self.original.path()
     }
 
@@ -119,7 +119,7 @@ impl Cookie {
     }
 
     #[getter]
-    pub fn get_domain(&self) -> Option<String> {
+    pub fn domain(&self) -> Option<String> {
         self.original.domain()
     }
 
@@ -129,7 +129,7 @@ impl Cookie {
     }
 
     #[getter]
-    pub fn get_expires(&self) -> Option<Expiration> {
+    pub fn expires(&self) -> Option<Expiration> {
         self.original.expires().map(|e| Expiration { original: e })
     }
 
