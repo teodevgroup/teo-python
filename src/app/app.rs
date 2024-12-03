@@ -122,11 +122,11 @@ impl App {
 
     #[getter]
     fn main_namespace(&self) -> Namespace {
-        Namespace { teo_namespace: self.teo_app.main_namespace().clone() }
+        Namespace { builder: self.teo_app.main_namespace().clone() }
     }
 
     #[getter]
     fn main(&self) -> Namespace {
-        Namespace { teo_namespace: self.teo_app.main_namespace().clone() }
+        Namespace { builder: self.teo_app.main_namespace().clone() }
     }
 }

@@ -5,20 +5,20 @@ use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, object::value::{py_a
 
 #[pyclass]
 pub struct Property {
-    pub(crate) teo_property: model::property::Builder,
+    pub(crate) builder: model::property::Builder,
 }
 
 #[pymethods]
 impl Property {
 
     pub fn set_data(&mut self, py: Python<'_>, key: String, value: Bound<PyAny>) -> PyResult<()> {
-        self.teo_property.data().insert(key, py_any_to_teo_value(py, &value)?);
+        self.builder.data().insert(key, py_any_to_teo_value(py, &value)?);
         Ok(())
     }
 
     pub fn data(&mut self, py: Python<'_>, key: String) -> PyResult<PyObject> {
-        Ok(match self.teo_property.data().get(key.as_str()) {
-            Some(object) => teo_value_to_py_any(py, object, PYClassLookupMap::from_app_data(self.teo_property.app_data()))?,
+        Ok(match self.builder.data().get(key.as_str()) {
+            Some(object) => teo_value_to_py_any(py, object, PYClassLookupMap::from_app_data(self.builder.app_data()))?,
             None => PyNone::get(py).as_unbound().clone_ref(py).into_any(),
         })
     }

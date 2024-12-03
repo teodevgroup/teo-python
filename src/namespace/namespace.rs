@@ -1,13 +1,13 @@
 use teo_result::Error;
 use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction}, Bound, IntoPyObjectExt, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::TaskLocals;
-use teo::prelude::{r#enum, handler, namespace, pipeline::{self, item::templates::validator::Validity}, request, Middleware, MiddlewareImp, Next, NextImp, Value};
+use teo::prelude::{r#enum, handler, namespace, pipeline::{self, item::templates::validator::Validity}, request, Middleware, Next, NextImp, Value};
 use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::teo_args_to_py_args, value::{py_any_to_teo_value, teo_value_to_py_any}}, pipeline::ctx::PipelineCtx, request::Request, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable, cstr::static_cstr}};
 use teo::prelude::request::Request as TeoRequest;
 
 #[pyclass]
 pub struct Namespace {
-    pub(crate) teo_namespace: namespace::Builder,
+    pub(crate) builder: namespace::Builder,
 }
 
 #[pymethods]
@@ -15,17 +15,17 @@ impl Namespace {
 
     #[getter]
     pub fn is_main(&self) -> bool {
-        self.teo_namespace.is_main()
+        self.builder.is_main()
     }
 
     #[getter]
     pub fn is_std(&self) -> bool {
-        self.teo_namespace.is_std()
+        self.builder.is_std()
     }
 
     #[getter]
     pub fn path(&self) -> &Vec<String> {
-        self.teo_namespace.path()
+        self.builder.path()
     }
 
     pub fn namespace(&self, name: &str) -> Namespace {
@@ -33,29 +33,29 @@ impl Namespace {
     }
 
     pub fn child_namespace(&self, name: &str) -> Option<Namespace> {
-        self.teo_namespace.child_namespace(name).map(|n| Namespace { teo_namespace: n })
+        self.builder.child_namespace(name).map(|n| Namespace { builder: n })
     }
 
     pub fn child_namespace_or_create(&self, name: &str) -> Namespace {
-        Namespace { teo_namespace: self.teo_namespace.child_namespace_or_create(name) }
+        Namespace { builder: self.builder.child_namespace_or_create(name) }
     }
 
     pub fn descendant_namespace_at_path(&self, path: Vec<String>) -> Option<Namespace> {
-        self.teo_namespace.descendant_namespace_at_path(&path).map(|n| Namespace { teo_namespace: n })
+        self.builder.descendant_namespace_at_path(&path).map(|n| Namespace { builder: n })
     }
 
     pub fn descendant_namespace_or_create_at_path(&self, path: Vec<String>) -> Namespace {
-        Namespace { teo_namespace: self.teo_namespace.descendant_namespace_or_create_at_path(&path) }
+        Namespace { builder: self.builder.descendant_namespace_or_create_at_path(&path) }
     }
 
     pub fn define_model_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_model_decorator(name, move |arguments, model| {
+        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
+        self.builder.define_model_decorator(name, move |arguments, model| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let model_wrapped = Model {
-                    teo_model: model.clone()
+                    builder: model.clone()
                 };
                 callback.call1(py, (arguments, model_wrapped))?;
                 Ok::<(), PyErr>(())
@@ -67,12 +67,12 @@ impl Namespace {
 
     pub fn define_model_field_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_model_field_decorator(name, move |arguments, field| {
+        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
+        self.builder.define_model_field_decorator(name, move |arguments, field| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let field_wrapped = Field {
-                    teo_field: field.clone()
+                    builder: field.clone()
                 };
                 callback.call1(py, (arguments, field_wrapped))?;
                 Ok::<(), PyErr>(())
@@ -84,12 +84,12 @@ impl Namespace {
 
     pub fn define_model_relation_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_model_relation_decorator(name, move |arguments, relation| {
+        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
+        self.builder.define_model_relation_decorator(name, move |arguments, relation| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let relation_wrapped = Relation {
-                    teo_relation: relation.clone()
+                    builder: relation.clone()
                 };
                 callback.call1(py, (arguments, relation_wrapped))?;
                 Ok::<(), PyErr>(())
@@ -101,12 +101,12 @@ impl Namespace {
 
     pub fn define_model_property_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_model_property_decorator(name, move |arguments, property| {
+        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
+        self.builder.define_model_property_decorator(name, move |arguments, property| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let property_wrapped = Property {
-                    teo_property: property.clone()
+                    builder: property.clone()
                 };
                 callback.call1(py, (arguments, property_wrapped))?;
                 Ok::<(), PyErr>(())
@@ -118,8 +118,8 @@ impl Namespace {
 
     pub fn define_enum_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_enum_decorator(name, move |arguments, teo_enum: &r#enum::Builder| {
+        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
+        self.builder.define_enum_decorator(name, move |arguments, teo_enum: &r#enum::Builder| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let enum_wrapped = Enum {
@@ -135,8 +135,8 @@ impl Namespace {
 
     pub fn define_enum_member_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_enum_member_decorator(name, move |arguments, member: &r#enum::member::Builder| {
+        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
+        self.builder.define_enum_member_decorator(name, move |arguments, member: &r#enum::member::Builder| {
             Python::with_gil(|py| {
                 let arguments = teo_args_to_py_args(py, &arguments, map)?;
                 let enum_member_wrapped = EnumMember {
@@ -153,8 +153,8 @@ impl Namespace {
     pub fn _define_pipeline_item(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(&callback.bind(py))?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_pipeline_item(name, move |args| {
+        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
+        self.builder.define_pipeline_item(name, move |args| {
             Python::with_gil(|py| {
                 let args = teo_args_to_py_args(py, &args, map)?;
                 let callback = callback.clone_ref(py);
@@ -187,8 +187,8 @@ impl Namespace {
         check_callable(&callback)?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let callback = Py::from(callback);
-        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_pipeline_item(name, move |args| {
+        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
+        self.builder.define_pipeline_item(name, move |args| {
             Python::with_gil(|py| {
                 let args = teo_args_to_py_args(py, &args, map)?;
                 let callback = callback.clone_ref(py);
@@ -236,8 +236,8 @@ impl Namespace {
         check_callable(&callback)?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let callback = Py::from(callback);
-        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_pipeline_item(name, move |args| {
+        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
+        self.builder.define_pipeline_item(name, move |args| {
             Python::with_gil(|py| {
                 let args = teo_args_to_py_args(py, &args, map)?;
                 let callback = callback.clone_ref(py);
@@ -267,8 +267,8 @@ impl Namespace {
         check_callable(&callback)?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let callback = Py::from(callback);
-        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
-        self.teo_namespace.define_pipeline_item(name, move |args| {
+        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
+        self.builder.define_pipeline_item(name, move |args| {
             Python::with_gil(|py| {
                 let args = teo_args_to_py_args(py, &args, map)?;
                 let callback = callback.clone_ref(py);
@@ -330,7 +330,7 @@ impl Namespace {
         check_callable(callback.bind(py))?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let callback_object = Py::from(callback);
-        self.teo_namespace.define_handler(name.as_str(), move |request: TeoRequest| {
+        self.builder.define_handler(name.as_str(), move |request: TeoRequest| {
             let (main_thread_locals, callback_object) = Python::with_gil(|py| {
                 (main_thread_locals.clone_ref(py), callback_object.clone_ref(py))
             });
@@ -357,7 +357,7 @@ impl Namespace {
 
     pub fn define_handler_group(&self, name: String, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
-        self.teo_namespace.define_handler_group(name.as_str(), |teo_handler_group: &handler::group::Builder| {
+        self.builder.define_handler_group(name.as_str(), |teo_handler_group: &handler::group::Builder| {
             let handler_group = HandlerGroup { teo_handler_group: teo_handler_group.clone() };
             callback.call1((handler_group,))?;
             Ok(())
@@ -366,16 +366,16 @@ impl Namespace {
     }
 
     pub fn handler_group(&self, name: &str) -> Option<HandlerGroup> {
-        self.teo_namespace.handler_group(name).map(|hg| HandlerGroup { teo_handler_group: hg.clone() })
+        self.builder.handler_group(name).map(|hg| HandlerGroup { teo_handler_group: hg.clone() })
     }
 
     pub fn group(&self, name: &str) -> HandlerGroup {
-        HandlerGroup { teo_handler_group: self.teo_namespace.handler_group_or_create(name) }
+        HandlerGroup { teo_handler_group: self.builder.handler_group_or_create(name) }
     }
 
     pub fn define_model_handler_group(&self, name: String, callback: Bound<PyAny>) -> PyResult<()> {
         check_callable(&callback)?;
-        self.teo_namespace.define_model_handler_group(name.as_str(), |teo_handler_group: &handler::group::Builder| {
+        self.builder.define_model_handler_group(name.as_str(), |teo_handler_group: &handler::group::Builder| {
             let handler_group = HandlerGroup { teo_handler_group: teo_handler_group.clone() };
             callback.call1((handler_group,))?;
             Ok(())
@@ -384,19 +384,19 @@ impl Namespace {
     }
 
     pub fn model_handler_group(&self, name: &str) -> Option<HandlerGroup> {
-        self.teo_namespace.model_handler_group(name).map(|hg| HandlerGroup { teo_handler_group: hg.clone() })
+        self.builder.model_handler_group(name).map(|hg| HandlerGroup { teo_handler_group: hg.clone() })
     }
 
     pub fn model(&self, name: &str) -> HandlerGroup {
-        HandlerGroup { teo_handler_group: self.teo_namespace.model_handler_group_or_create(name) }
+        HandlerGroup { teo_handler_group: self.builder.model_handler_group_or_create(name) }
     }
 
     pub fn _define_request_middleware(&self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
         let name_cstr = static_cstr(name)?;
         check_callable(&callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
+        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-        self.teo_namespace.define_request_middleware_impl(name, move |arguments| {
+        self.builder.define_request_middleware_impl(name, move |arguments| {
             let (callback, main_thread_locals) = Python::with_gil(|py| {
                 (callback.clone_ref(py), main_thread_locals.clone_ref(py))
             });
@@ -461,9 +461,9 @@ impl Namespace {
     pub fn _define_handler_middleware(&self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
         let name_cstr = static_cstr(name)?;
         check_callable(&callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.teo_namespace.app_data());
+        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-        self.teo_namespace.define_handler_middleware_impl(name, move |arguments| {
+        self.builder.define_handler_middleware_impl(name, move |arguments| {
             let (callback, main_thread_locals) = Python::with_gil(|py| {
                 (callback.clone_ref(py), main_thread_locals.clone_ref(py))
             });
