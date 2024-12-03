@@ -3933,6 +3933,7 @@ dependencies = [
 name = "teo-result"
 version = "0.3.5"
 dependencies = [
+ "bson",
  "cookie",
  "http",
  "indexmap 2.6.0",

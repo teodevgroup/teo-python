@@ -1,8 +1,9 @@
 use bson::oid::ObjectId as OriginalObjectId;
-use pyo3::{pyclass, pymethods, PyResult, exceptions::PyValueError};
+use pyo3::{pyclass, pymethods, PyResult};
 
 #[pyclass]
-#[derive(Clone)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
 pub struct ObjectId {
     pub(crate) original: OriginalObjectId,
 }
