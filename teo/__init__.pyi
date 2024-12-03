@@ -1100,6 +1100,7 @@ class ObjectId:
         """
         ...
 
+
 class Range[T]:
     """
     A range value in Teo schema.
@@ -1133,14 +1134,50 @@ class Range[T]:
         """
         ...
 
+
 class OptionVariant:
-    pass
+    """
+    Option variant.
+    """
+
+    def __int__(self) -> int:
+        ...
+
+    def __and__(self, other: OptionVariant) -> OptionVariant:
+        ...
+
+    def __or__(self, other: OptionVariant) -> OptionVariant:
+        ...
+
+    def __xor__(self, other: OptionVariant) -> OptionVariant:
+        ...
+
+    def __invert__(self) -> OptionVariant:
+        ...
+
 
 class InterfaceEnumVariant:
-    pass
+    """
+    Interface enum variant.
+    """
+
+    @property
+    def value(self) -> str:
+        """
+        Get the variant's value.
+        """
+        ...
+
+    def __getitem__(self, name: str) -> Optional[Any]:
+        """
+        Get the value of the argument with name.
+        """
+        ...
+
 
 class Pipeline:
     pass
+
 
 class PipelineCtx:
     """

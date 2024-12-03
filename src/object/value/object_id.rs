@@ -1,5 +1,6 @@
 use bson::oid::ObjectId as OriginalObjectId;
 use pyo3::{pyclass, pymethods, PyResult};
+use teo_result::Error;
 
 #[pyclass]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -14,7 +15,7 @@ impl ObjectId {
 
     #[new]
     pub fn new(value: &str) -> PyResult<Self> {
-        Ok(ObjectId { original: OriginalObjectId::parse_str(value)? })
+        Ok(ObjectId { original: OriginalObjectId::parse_str(value).map_err(|e| Error::from(e))? })
     }
 
     pub fn __str__(&self) -> String {
