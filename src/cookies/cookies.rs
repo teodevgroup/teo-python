@@ -45,6 +45,10 @@ impl Cookies {
         self.original.clear()
     }
 
+    pub fn __len__(&self) -> usize {
+        self.original.len()
+    }
+
     pub fn __iter__(&self) -> CookiesIter {
         CookiesIter {
             original: self.original.entries().into_iter().map(|entry| Cookie {

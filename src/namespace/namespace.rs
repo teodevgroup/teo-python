@@ -336,7 +336,7 @@ impl Namespace {
             });
             async move {
                 let (coroutine, thread_locals) = Python::with_gil(|py| {
-                    let request = Request::new(request);
+                    let request = Request::from(request);
                     let result = callback_object.call1(py, (request,))?;
                     let current_thread_locals_result = pyo3_async_runtimes::tokio::get_current_locals(py);
                     if let Ok(current_thread_locals) = current_thread_locals_result {
@@ -413,7 +413,7 @@ impl Namespace {
                         });
                         async move {
                             let coroutine = Python::with_gil(|py| {
-                                let py_ctx = Request::new(request);
+                                let py_ctx = Request::from(request);
                                 let py_next = PyCFunction::new_closure(py, Some(name_cstr), None, move |args, _kwargs| {
                                     let next = next.clone();
                                     Python::with_gil(|py| {
@@ -480,7 +480,7 @@ impl Namespace {
                         });
                         async move {
                             let coroutine = Python::with_gil(|py| {
-                                let py_ctx = Request::new(request);
+                                let py_ctx = Request::from(request);
                                 let py_next = PyCFunction::new_closure(py, Some(name_cstr), None, move |args, _kwargs| {
                                     let next = next.clone();
                                     Python::with_gil(|py| {

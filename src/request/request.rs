@@ -2,7 +2,6 @@ use pyo3::{pyclass, pymethods, Bound, PyAny, PyObject, PyResult, Python};
 use teo::prelude::request::{Version, Method, Request as OriginalRequest};
 use teo_result::Error;
 use crate::{cookies::cookies::Cookies, dynamic::py_class_lookup_map::PYClassLookupMap, headers::Headers, object::value::{py_any_to_teo_value, teo_value_to_py_any_without_model_objects}};
-
 use super::{local::{objects::LocalObjects, values::LocalValues}, HandlerMatch};
 
 #[pyclass]
@@ -11,11 +10,9 @@ pub struct Request {
     pub(crate) original: OriginalRequest,
 }
 
-impl Request {
-    pub(crate) fn new(teo_request: OriginalRequest) -> Self {
-        Self {
-            original: teo_request.clone(),
-        }
+impl From<OriginalRequest> for Request {
+    fn from(original: OriginalRequest) -> Self {
+        Self { original }
     }
 }
 

@@ -55,6 +55,6 @@ impl PipelineCtx {
 
     #[getter]
     fn request(&self) -> Option<Request> {
-        self.original.request().map(|r| Request::new(r))
+        self.original.request().map(|r| Request::from(r))
     }
 }
