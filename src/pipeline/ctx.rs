@@ -13,10 +13,10 @@ pub struct PipelineCtx {
 
 impl From<pipeline::Ctx> for PipelineCtx {
 
-    fn from(value: pipeline::Ctx) -> Self {
-        let map = PYClassLookupMap::from_app_data(value.object().namespace().app_data());
-        PipelineCtx {
-            original: value,
+    fn from(original: pipeline::Ctx) -> Self {
+        let map = PYClassLookupMap::from_app_data(original.object().namespace().app_data());
+        Self {
+            original,
             map
         }
     }
