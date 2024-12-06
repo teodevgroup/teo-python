@@ -1,7 +1,7 @@
 use pyo3::{pyclass, pymethods, Bound, PyAny, PyObject, PyResult, Python};
 use teo::prelude::request::{Version, Method, Request as OriginalRequest};
 use teo_result::Error;
-use crate::{cookies::cookies::Cookies, dynamic::py_class_lookup_map::PYClassLookupMap, headers::Headers, object::value::{py_any_to_teo_value, teo_value_to_py_any_without_model_objects}};
+use crate::{cookies::cookies::Cookies, dynamic::{DynamicClasses, QueryDynamicClasses}, headers::Headers, object::value::{py_any_to_teo_value, teo_value_to_py_any_without_model_objects}};
 use super::{local::{objects::LocalObjects, values::LocalValues}, HandlerMatch};
 
 #[pyclass]
@@ -125,7 +125,7 @@ impl Request {
 
     #[getter]
     pub fn teo(&self, py: Python<'_>) -> PyResult<PyObject> {
-        let map = PYClassLookupMap::from_app_data(self.original.transaction_ctx().namespace().app_data());
+        let map = DynamicClasses::retrieve(self.original.transaction_ctx().namespace().app_data())?;
         map.teo_transaction_ctx_to_py_ctx_object(py, self.original.transaction_ctx(), "")
     }
 

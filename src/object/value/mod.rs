@@ -16,8 +16,7 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 use pyo3::types::{PyBool, PyDate, PyDateTime, PyFloat, PyInt};
 use chrono::prelude::{NaiveDate, Utc, DateTime};
-use crate::dynamic::py_class_lookup_map::PYClassLookupMap;
-
+use crate::dynamic::DynamicClasses;
 use self::decimal::big_decimal_to_python_decimal;
 use super::{array::teo_array_to_py_any, interface_enum_variant::teo_interface_enum_variant_to_py_any, model::teo_model_object_to_py_any, pipeline::teo_pipeline_to_py_any, r#struct::teo_struct_object_to_py_any};
 
@@ -77,7 +76,7 @@ pub fn teo_value_to_py_any_without_model_objects<'p>(py: Python<'p>, value: &Val
     })
 }
 
-pub(crate) fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value, map: &PYClassLookupMap) -> PyResult<PyObject> {
+pub(crate) fn teo_value_to_py_any<'p>(py: Python<'p>, value: &Value, map: &DynamicClasses) -> PyResult<PyObject> {
     Ok(match value {
         Value::ModelObject(model_object) => teo_model_object_to_py_any(py, model_object, map)?,
         Value::Array(v) => teo_array_to_py_any(py, v, map)?,
@@ -161,8 +160,7 @@ pub fn py_any_to_teo_value(py: Python<'_>, object: &Bound<PyAny>) -> PyResult<Va
             let pattern_str: &str = pattern_any.extract(py)?;
             let r: Regex = Regex::new(pattern_str).unwrap();
             Ok(Value::Regex(r))
-        }
-         else {
+        } else {
             Err(PyValueError::new_err("Cannot convert Python object to Teo value."))
         }
     }

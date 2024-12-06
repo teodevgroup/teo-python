@@ -1,8 +1,8 @@
-from teo import App, Request, Response, HandlerGroup
+from teo import App
 from tests.helpers.schema_path_args import schema_path_args
 from datetime import datetime, date, timedelta
 from decimal import Decimal
-from .entities import Teo, Container, Status
+from .entities import Container, Status
 
 
 def load_app():

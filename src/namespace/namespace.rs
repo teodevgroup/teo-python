@@ -2,7 +2,7 @@ use teo_result::Error;
 use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction}, Bound, IntoPyObjectExt, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::TaskLocals;
 use teo::prelude::{r#enum, handler, namespace, pipeline::{self, item::templates::validator::Validity}, request, Middleware, Next, NextImp, Value};
-use crate::{dynamic::py_class_lookup_map::PYClassLookupMap, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::teo_args_to_py_args, value::{py_any_to_teo_value, teo_value_to_py_any}}, pipeline::ctx::PipelineCtx, request::Request, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable, cstr::static_cstr}};
+use crate::{dynamic::DynamicClasses, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::{teo_args_to_py_args, teo_args_to_py_args_no_map}, value::{py_any_to_teo_value, teo_value_to_py_any}}, pipeline::ctx::PipelineCtx, request::Request, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable, cstr::static_cstr}};
 use teo::prelude::request::Request as TeoRequest;
 
 #[pyclass]
@@ -50,10 +50,9 @@ impl Namespace {
 
     pub fn define_model_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
         self.builder.define_model_decorator(name, move |arguments, model| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args(py, &arguments, map)?;
+                let arguments = teo_args_to_py_args_no_map(py, &arguments)?;
                 let model_wrapped = Model {
                     builder: model.clone()
                 };
@@ -67,10 +66,9 @@ impl Namespace {
 
     pub fn define_model_field_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
         self.builder.define_model_field_decorator(name, move |arguments, field| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args(py, &arguments, map)?;
+                let arguments = teo_args_to_py_args_no_map(py, &arguments)?;
                 let field_wrapped = Field {
                     builder: field.clone()
                 };
@@ -84,10 +82,9 @@ impl Namespace {
 
     pub fn define_model_relation_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
         self.builder.define_model_relation_decorator(name, move |arguments, relation| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args(py, &arguments, map)?;
+                let arguments = teo_args_to_py_args_no_map(py, &arguments)?;
                 let relation_wrapped = Relation {
                     builder: relation.clone()
                 };
@@ -101,10 +98,9 @@ impl Namespace {
 
     pub fn define_model_property_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
         self.builder.define_model_property_decorator(name, move |arguments, property| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args(py, &arguments, map)?;
+                let arguments = teo_args_to_py_args_no_map(py, &arguments)?;
                 let property_wrapped = Property {
                     builder: property.clone()
                 };
@@ -118,12 +114,11 @@ impl Namespace {
 
     pub fn define_enum_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
         self.builder.define_enum_decorator(name, move |arguments, teo_enum: &r#enum::Builder| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args(py, &arguments, map)?;
+                let arguments = teo_args_to_py_args_no_map(py, &arguments)?;
                 let enum_wrapped = Enum {
-                    teo_enum: teo_enum.clone()
+                    builder: teo_enum.clone()
                 };
                 callback.call1(py, (arguments, enum_wrapped))?;
                 Ok::<(), PyErr>(())
@@ -135,12 +130,11 @@ impl Namespace {
 
     pub fn define_enum_member_decorator(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
         self.builder.define_enum_member_decorator(name, move |arguments, member: &r#enum::member::Builder| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args(py, &arguments, map)?;
+                let arguments = teo_args_to_py_args_no_map(py, &arguments)?;
                 let enum_member_wrapped = EnumMember {
-                    teo_enum_member: member.clone()
+                    builder: member.clone()
                 };
                 callback.call1(py, (arguments, enum_member_wrapped))?;
                 Ok::<(), PyErr>(())
@@ -153,10 +147,9 @@ impl Namespace {
     pub fn _define_pipeline_item(&self, name: &str, callback: PyObject, py: Python<'_>) -> PyResult<()> {
         check_callable(&callback.bind(py))?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
-        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
         self.builder.define_pipeline_item(name, move |args| {
             Python::with_gil(|py| {
-                let args = teo_args_to_py_args(py, &args, map)?;
+                let args = teo_args_to_py_args_no_map(py, &args)?;
                 let callback = callback.clone_ref(py);
                 let main_thread_locals = main_thread_locals.clone_ref(py);
 //                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
@@ -187,10 +180,9 @@ impl Namespace {
         check_callable(&callback)?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let callback = Py::from(callback);
-        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
         self.builder.define_pipeline_item(name, move |args| {
             Python::with_gil(|py| {
-                let args = teo_args_to_py_args(py, &args, map)?;
+                let args = teo_args_to_py_args_no_map(py, &args)?;
                 let callback = callback.clone_ref(py);
                 let main_thread_locals = main_thread_locals.clone_ref(py);
 //                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
@@ -236,10 +228,9 @@ impl Namespace {
         check_callable(&callback)?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let callback = Py::from(callback);
-        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
         self.builder.define_pipeline_item(name, move |args| {
             Python::with_gil(|py| {
-                let args = teo_args_to_py_args(py, &args, map)?;
+                let args = teo_args_to_py_args_no_map(py, &args)?;
                 let callback = callback.clone_ref(py);
                 let main_thread_locals = main_thread_locals.clone_ref(py);
 //                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
@@ -267,21 +258,22 @@ impl Namespace {
         check_callable(&callback)?;
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         let callback = Py::from(callback);
-        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
         self.builder.define_pipeline_item(name, move |args| {
             Python::with_gil(|py| {
-                let args = teo_args_to_py_args(py, &args, map)?;
+                let args = teo_args_to_py_args_no_map(py, &args)?;
                 let callback = callback.clone_ref(py);
                 let main_thread_locals = main_thread_locals.clone_ref(py);
 //                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
                 let python_pipeline_item = callback.call1(py, (args,))?;
                 return Ok(move |ctx: pipeline::Ctx| {
+                    let app_data = ctx.object().namespace().app_data().clone();
                     let gil_result = Python::with_gil(|py| {
                         let main_thread_locals = main_thread_locals.clone_ref(py);
                         let python_pipeline_item = python_pipeline_item.clone_ref(py);
                         Ok::<_, Error>((main_thread_locals, python_pipeline_item))
                     });
                     async move {
+                        let dynamic_classes = DynamicClasses::retrieve(&app_data)?;
                         let (main_thread_locals, python_pipeline_item) = gil_result?;
                         if ctx.object().is_new() {
                             return Ok(ctx.value().clone());
@@ -294,10 +286,10 @@ impl Namespace {
                         }
                         let python_pipeline_item_result = Python::with_gil(|py| {
                             let ctx = PipelineCtx::from(ctx.clone());
-                            let old_value_py = teo_value_to_py_any(py, &previous_value, map)?;
-                            let new_value_py = teo_value_to_py_any(py, current_value, map)?;
+                            let old_value_py = teo_value_to_py_any(py, &previous_value, &dynamic_classes)?;
+                            let new_value_py = teo_value_to_py_any(py, current_value, &dynamic_classes)?;
                             let python_pipeline_item_result = python_pipeline_item.call1(py, (old_value_py, new_value_py, ctx))?;
-                            Ok::<PyObject, Error>(python_pipeline_item_result)    
+                            Ok::<PyObject, Error>(python_pipeline_item_result)
                         })?;
                         let python_result = await_coroutine_if_needed_value_with_locals(&python_pipeline_item_result, &main_thread_locals).await?;
                         let validity = Python::with_gil(|py| {
@@ -394,7 +386,6 @@ impl Namespace {
     pub fn _define_request_middleware(&self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
         let name_cstr = static_cstr(name)?;
         check_callable(&callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         self.builder.define_request_middleware_impl(name, move |arguments| {
             let (callback, main_thread_locals) = Python::with_gil(|py| {
@@ -402,7 +393,7 @@ impl Namespace {
             });
             async move {
                 Python::with_gil(|py| {
-                    let py_args = teo_args_to_py_args(py, &arguments, map)?;
+                    let py_args = teo_args_to_py_args_no_map(py, &arguments)?;
                     let result_function = callback.call1(py, (py_args,))?;
                     let main = py.import("__main__")?;
                     let teo_wrap_async = main.getattr("teo_wrap_async")?;
@@ -461,7 +452,6 @@ impl Namespace {
     pub fn _define_handler_middleware(&self, py: Python<'_>, name: &str, callback: PyObject) -> PyResult<()> {
         let name_cstr = static_cstr(name)?;
         check_callable(&callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.builder.app_data());
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         self.builder.define_handler_middleware_impl(name, move |arguments| {
             let (callback, main_thread_locals) = Python::with_gil(|py| {
@@ -469,7 +459,7 @@ impl Namespace {
             });
             async move {
                 Python::with_gil(|py| {
-                    let py_args = teo_args_to_py_args(py, &arguments, map)?;
+                    let py_args = teo_args_to_py_args_no_map(py, &arguments)?;
                     let result_function = callback.call1(py, (py_args,))?;
                     let main = py.import("__main__")?;
                     let teo_wrap_async = main.getattr("teo_wrap_async")?;

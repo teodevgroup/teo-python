@@ -4,7 +4,7 @@ use ::teo::prelude::{RuntimeVersion, App as TeoApp, Entrance, transaction};
 use teo_result::Error;
 use tokio::runtime::Builder;
 
-use crate::{dynamic::{py_class_lookup_map::PYClassLookupMap, synthesize_dynamic_python_classes}, namespace::namespace::Namespace, utils::{check_callable::check_callable, is_coroutine::is_coroutine}};
+use crate::{dynamic::{synthesize_dynamic_python_classes, DynamicClasses, QueryDynamicClasses}, namespace::namespace::Namespace, utils::{check_callable::check_callable, is_coroutine::is_coroutine}};
 
 #[pyclass]
 #[derive(Clone)]
@@ -48,14 +48,16 @@ impl App {
 
     fn setup<'p>(&mut self, py: Python<'p>, callback: PyObject) -> PyResult<()> {
         check_callable(&callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.teo_app.app_data()); 
+        let app_data = self.teo_app.app_data().clone();
         self.teo_app.setup(move |ctx: transaction::Ctx| {
+            let app_data = app_data.clone();
             let callback = Python::with_gil(|py| {
                 callback.clone_ref(py)
             });
             async move {
+                let dynamic_classes = DynamicClasses::retrieve(&app_data)?;
                 let transformed = Python::with_gil(|py| {
-                    let transformed_py = callback.call1(py, (map.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?,))?;
+                    let transformed_py = callback.call1(py, (dynamic_classes.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?,))?;
                     let is_coroutine = is_coroutine(&transformed_py)?;
                     Ok::<_, Error>((transformed_py, is_coroutine))
                 })?;
@@ -74,14 +76,16 @@ impl App {
     #[pyo3(signature = (name, desc, callback))]
     fn program<'p>(&mut self, py: Python<'p>, name: &str, desc: Option<&str>, callback: PyObject) -> PyResult<()> {
         check_callable(&callback.bind(py))?;
-        let map = PYClassLookupMap::from_app_data(self.teo_app.app_data()); 
+        let app_data = self.teo_app.app_data().clone();
         self.teo_app.program(name, desc, move |ctx: transaction::Ctx| {
+            let app_data = app_data.clone();
             let callback = Python::with_gil(|py| {
                 callback.clone_ref(py)
             });
             async move {
+                let dynamic_classes = DynamicClasses::retrieve(&app_data)?;
                 let transformed = Python::with_gil(|py| {
-                    let transformed_py = callback.call1(py, (map.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?,))?;
+                    let transformed_py = callback.call1(py, (dynamic_classes.teo_transaction_ctx_to_py_ctx_object(py, ctx, "")?,))?;
                     let is_coroutine = is_coroutine(&transformed_py)?;
                     Ok::<_, Error>((transformed_py, is_coroutine))
                 })?;
