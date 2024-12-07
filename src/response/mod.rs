@@ -9,6 +9,14 @@ pub struct Response {
     pub(crate) original: OriginalResponse,
 }
 
+impl From<OriginalResponse> for Response {
+    fn from(original: OriginalResponse) -> Self {
+        Self {
+            original
+        }
+    }
+}
+
 #[pymethods]
 impl Response {
 
