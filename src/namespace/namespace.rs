@@ -152,19 +152,24 @@ impl Namespace {
                 let args = teo_args_to_py_args(py, &args)?;
                 let callback = callback.clone_ref(py);
                 let main_thread_locals = main_thread_locals.clone_ref(py);
-//                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
                 let python_pipeline_item = callback.call1(py, (args,))?;
                 return Ok(move |ctx: pipeline::Ctx| {
                     let gil_result = Python::with_gil(|py| {
                         let main_thread_locals = main_thread_locals.clone_ref(py);
+                        let current_thread_locals_result = pyo3_async_runtimes::tokio::get_current_locals(py);
+                        let thread_locals = if let Ok(current_thread_locals) = current_thread_locals_result {
+                            current_thread_locals
+                        } else {
+                            main_thread_locals
+                        };
                         let python_pipeline_item = python_pipeline_item.clone_ref(py);
                         let ctx = PipelineCtx::from(ctx);
                         let python_pipeline_item_result = python_pipeline_item.call1(py, (ctx,))?;
-                        Ok::<_, Error>((main_thread_locals, python_pipeline_item_result))
+                        Ok::<_, Error>((thread_locals, python_pipeline_item_result))
                     });
                     async move {
-                        let (main_thread_locals, python_pipeline_item_result) = gil_result?;
-                        let python_result = await_coroutine_if_needed_value_with_locals(&python_pipeline_item_result, &main_thread_locals).await?;
+                        let (thread_locals, python_pipeline_item_result) = gil_result?;
+                        let python_result = await_coroutine_if_needed_value_with_locals(&python_pipeline_item_result, &thread_locals).await?;
                         Python::with_gil(|py| {
                             let bounded_result = python_result.into_bound(py);
                             Ok(py_any_to_teo_value(py, &bounded_result)?)
@@ -185,19 +190,24 @@ impl Namespace {
                 let args = teo_args_to_py_args(py, &args)?;
                 let callback = callback.clone_ref(py);
                 let main_thread_locals = main_thread_locals.clone_ref(py);
-//                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
                 let python_pipeline_item = callback.call1(py, (args,))?;
                 return Ok(move |ctx: pipeline::Ctx| {
                     let gil_result = Python::with_gil(|py| {
                         let main_thread_locals = main_thread_locals.clone_ref(py);
+                        let current_thread_locals_result = pyo3_async_runtimes::tokio::get_current_locals(py);
+                        let thread_locals = if let Ok(current_thread_locals) = current_thread_locals_result {
+                            current_thread_locals
+                        } else {
+                            main_thread_locals
+                        };
                         let python_pipeline_item = python_pipeline_item.clone_ref(py);
                         let ctx = PipelineCtx::from(ctx.clone());
                         let python_pipeline_item_result = python_pipeline_item.call1(py, (ctx,))?;
-                        Ok::<_, Error>((main_thread_locals, python_pipeline_item_result))
+                        Ok::<_, Error>((thread_locals, python_pipeline_item_result))
                     });
                     async move {
-                        let (main_thread_locals, python_pipeline_item_result) = gil_result?;
-                        let python_result = await_coroutine_if_needed_value_with_locals(&python_pipeline_item_result, &main_thread_locals).await?;
+                        let (thread_locals, python_pipeline_item_result) = gil_result?;
+                        let python_result = await_coroutine_if_needed_value_with_locals(&python_pipeline_item_result, &thread_locals).await?;
                         let validity = Python::with_gil(|py| {
                             let bounded_result = python_result.into_bound(py);
                             let teo_result = py_any_to_teo_value(py, &bounded_result)?;
@@ -233,19 +243,24 @@ impl Namespace {
                 let args = teo_args_to_py_args(py, &args)?;
                 let callback = callback.clone_ref(py);
                 let main_thread_locals = main_thread_locals.clone_ref(py);
-//                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
                 let python_pipeline_item = callback.call1(py, (args,))?;
                 return Ok(move |ctx: pipeline::Ctx| {
                     let gil_result = Python::with_gil(|py| {
                         let main_thread_locals = main_thread_locals.clone_ref(py);
+                        let current_thread_locals_result = pyo3_async_runtimes::tokio::get_current_locals(py);
+                        let thread_locals = if let Ok(current_thread_locals) = current_thread_locals_result {
+                            current_thread_locals
+                        } else {
+                            main_thread_locals
+                        };
                         let python_pipeline_item = python_pipeline_item.clone_ref(py);
                         let ctx = PipelineCtx::from(ctx.clone());
                         let python_pipeline_item_result = python_pipeline_item.call1(py, (ctx,))?;
-                        Ok::<_, Error>((main_thread_locals, python_pipeline_item_result))
+                        Ok::<_, Error>((thread_locals, python_pipeline_item_result))
                     });
                     async move {
-                        let (main_thread_locals, python_pipeline_item_result) = gil_result?;
-                        let _ = await_coroutine_if_needed_value_with_locals(&python_pipeline_item_result, &main_thread_locals).await?;
+                        let (thread_locals, python_pipeline_item_result) = gil_result?;
+                        let _ = await_coroutine_if_needed_value_with_locals(&python_pipeline_item_result, &thread_locals).await?;
                         Ok::<Value, Error>(ctx.value().clone())
                     }
                 })
@@ -263,18 +278,23 @@ impl Namespace {
                 let args = teo_args_to_py_args(py, &args)?;
                 let callback = callback.clone_ref(py);
                 let main_thread_locals = main_thread_locals.clone_ref(py);
-//                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
                 let python_pipeline_item = callback.call1(py, (args,))?;
                 return Ok(move |ctx: pipeline::Ctx| {
                     let app_data = ctx.object().namespace().app_data().clone();
                     let gil_result = Python::with_gil(|py| {
                         let main_thread_locals = main_thread_locals.clone_ref(py);
+                        let current_thread_locals_result = pyo3_async_runtimes::tokio::get_current_locals(py);
+                        let thread_locals = if let Ok(current_thread_locals) = current_thread_locals_result {
+                            current_thread_locals
+                        } else {
+                            main_thread_locals
+                        };
                         let python_pipeline_item = python_pipeline_item.clone_ref(py);
-                        Ok::<_, Error>((main_thread_locals, python_pipeline_item))
+                        Ok::<_, Error>((thread_locals, python_pipeline_item))
                     });
                     async move {
                         let dynamic_classes = DynamicClasses::retrieve(&app_data)?;
-                        let (main_thread_locals, python_pipeline_item) = gil_result?;
+                        let (thread_locals, python_pipeline_item) = gil_result?;
                         if ctx.object().is_new() {
                             return Ok(ctx.value().clone());
                         }
@@ -291,7 +311,7 @@ impl Namespace {
                             let python_pipeline_item_result = python_pipeline_item.call1(py, (old_value_py, new_value_py, ctx))?;
                             Ok::<PyObject, Error>(python_pipeline_item_result)
                         })?;
-                        let python_result = await_coroutine_if_needed_value_with_locals(&python_pipeline_item_result, &main_thread_locals).await?;
+                        let python_result = await_coroutine_if_needed_value_with_locals(&python_pipeline_item_result, &thread_locals).await?;
                         let validity = Python::with_gil(|py| {
                             let bounded_result = python_result.into_bound(py);
                             let teo_result = py_any_to_teo_value(py, &bounded_result)?;
