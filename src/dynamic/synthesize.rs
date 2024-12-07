@@ -25,7 +25,7 @@ pub(crate) fn teo_model_object_from_py_model_object(py: Python<'_>, model_object
 pub fn synthesize_dynamic_python_classes(app: &App, py: Python<'_>) -> PyResult<()> {
     let mut builder = DynamicClassesBuilder::new();
     synthesize_dynamic_python_classes_for_namespace(&mut builder, app, app.compiled_main_namespace(), py)?;
-    app.app_data().set_dynamic_classes(Arc::new(builder.build()));
+    app.app_data().set_dynamic_classes(Arc::new(builder.build()))?;
     Ok(())
 }
 
@@ -821,7 +821,7 @@ fn save_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
     })?)
 }
 
-fn delete_function<'py>(py: Python<'py>) -> PyResult<Bound<PyCFunction>> {
+fn delete_function(py: Python) -> PyResult<Bound<PyCFunction>> {
     Ok(PyCFunction::new_closure(py, Some(c"delete"), Some(c"Delete this object."), move |args, _kwargs| {
         Python::with_gil(|py| {
             let slf = args.get_item(0)?;

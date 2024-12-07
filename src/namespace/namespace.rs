@@ -2,7 +2,7 @@ use teo_result::Error;
 use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyCFunction}, Bound, IntoPyObjectExt, Py, PyAny, PyErr, PyObject, PyResult, Python};
 use pyo3_async_runtimes::TaskLocals;
 use teo::prelude::{r#enum, handler, namespace, pipeline::{self, item::templates::validator::Validity}, request, Middleware, Next, NextImp, Value};
-use crate::{dynamic::DynamicClasses, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::{teo_args_to_py_args, teo_args_to_py_args_no_map}, value::{py_any_to_teo_value, teo_value_to_py_any}}, pipeline::ctx::PipelineCtx, request::Request, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable, cstr::static_cstr}};
+use crate::{dynamic::DynamicClasses, r#enum::{r#enum::Enum, member::member::EnumMember}, handler::group::HandlerGroup, model::{field::field::Field, model::Model, property::property::Property, relation::relation::Relation}, object::{arguments::teo_args_to_py_args, value::{py_any_to_teo_value, teo_value_to_py_any}}, pipeline::ctx::PipelineCtx, request::Request, response::Response, utils::{await_coroutine_if_needed::await_coroutine_if_needed_value_with_locals, check_callable::check_callable, cstr::static_cstr}};
 use teo::prelude::request::Request as TeoRequest;
 
 #[pyclass]
@@ -52,7 +52,7 @@ impl Namespace {
         check_callable(callback.bind(py))?;
         self.builder.define_model_decorator(name, move |arguments, model| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args_no_map(py, &arguments)?;
+                let arguments = teo_args_to_py_args(py, &arguments)?;
                 let model_wrapped = Model {
                     builder: model.clone()
                 };
@@ -68,7 +68,7 @@ impl Namespace {
         check_callable(callback.bind(py))?;
         self.builder.define_model_field_decorator(name, move |arguments, field| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args_no_map(py, &arguments)?;
+                let arguments = teo_args_to_py_args(py, &arguments)?;
                 let field_wrapped = Field {
                     builder: field.clone()
                 };
@@ -84,7 +84,7 @@ impl Namespace {
         check_callable(callback.bind(py))?;
         self.builder.define_model_relation_decorator(name, move |arguments, relation| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args_no_map(py, &arguments)?;
+                let arguments = teo_args_to_py_args(py, &arguments)?;
                 let relation_wrapped = Relation {
                     builder: relation.clone()
                 };
@@ -100,7 +100,7 @@ impl Namespace {
         check_callable(callback.bind(py))?;
         self.builder.define_model_property_decorator(name, move |arguments, property| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args_no_map(py, &arguments)?;
+                let arguments = teo_args_to_py_args(py, &arguments)?;
                 let property_wrapped = Property {
                     builder: property.clone()
                 };
@@ -116,7 +116,7 @@ impl Namespace {
         check_callable(callback.bind(py))?;
         self.builder.define_enum_decorator(name, move |arguments, teo_enum: &r#enum::Builder| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args_no_map(py, &arguments)?;
+                let arguments = teo_args_to_py_args(py, &arguments)?;
                 let enum_wrapped = Enum {
                     builder: teo_enum.clone()
                 };
@@ -132,7 +132,7 @@ impl Namespace {
         check_callable(callback.bind(py))?;
         self.builder.define_enum_member_decorator(name, move |arguments, member: &r#enum::member::Builder| {
             Python::with_gil(|py| {
-                let arguments = teo_args_to_py_args_no_map(py, &arguments)?;
+                let arguments = teo_args_to_py_args(py, &arguments)?;
                 let enum_member_wrapped = EnumMember {
                     builder: member.clone()
                 };
@@ -149,7 +149,7 @@ impl Namespace {
         let main_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
         self.builder.define_pipeline_item(name, move |args| {
             Python::with_gil(|py| {
-                let args = teo_args_to_py_args_no_map(py, &args)?;
+                let args = teo_args_to_py_args(py, &args)?;
                 let callback = callback.clone_ref(py);
                 let main_thread_locals = main_thread_locals.clone_ref(py);
 //                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
@@ -182,7 +182,7 @@ impl Namespace {
         let callback = Py::from(callback);
         self.builder.define_pipeline_item(name, move |args| {
             Python::with_gil(|py| {
-                let args = teo_args_to_py_args_no_map(py, &args)?;
+                let args = teo_args_to_py_args(py, &args)?;
                 let callback = callback.clone_ref(py);
                 let main_thread_locals = main_thread_locals.clone_ref(py);
 //                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
@@ -230,7 +230,7 @@ impl Namespace {
         let callback = Py::from(callback);
         self.builder.define_pipeline_item(name, move |args| {
             Python::with_gil(|py| {
-                let args = teo_args_to_py_args_no_map(py, &args)?;
+                let args = teo_args_to_py_args(py, &args)?;
                 let callback = callback.clone_ref(py);
                 let main_thread_locals = main_thread_locals.clone_ref(py);
 //                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
@@ -260,7 +260,7 @@ impl Namespace {
         let callback = Py::from(callback);
         self.builder.define_pipeline_item(name, move |args| {
             Python::with_gil(|py| {
-                let args = teo_args_to_py_args_no_map(py, &args)?;
+                let args = teo_args_to_py_args(py, &args)?;
                 let callback = callback.clone_ref(py);
                 let main_thread_locals = main_thread_locals.clone_ref(py);
 //                let creator_thread_locals = pyo3_async_runtimes::tokio::get_current_locals(py)?;
@@ -393,7 +393,7 @@ impl Namespace {
             });
             async move {
                 Python::with_gil(|py| {
-                    let py_args = teo_args_to_py_args_no_map(py, &arguments)?;
+                    let py_args = teo_args_to_py_args(py, &arguments)?;
                     let result_function = callback.call1(py, (py_args,))?;
                     let main = py.import("__main__")?;
                     let teo_wrap_async = main.getattr("teo_wrap_async")?;
@@ -459,7 +459,7 @@ impl Namespace {
             });
             async move {
                 Python::with_gil(|py| {
-                    let py_args = teo_args_to_py_args_no_map(py, &arguments)?;
+                    let py_args = teo_args_to_py_args(py, &arguments)?;
                     let result_function = callback.call1(py, (py_args,))?;
                     let main = py.import("__main__")?;
                     let teo_wrap_async = main.getattr("teo_wrap_async")?;
