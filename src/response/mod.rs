@@ -104,6 +104,11 @@ impl Response {
         Headers::from(self.original.headers())
     }
 
+    #[setter]
+    pub fn set_headers(&self, headers: &Headers) {
+        self.original.set_headers(headers.original().clone());
+    }
+
     #[getter]
     pub fn is_file(&self) -> bool {
         self.original.body().is_file()
@@ -148,5 +153,10 @@ impl Response {
     #[getter]
     pub fn cookies(&self) -> Cookies {
         Cookies::from(self.original.cookies())
+    }
+
+    #[setter]
+    pub fn set_cookies(&self, cookies: &Cookies) {
+        self.original.set_cookies(cookies.original().clone());
     }
 }

@@ -91,9 +91,19 @@ impl Request {
         Headers::from(self.original.headers())
     }
 
+    #[setter]
+    pub fn set_headers(&self, headers: &Headers) {
+        self.original.set_headers(headers.original().clone());
+    }
+
     #[getter]
     pub fn cookies(&self) -> PyResult<Cookies> {
         Ok(Cookies::from(self.original.cookies()?.clone()))
+    }
+
+    #[setter]
+    pub fn set_cookies(&self, cookies: &Cookies) {
+        self.original.set_cookies(cookies.original().clone());
     }
 
     #[getter]
