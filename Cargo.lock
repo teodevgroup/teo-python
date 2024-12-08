@@ -2766,9 +2766,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3"
-version = "0.23.2"
+version = "0.23.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f54b3d09cbdd1f8c20650b28e7b09e338881482f4aa908a5f61a00c98fba2690"
+checksum = "e484fd2c8b4cb67ab05a318f1fd6fa8f199fcc30819f08f07d200809dba26c15"
 dependencies = [
  "cfg-if",
  "chrono",
@@ -2811,9 +2811,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-build-config"
-version = "0.23.2"
+version = "0.23.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3015cf985888fe66cfb63ce0e321c603706cd541b7aec7ddd35c281390af45d8"
+checksum = "dc0e0469a84f208e20044b98965e1561028180219e35352a2afaf2b942beff3b"
 dependencies = [
  "once_cell",
  "target-lexicon",
@@ -2821,9 +2821,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-ffi"
-version = "0.23.2"
+version = "0.23.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fca7cd8fd809b5ac4eefb89c1f98f7a7651d3739dfb341ca6980090f554c270"
+checksum = "eb1547a7f9966f6f1a0f0227564a9945fe36b90da5a93b3933fc3dc03fae372d"
 dependencies = [
  "libc",
  "pyo3-build-config",
@@ -2831,9 +2831,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-macros"
-version = "0.23.2"
+version = "0.23.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34e657fa5379a79151b6ff5328d9216a84f55dc93b17b08e7c3609a969b73aa0"
+checksum = "fdb6da8ec6fa5cedd1626c886fc8749bdcbb09424a86461eb8cdf096b7c33257"
 dependencies = [
  "proc-macro2",
  "pyo3-macros-backend",
@@ -2843,9 +2843,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-macros-backend"
-version = "0.23.2"
+version = "0.23.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "295548d5ffd95fd1981d2d3cf4458831b21d60af046b729b6fd143b0ba7aee2f"
+checksum = "38a385202ff5a92791168b1136afae5059d3ac118457bb7bc304c197c2d33e7d"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -3789,6 +3789,8 @@ dependencies = [
 [[package]]
 name = "teo"
 version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "219a5924c52dfef6c79fce4396fecd6571d215bd952b44bc75ccd6c79cd18554"
 dependencies = [
  "array_tool",
  "bigdecimal",
@@ -3830,6 +3832,8 @@ dependencies = [
 [[package]]
 name = "teo-generator"
 version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e93bc1c07757cb987790f05ad910593bcfe174134c2977000c389070ed97ee29"
 dependencies = [
  "askama",
  "async-recursion",
@@ -3858,6 +3862,8 @@ dependencies = [
 [[package]]
 name = "teo-mongodb-connector"
 version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ef28660fa1ffe9eb7e0b9e67da09e8a80844a4f2c3f082e3b4166e2fb2f283c"
 dependencies = [
  "async-recursion",
  "async-trait",
@@ -3881,6 +3887,8 @@ dependencies = [
 [[package]]
 name = "teo-parser"
 version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23add168f3349eb83ad498559d3383f604fc0ee6c400f5481d7014033921fdc5"
 dependencies = [
  "array_tool",
  "bigdecimal",
@@ -3932,6 +3940,8 @@ dependencies = [
 [[package]]
 name = "teo-result"
 version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af05f504b608ec99d4b58fa9b95f1138df34a7311352f8173a0a8508d1f63f56"
 dependencies = [
  "bson",
  "cookie",
@@ -3947,6 +3957,8 @@ dependencies = [
 [[package]]
 name = "teo-runtime"
 version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c90944ee099c886a6ee4367faecca2100d91f890c4686c89d6d70b4e43f28e9b"
 dependencies = [
  "array_tool",
  "async-recursion",
@@ -3991,6 +4003,8 @@ dependencies = [
 [[package]]
 name = "teo-sql-connector"
 version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b2ec1a38bc42048efd06c5de814bc317d811d874643dd079f0df95f228536a6"
 dependencies = [
  "array_tool",
  "async-recursion",
