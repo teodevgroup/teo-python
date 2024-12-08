@@ -151,6 +151,11 @@ impl TestRequest {
         self.body = Bytes::copy_from_slice(&data);
         Ok(())
     }
+
+    #[getter]
+    pub fn cookies(&self) -> Cookies {
+        self.cookies.clone()
+    }
 }
 
 impl TestRequest {

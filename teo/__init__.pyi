@@ -1387,7 +1387,8 @@ class TestRequest:
                  uri: str,
                  method: Optional[str] = None,
                  headers: Optional[dict[str, str]] = None,
-                 body: Optional[bytes | str | Any] = None) -> None:
+                 body: Optional[bytes | str | Any] = None,
+                 cookies: Optional[list[Cookie]] = None) -> None:
         """
         Create a new test request.
         """
@@ -1444,6 +1445,13 @@ class TestRequest:
     def set_body(self, body: bytes) -> None:
         """
         Set the request's body.
+        """
+        ...
+
+    @property
+    def cookies(self) -> Cookies:
+        """
+        Get the request's cookies.
         """
         ...
 
