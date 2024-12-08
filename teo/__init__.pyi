@@ -1486,33 +1486,17 @@ class TestResponse:
         """
         ...
 
-    def contains_header(self, key: str) -> bool:
+    @property
+    def headers(self) -> Headers:
         """
-        Whether the response contains a header by key.
-        """
-        ...
-
-    def header_value(self, key: str) -> Optional[str]:
-        """
-        Get the response's header value by key.
+        Get the response's headers.
         """
         ...
 
-    def header_values(self, key: str) -> list[str]:
+    @property
+    def cookies(self) -> Cookies:
         """
-        Get the response's header values by key.
-        """
-        ...
-
-    def header_keys(self) -> list[str]:
-        """
-        Get the response's header keys.
-        """
-        ...
-
-    def headers_length(self) -> int:
-        """
-        Get the number of response's headers.
+        Get the response's cookies.
         """
         ...
 
