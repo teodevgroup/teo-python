@@ -1,4 +1,4 @@
-use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyBytes, PyDict, PyDictMethods, PyList, PyListMethods, PyString}, Bound, PyResult, Python};
+use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyBytes, PyDict, PyDictMethods, PyList, PyListMethods, PyString}, Bound, IntoPyObjectExt, PyObject, PyResult, Python};
 use teo_result::Error;
 use std::str::FromStr;
 use hyper::{header::{HeaderName, HeaderValue}, HeaderMap, Method};
@@ -129,14 +129,14 @@ impl TestRequest {
         self.uri = uri;
     }
 
-    pub fn insert_header(&mut self, key: String, value: String) -> PyResult<&Self> {
+    pub fn insert_header(&mut self, key: String, value: String, py: Python<'_>) -> PyResult<()> {
         self.headers.__setitem__(key, value)?;
-        Ok(self)
+        Ok(())
     }
 
-    pub fn append_header(&mut self, key: String, value: String) -> PyResult<&Self> {
+    pub fn append_header(&mut self, key: String, value: String, py: Python<'_>) -> PyResult<()> {
         self.headers.append(key, value)?;
-        Ok(self)
+        Ok(())
     }
 
     #[getter]

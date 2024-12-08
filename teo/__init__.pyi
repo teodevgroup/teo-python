@@ -1422,13 +1422,13 @@ class TestRequest:
         """
         ...
 
-    def insert_header(self, key: str, value: str) -> TestRequest:
+    def insert_header(self, key: str, value: str) -> None:
         """
         Insert a header to the request.
         """
         ...
 
-    def append_header(self, key: str, value: str) -> TestRequest:
+    def append_header(self, key: str, value: str) -> None:
         """
         Append a header to the request.
         """
