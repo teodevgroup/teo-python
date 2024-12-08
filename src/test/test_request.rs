@@ -129,14 +129,14 @@ impl TestRequest {
         self.uri = uri;
     }
 
-    pub fn insert_header(&mut self, key: String, value: String) -> PyResult<()> {
+    pub fn insert_header(&mut self, key: String, value: String) -> PyResult<&Self> {
         self.headers.__setitem__(key, value)?;
-        Ok(())
+        Ok(self)
     }
 
-    pub fn append_header(&mut self, key: String, value: String) -> PyResult<()> {
+    pub fn append_header(&mut self, key: String, value: String) -> PyResult<&Self> {
         self.headers.append(key, value)?;
-        Ok(())
+        Ok(self)
     }
 
     #[getter]
