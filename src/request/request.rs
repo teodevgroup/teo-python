@@ -88,15 +88,12 @@ impl Request {
 
     #[getter]
     pub fn headers(&self) -> Headers {
-        Headers {
-            original: self.original.headers()
-        }
+        Headers::from(self.original.headers())
     }
 
     #[getter]
     pub fn cookies(&self) -> PyResult<Cookies> {
-        let cookies = self.original.cookies()?;
-        Ok(Cookies { original: cookies.clone() })
+        Ok(Cookies::from(self.original.cookies()?.clone()))
     }
 
     #[getter]

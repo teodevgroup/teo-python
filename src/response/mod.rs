@@ -101,9 +101,7 @@ impl Response {
 
     #[getter]
     pub fn headers(&self) -> Headers {
-        Headers {
-            original: self.original.headers()
-        }
+        Headers::from(self.original.headers())
     }
 
     #[getter]
@@ -149,9 +147,6 @@ impl Response {
 
     #[getter]
     pub fn cookies(&self) -> Cookies {
-        let cookies = self.original.cookies();
-        Cookies {
-            original: cookies
-        }
+        Cookies::from(self.original.cookies())
     }
 }

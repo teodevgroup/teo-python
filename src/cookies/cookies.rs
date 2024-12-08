@@ -5,7 +5,19 @@ use super::Cookie;
 #[pyclass]
 #[derive(Clone)]
 pub struct Cookies {
-    pub(crate) original: OriginalCookies,
+    original: OriginalCookies,
+}
+
+impl From<OriginalCookies> for Cookies {
+    fn from(original: OriginalCookies) -> Self {
+        Self { original }
+    }
+}
+
+impl Cookies {
+    pub(crate) fn original(&self) -> &OriginalCookies {
+        &self.original
+    }
 }
 
 #[pymethods]

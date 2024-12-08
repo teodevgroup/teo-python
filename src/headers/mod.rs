@@ -3,7 +3,19 @@ use teo::prelude::headers::Headers as OriginalHeaders;
 
 #[pyclass]
 pub struct Headers {
-    pub(super) original: OriginalHeaders
+    original: OriginalHeaders
+}
+
+impl From<OriginalHeaders> for Headers {
+    fn from(original: OriginalHeaders) -> Self {
+        Self { original }
+    }
+}
+
+impl Headers {
+    pub(crate) fn original(&self) -> &OriginalHeaders {
+        &self.original
+    }
 }
 
 #[pymethods]
