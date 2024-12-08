@@ -545,6 +545,13 @@ class Response:
         """
         ...
 
+    @headers.setter
+    def set_headers(self, headers: Headers) -> None:
+        """
+        Set the headers of the response.
+        """
+        ...
+
     @property
     def is_file(self) -> bool:
         """
@@ -598,6 +605,13 @@ class Response:
     def cookies(self) -> Cookies:
         """
         Get the cookies of the response.
+        """
+        ...
+
+    @cookies.setter
+    def set_cookies(self, cookies: Cookies) -> None:
+        """
+        Set the cookies of the response.
         """
         ...
 
@@ -991,10 +1005,23 @@ class Request:
         Get the request's header map.
         """
 
+    @headers.setter
+    def set_headers(self, headers: Headers) -> None:
+        """
+        Set the request's header map.
+        """
+
     @property
     def cookies(self) -> Cookies:
         """
         Get the cookies from the request.
+        """
+        ...
+
+    @cookies.setter
+    def set_cookies(self, cookies: Cookies) -> None:
+        """
+        Set the cookies to the request.
         """
         ...
 
