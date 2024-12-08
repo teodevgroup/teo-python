@@ -48,7 +48,7 @@ impl TestServer {
         let coroutine = future_into_py(py, (move || async {
             let hyper_request = static_request.to_hyper_request();
             let response = static_self.server.process_test_request_with_hyper_request(hyper_request).await?;
-            Ok(TestResponse::new(response))
+            Ok(TestResponse::from(response))
         })())?;
         Ok(coroutine)
     }

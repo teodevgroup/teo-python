@@ -28,7 +28,7 @@ impl Cookies {
     pub fn new(cookies: Option<Vec<Cookie>>) -> Self {
         if let Some(cookies) = cookies {
             let original_cookies = OriginalCookies::new();
-            original_cookies.set_entries(cookies.into_iter().map(|cookie| cookie.original).collect());
+            original_cookies.set_entries(cookies.into_iter().map(|cookie| cookie.original().clone()).collect());
             Cookies {
                 original: original_cookies,
             }
@@ -40,9 +40,7 @@ impl Cookies {
     }
 
     pub fn __getitem__(&self, key: &str) -> Option<Cookie> {
-        self.original.get(key).map(|cookie| Cookie {
-            original: cookie.clone(),
-        })
+        self.original.get(key).map(|cookie| Cookie::from(cookie.clone()))
     }
 
     pub fn __hasitem__(&self, key: &str) -> bool {
@@ -50,7 +48,7 @@ impl Cookies {
     }
 
     pub fn append(&self, cookie: Cookie) {
-        self.original.push(cookie.original)
+        self.original.push(cookie.original().clone())
     }
 
     pub fn clear(&self) {
@@ -63,9 +61,7 @@ impl Cookies {
 
     pub fn __iter__(&self) -> CookiesIter {
         CookiesIter {
-            original: self.original.entries().into_iter().map(|entry| Cookie {
-                original: entry
-            }).collect(),
+            original: self.original.entries().into_iter().map(|entry| Cookie::from(entry)).collect(),
             index: 0
         }
     }

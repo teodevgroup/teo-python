@@ -1,16 +1,18 @@
-use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyBytes, PyDict, PyDictMethods, PyString}, Bound, PyResult, Python};
+use pyo3::{pyclass, pymethods, types::{PyAnyMethods, PyBytes, PyDict, PyDictMethods, PyList, PyListMethods, PyString}, Bound, PyResult, Python};
 use teo_result::Error;
 use std::str::FromStr;
 use hyper::{header::{HeaderName, HeaderValue}, HeaderMap, Method};
 use http_body_util::Full;
 use bytes::Bytes;
+use crate::{cookies::{Cookie, Cookies}, headers::Headers};
 
 #[pyclass]
 pub struct TestRequest {
     method: Method,
     uri: String,
-    headers: HeaderMap,
+    headers: Headers,
     body: Bytes,
+    cookies: Cookies,
 }
 
 #[pymethods]
@@ -40,6 +42,7 @@ impl TestRequest {
             return Err(Error::new("missing required argument: uri"))?;
         };
         let uri: String = uri.extract()?;
+        // Headers
         let mut headers: HeaderMap = HeaderMap::new();
         let headers_any = kwds.get_item("headers")?;
         if let Some(headers_any) = headers_any {
@@ -56,6 +59,7 @@ impl TestRequest {
                 });
             }
         }
+        // Body
         let body = kwds.get_item("body")?;
         let body = if let Some(body) = body {
             if body.is_instance_of::<PyBytes>() {
@@ -77,11 +81,25 @@ impl TestRequest {
         } else {
             Bytes::new()
         };
+        // Cookies
+        let mut cookies = vec![];
+        let cookies_list = kwds.get_item("cookies")?;
+        if let Some(cookies_list) = cookies_list {
+            let cookies_list: Bound<PyList> = cookies_list.extract()?;
+            for item in cookies_list.iter() {
+                let item: Cookie = item.extract()?;
+                cookies.push(item);
+            }
+        }
+        let cookies = Cookies::new(Some(cookies));
+        // Build
+        let original_headers = teo::prelude::headers::Headers::from(headers);
         Ok(Self {
             method,
             uri,
-            headers,
+            headers: Headers::from(original_headers),
             body,
+            cookies,
         })
     }
 
@@ -112,24 +130,12 @@ impl TestRequest {
     }
 
     pub fn insert_header(&mut self, key: String, value: String) -> PyResult<()> {
-        self.headers.insert(match HeaderName::try_from(key) {
-            Ok(value) => value,
-            Err(_) => return Err(teo_result::Error::internal_server_error_message("cannot parse header name").into()),
-        }, match HeaderValue::from_str(value.as_str()) {
-            Ok(value) => value,
-            Err(_) => return Err(teo_result::Error::internal_server_error_message("cannot parse header value").into()),
-        });
+        self.headers.__setitem__(key, value)?;
         Ok(())
     }
 
     pub fn append_header(&mut self, key: String, value: String) -> PyResult<()> {
-        self.headers.append(match HeaderName::try_from(key) {
-            Ok(value) => value,
-            Err(_) => return Err(teo_result::Error::internal_server_error_message("cannot parse header name").into()),
-        }, match HeaderValue::from_str(value.as_str()) {
-            Ok(value) => value,
-            Err(_) => return Err(teo_result::Error::internal_server_error_message("cannot parse header value").into()),
-        });
+        self.headers.append(key, value)?;
         Ok(())
     }
 
@@ -149,12 +155,14 @@ impl TestRequest {
 
 impl TestRequest {
     pub(crate) fn to_hyper_request(&self) -> hyper::Request<Full<Bytes>> {
-        let mut request = hyper::Request::builder()
+        let request = hyper::Request::builder()
             .method(self.method.clone())
             .uri(self.uri.clone());
-        for (key, value) in self.headers.iter() {
-            request = request.header(key.clone(), value.clone());
+        let mut request = request.body(Full::new(self.body.clone())).unwrap();
+        self.headers.original().extend_to(request.headers_mut());
+        for cookie in self.cookies.original().iter() {
+            request.headers_mut().append("Cookie", HeaderValue::try_from(cookie.encoded()).unwrap());
         }
-        request.body(Full::new(self.body.clone())).unwrap()
+        request
     }
 }

@@ -8,7 +8,19 @@ use super::expiration::Expiration;
 #[pyclass]
 #[derive(Clone)]
 pub struct Cookie {
-    pub(crate) original: OriginalCookie,
+    original: OriginalCookie,
+}
+
+impl From<OriginalCookie> for Cookie {
+    fn from(original: OriginalCookie) -> Self {
+        Self { original }
+    }
+}
+
+impl Cookie {
+    pub(crate) fn original(&self) -> &OriginalCookie {
+        &self.original
+    }
 }
 
 #[pymethods]
