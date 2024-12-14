@@ -12,7 +12,7 @@ from .teo import (
     File, Pipeline, LocalObjects, LocalValues, InterfaceEnumVariant, Pipeline,
     TestRequest, TestResponse, TestServer, PipelineCtx
 )
-from .annotations import CapturesAnnotationMark, RequestBodyObjectAnnotationMark, TeoAnnotationMark, ModelObjectAnnotationMark
+from .annotations import TeoAnnotationMark, ModelObjectAnnotationMark
 
 
 T = TypeVar('T')
@@ -90,6 +90,12 @@ def _extract_from_pipeline_ctx(parameters: dict[str, Parameter], ctx: PipelineCt
             raise TeoException(f"unsupported parameter extraction: {parameter}")
     return arguments
 
+def _has_captures_annotation_mark(bases: tuple[type, ...]) -> bool:
+    return any(base.__name__ == 'CapturesAnnotationMark' in base.__bases__ for base in bases)
+
+def _has_request_body_object_annotation_mark(bases: tuple[type, ...]) -> bool:
+    return any(base.__name__ == 'RequestBodyObjectAnnotationMark' in base.__bases__ for base in bases)
+
 def _extract_from_request(parameters: dict[str, Parameter], request: Request, next: Optional[Next]) -> list[Any]:
     arguments: list[Any] = []
     for name, parameter in parameters.items():
@@ -111,9 +117,9 @@ def _extract_from_request(parameters: dict[str, Parameter], request: Request, ne
             elif hasattr(parameter.annotation, '__bases__'):
                 if TeoAnnotationMark in parameter.annotation.__bases__:
                     arguments.append(request.teo)
-                elif CapturesAnnotationMark in parameter.annotation.__orig_bases__:
+                elif _has_captures_annotation_mark(parameter.annotation.__orig_bases__):
                     arguments.append(request.captures)
-                elif RequestBodyObjectAnnotationMark in parameter.annotation.__orig_bases__:
+                elif _has_request_body_object_annotation_mark(parameter.annotation.__orig_bases__):
                     arguments.append(request.body_object)
                 else:
                     arguments.append(request.body_object)
