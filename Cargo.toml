@@ -1,6 +1,6 @@
 [package]
 name = "teo-py"
-version = "0.3.7"
+version = "0.3.8"
 edition = "2021"
 
 [lib]
@@ -8,7 +8,7 @@ name = "teo"
 crate-type = ["cdylib"]
 
 [dependencies]
-teo = { version = "0.3.7" }
+teo = { version = "0.3.8" }
 teo-result = { version = "0.3.5", features = ["pyo3"] }
 pyo3 = { version = "0.23.3", features = ["extension-module", "chrono", "indexmap"] }
 pyo3-async-runtimes = { version = "0.23.0", features = ["attributes", "tokio-runtime"] }
